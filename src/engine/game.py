@@ -27,7 +27,7 @@ class DynamicObject(GameObject):
         self.rect.y += self.change_y
 
     def calc_grav(self):
-        # If falling, increase velocity (simulate gravity)
+        # If falling, simulate gravity
         if self.change_y == 0:
             self.change_y = 1
         else:
@@ -40,7 +40,36 @@ class Player(DynamicObject):
     def update(self):
         # Override update to include player-specific behavior if needed
         super().update()
-        # Add collision handling or input processing here
+        # Collision handling or other logic may be added here
+
+class Fighter(Player):
+    """
+    Fighter class with controls for left/right movement and jumping.
+    Each fighter can have custom keys assigned via the `controls` dict.
+    Example controls dict:
+        {
+            "left": pygame.K_a,
+            "right": pygame.K_d,
+            "jump": pygame.K_w
+        }
+    """
+    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), controls=None):
+        super().__init__(x, y, width, height, color)
+        self.controls = controls or {}
+        self.speed = 5
+        self.jump_strength = -10
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+        if self.controls.get("left") and keys[self.controls["left"]]:
+            self.rect.x -= self.speed
+        if self.controls.get("right") and keys[self.controls["right"]]:
+            self.rect.x += self.speed
+        if self.controls.get("jump") and keys[self.controls["jump"]]:
+            # Only apply jump if on ground (simplistic check)
+            if self.change_y == 0:
+                self.change_y = self.jump_strength
+        super().update()
 
 class MovingPlatform(Platform):
     """A platform that moves horizontally or vertically within a range."""
@@ -88,19 +117,15 @@ if __name__ == '__main__':
     platforms = pygame.sprite.Group()
     enemies = pygame.sprite.Group()
 
-    # Create a sample static platform, moving platform, player, and enemy
+    # Create some sample objects
     static_platform = Platform(100, 500, 400, 20)
     moving_platform = MovingPlatform(100, 400, 200, 20, range_x=150, speed=3)
-    player = Player(150, 450)
+    fighter1 = Fighter(150, 450, color=(0, 0, 255), controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w})
+    fighter2 = Fighter(350, 450, color=(255, 255, 0), controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
     enemy = Enemy(50, 300, speed=2)
 
-    all_sprites.add(static_platform)
-    all_sprites.add(moving_platform)
-    all_sprites.add(player)
-    all_sprites.add(enemy)
-
-    platforms.add(static_platform)
-    platforms.add(moving_platform)
+    all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
+    platforms.add(static_platform, moving_platform)
     enemies.add(enemy)
 
     running = True
