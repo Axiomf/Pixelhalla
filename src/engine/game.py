@@ -1,47 +1,52 @@
-import pygame
-import config
+import pygame  # Import pygame for sprite and game functions
+import config  # Import configuration settings such as scene dimensions
 
+# Base class for all game objects derived from pygame's Sprite class.
 class GameObject(pygame.sprite.Sprite):
     def __init__(self, x, y, width, height, color):
-        super().__init__()
-        self.image = pygame.Surface([width, height])
-        self.image.fill(color)
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        super().__init__()  # Initialize the pygame Sprite base class
+        self.image = pygame.Surface([width, height])  # Create a new surface for the object
+        self.image.fill(color)  # Fill the object surface with the specified color
+        self.rect = self.image.get_rect()  # Get the rectangular area of the surface
+        self.rect.x = x  # Set the horizontal position of the object
+        self.rect.y = y  # Set the vertical position of the object
 
+# Platform class that represents static surfaces for characters to stand on.
 class Platform(GameObject):
     def __init__(self, x, y, width, height, color=(0, 255, 0)):
         super().__init__(x, y, width, height, color)
 
+# Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
     def __init__(self, x, y, width, height, color):
         super().__init__(x, y, width, height, color)
-        self.change_x = 0
-        self.change_y = 0
+        self.change_x = 0  # Horizontal velocity
+        self.change_y = 0  # Vertical velocity
 
     def update(self):
-        self.calc_grav()
-        self.rect.x += self.change_x
-        self.rect.y += self.change_y
+        self.calc_grav()  # Adjust vertical velocity due to gravity
+        self.rect.x += self.change_x  # Update horizontal position
+        self.rect.y += self.change_y  # Update vertical position
 
     def calc_grav(self):
-        # If falling, simulate gravity
+        # Basic gravity simulation: if not already falling, start falling.
         if self.change_y == 0:
             self.change_y = 1
         else:
-            self.change_y += 0.35
+            self.change_y += 0.35  # Acceleration due to gravity
 
+# Player class that can later be expanded with collision detection and other behaviors.
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=(0, 0, 255)):
         super().__init__(x, y, width, height, color)
 
     def update(self):
-        # Override update to include player-specific behavior if needed
+        # Call DynamicObject's update to apply gravity and movement
         super().update()
-        # Collision handling or other logic may be added here
+        # Add player-specific behaviors here (e.g., collision checking)
 
+# Fighter class implements control logic for player actions such as movement and jumping.
 class Fighter(Player):
     """
     Fighter class with controls for left/right movement and jumping.
@@ -55,54 +60,62 @@ class Fighter(Player):
     """
     def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), controls=None):
         super().__init__(x, y, width, height, color)
-        self.controls = controls or {}
-        self.speed = 5
-        self.jump_strength = -10
+        self.controls = controls or {}  # Store control keys for this fighter
+        self.speed = 5  # Pixel movement per update for horizontal movement
+        self.jump_strength = -10  # Vertical speed for jumping (negative to move up)
 
     def update(self):
-        keys = pygame.key.get_pressed()
+        keys = pygame.key.get_pressed()  # Get the current state of keyboard keys
+        # Move left if the assigned 'left' key is pressed
         if self.controls.get("left") and keys[self.controls["left"]]:
             self.rect.x -= self.speed
+        # Move right if the assigned 'right' key is pressed
         if self.controls.get("right") and keys[self.controls["right"]]:
             self.rect.x += self.speed
+        # Initiate jump if the 'jump' key is pressed (only if the fighter is on the ground)
         if self.controls.get("jump") and keys[self.controls["jump"]]:
-            # Only apply jump if on ground (simplistic check)
-            if self.change_y == 0:
+            if self.change_y == 0:  # Simplistic ground check
                 self.change_y = self.jump_strength
+        # Call the parent's update to apply gravity and move the sprite
         super().update()
 
+# A platform that automatically moves within a specified range.
 class MovingPlatform(Platform):
     """A platform that moves horizontally or vertically within a range."""
     def __init__(self, x, y, width, height, color=(0, 255, 0), range_x=0, range_y=0, speed=2):
         super().__init__(x, y, width, height, color)
-        self.start_x = x
-        self.start_y = y
-        self.range_x = range_x
-        self.range_y = range_y
-        self.speed = speed
-        self.direction = 1  # 1 = forward, -1 = backward
+        self.start_x = x  # Initial horizontal position to measure the movement range
+        self.start_y = y  # Initial vertical position to measure the movement range
+        self.range_x = range_x  # Maximum horizontal distance to move from the starting point
+        self.range_y = range_y  # Maximum vertical distance to move from the starting point
+        self.speed = speed  # Speed at which the platform moves
+        self.direction = 1  # Direction multiplier; 1 for forward and -1 for reverse motion
 
     def update(self):
+        # Update horizontal movement if applicable
         if self.range_x:
             self.rect.x += self.speed * self.direction
             if abs(self.rect.x - self.start_x) >= self.range_x:
-                self.direction *= -1
+                self.direction *= -1  # Reverse movement direction upon reaching range limit
+        # Update vertical movement if applicable
         if self.range_y:
             self.rect.y += self.speed * self.direction
             if abs(self.rect.y - self.start_y) >= self.range_y:
-                self.direction *= -1
+                self.direction *= -1  # Reverse vertical direction upon reaching range limit
 
+# Enemy class represents non-player adversaries that patrol and are affected by physics.
 class Enemy(DynamicObject):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=30, height=30, color=(255, 0, 0), speed=2):
         super().__init__(x, y, width, height, color)
-        self.change_x = speed
+        self.change_x = speed  # Set initial horizontal patrol speed
 
     def update(self):
-        self.rect.x += self.change_x
+        self.rect.x += self.change_x  # Move enemy horizontally
+        # Reverse direction when enemy hits either side of the game scene
         if self.rect.right > config.scene_WIDTH or self.rect.left < 0:
             self.change_x *= -1
-        # Enemy can also be affected by gravity if needed.
+        # Update vertical position with a gravity effect if needed
         self.calc_grav()
         self.rect.y += self.change_y
 
