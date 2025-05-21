@@ -36,6 +36,20 @@ class DynamicObject(GameObject):
         else:
             self.change_y += 0.35  # Acceleration due to gravity
 
+    def handle_platform_collision(self, platforms):
+        """
+        Checks for collision with any platform in the provided group.
+        If falling and colliding with a platform, adjust the vertical position
+        to stand on the platform and reset vertical velocity.
+        """
+        collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
+        for platform in collided_platforms:
+            # Only resolve collision if falling downward.
+            # Adjust so that object's bottom aligns with platform's top.
+            if self.change_y > 0 and self.rect.bottom <= platform.rect.bottom:
+                self.rect.bottom = platform.rect.top
+                self.change_y = 0
+
 # Player class that can later be expanded with collision detection and other behaviors.
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=(0, 0, 255)):
@@ -44,7 +58,7 @@ class Player(DynamicObject):
     def update(self):
         # Call DynamicObject's update to apply gravity and movement
         super().update()
-        # Add player-specific behaviors here (e.g., collision checking)
+        # Additional player-specific logic (e.g., collision checking) can be added externally
 
 # Fighter class implements control logic for player actions such as movement and jumping.
 class Fighter(Player):
@@ -115,7 +129,7 @@ class Enemy(DynamicObject):
         # Reverse direction when enemy hits either side of the game scene
         if self.rect.right > config.scene_WIDTH or self.rect.left < 0:
             self.change_x *= -1
-        # Update vertical position with a gravity effect if needed
+        # Apply gravity and update vertical position
         self.calc_grav()
         self.rect.y += self.change_y
 
