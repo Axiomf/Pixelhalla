@@ -26,10 +26,10 @@ static_platform = Platform(config.scene_WIDTH/4, config.scene_HEIGHT*3/5, config
 # MovingPlatform moves horizontally within a given range and speed
 moving_platform = MovingPlatform(config.scene_WIDTH/8, config.scene_HEIGHT/4, config.scene_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 # Two fighter objects using custom control keys for movement and jumping
-fighter1 = Fighter(150, 450, color=(0, 0, 255), controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w})
-fighter2 = Fighter(350, 450, color=(255, 255, 0), controls={"left": pygame.K_LEFT, "Protocolright": pygame.K_RIGHT, "jump": pygame.K_UP})
+fighter1 = Fighter(350, 450, color=(0, 0, 255), controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w})
+fighter2 = Fighter(650, 450, color=(255, 255, 0), controls={"left": pygame.K_LEFT, "Protocolright": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges
-enemy = Enemy(50, 300, speed=2)
+enemy = Enemy(400, 450, speed=1)
 
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
