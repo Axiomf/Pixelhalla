@@ -21,17 +21,22 @@ pygame.display.set_caption(config.CAPTION)
 clock = pygame.time.Clock()
 
 # Create sprite groups to better organize and manage game objects.
-all_sprites = pygame.sprite.Group()  # Contains all objects for global update and drawing
-platforms = pygame.sprite.Group()      # Contains all platform objects
-enemies = pygame.sprite.Group()        # Contains all enemy objects
+all_sprites = pygame.sprite.Group()      # Contains all objects for global update and drawing
+platforms = pygame.sprite.Group()          # Contains all platform objects
+enemies = pygame.sprite.Group()            # Contains all enemy objects
+projectiles = pygame.sprite.Group()        # Contains all projectile objects
 
 # Create game objects with specified positions, sizes, and behaviors
-static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3)
+static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5,
+                           config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3)
 # MovingPlatform moves horizontally within a given range and speed
-moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4, config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
-# Two fighter objects using custom control keys for movement and jumping
-fighter1 = Fighter(350, 450, color=(0, 0, 255), controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w})
-fighter2 = Fighter(650, 450, color=(255, 255, 0), controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
+moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
+                                 config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
+# Two fighter objects using custom control keys for movement, jumping, and shooting.
+fighter1 = Fighter(350, 450, color=(0, 0, 255), 
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE})
+fighter2 = Fighter(650, 450, color=(255, 255, 0), 
+                   controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges
 enemy = NPC(400, 450, speed=1)
 
@@ -40,13 +45,18 @@ all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
 platforms.add(static_platform, moving_platform)
 enemies.add(enemy)
 
-# Main game loop that runs until the player exits the game
 running = True
 while running:
-    # Process input events (such as closing the window)
+    # Process input events (such as closing the window or shooting projectiles)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            # If the shoot key for fighter1 is pressed, spawn a projectile.
+            if event.key == fighter1.controls.get("shoot"):
+                projectile = fighter1.shoot()
+                all_sprites.add(projectile)
+                projectiles.add(projectile)
 
     # Update all game objects (calls update() on each sprite in all_sprites)
     all_sprites.update()
