@@ -3,6 +3,8 @@ import pygame
 import config
 from .base import GameObject
 
+
+
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
@@ -21,7 +23,7 @@ class DynamicObject(GameObject):
         if self.change_y == 0:
             self.change_y = 1
         else:
-            self.change_y += 0.35  # Acceleration due to gravity
+            self.change_y += config.GLOBAL_GRAVITY  # Acceleration due to gravity
 
     def handle_platform_collision(self, platforms):
         """
@@ -32,13 +34,13 @@ class DynamicObject(GameObject):
         collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
         for platform in collided_platforms:
             # Only resolve collision if falling downward.
-            if self.change_y > 0 and self.rect.bottom <= platform.rect.bottom:
+            if self.change_y > 0: #   and self.rect.bottom <= platform.rect.bottom
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
 # Player class that can later be expanded with collision detection and other behaviors.
 class Player(DynamicObject):
-    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=config.PLAYER_DAMAGE,
+    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=100,
                  image_path=None):
         super().__init__(x, y, width, height, color,image_path)
         self.health = health          # Current health of the player
@@ -59,13 +61,20 @@ class Player(DynamicObject):
         # Call DynamicObject's update to apply gravity and movement.
         super().update()
         # Additional player-specific logic (collision, animation, etc.) may be added here.
+        if self.is_dead():
+            self.kill()
+    def shoot(self):
+        """Creates a projectile moving to the right from the fighter's position."""
+        # For simplicity, the projectile moves right. You can enhance this by using a facing direction.
+        return Projectile(self.rect.centerx + 100, self.rect.centery, velocity=(10, 0))
 
 # Projectile class acts like a bullet or arrow.
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=5, height=5, color=(255,255,0), velocity=(10, 0), use_gravity=False,image_path=None):
+    def __init__(self, x, y, width=5, height=5, color=(255,255,0), velocity=(10, 0),damage=config.PROJECTILE_DAMAGE, use_gravity=False,image_path=None):
         super().__init__(x, y, width, height, color,image_path)
+        self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
         # For projectiles we typically do not use the standard gravity unless needed.
@@ -83,23 +92,12 @@ class Projectile(DynamicObject):
 
 # Fighter class implements control logic for player actions such as movement, jumping, and shooting.
 class Fighter(Player):
-    """
-    Fighter class with controls for left/right movement, jumping, and shooting.
-    Each fighter can have custom keys assigned via the `controls` dict.
-    Example controls dict:
-        {
-            "left": pygame.K_a,
-            "right": pygame.K_d,
-            "jump": pygame.K_w,
-            "shoot": pygame.K_SPACE
-        }
-    """
-    def __init__(self, x, y, width=32, height=48, color=(0, 0, 255), controls=None, health=100, damage=config.PLAYER_DAMAGE,
+    def __init__(self, x, y, width=32, height=48, color=(0, 0, 255), controls=None, health=config.PLAYER_HEALTH, damage=config.PLAYER_DAMAGE,
                  image_path=None):
         super().__init__(x, y, width, height, color, health, damage,image_path)
         self.controls = controls or {}  # Store control keys for this fighter
-        self.speed = 5                 # Horizontal speed
-        self.jump_strength = -15       # Vertical speed for jumping (negative to move up)
+        self.speed = config.PLAYER_SPEED                 # Horizontal speed
+        self.jump_strength = config.PLAYER_JUMP       # Vertical speed for jumping (negative to move up)
 
     def update(self):
         keys = pygame.key.get_pressed()  # Get the state of keyboard keys
@@ -116,15 +114,12 @@ class Fighter(Player):
         # Call the parent's update to apply gravity and update movement.
         super().update()
 
-    def shoot(self):
-        """Creates a projectile moving to the right from the fighter's position."""
-        # For simplicity, the projectile moves right. You can enhance this by using a facing direction.
-        return Projectile(self.rect.centerx, self.rect.centery, velocity=(10, 0))
+    
 
 # NPC class represents non-player enemies.
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
-    def __init__(self, x, y, width=30, height=30, color=(255, 0, 0), speed=2, health=100, damage=config.NPC_DAMAGE,
+    def __init__(self, x, y, width=30, height=30, color=(255, 0, 0), speed=2, health=config.NPC_HEALTH, damage=config.NPC_DAMAGE,
                  image_path=None):
         super().__init__(x, y, width, height, color, health, damage,image_path)
         self.change_x = speed  # Set initial horizontal patrol speed
@@ -137,3 +132,10 @@ class NPC(Player):
         # Apply gravity and update vertical position
         self.calc_grav()
         self.rect.y += self.change_y
+        projectile = self.shoot()
+        from run_game import projectiles
+        from run_game import all_sprites
+        projectiles.add(projectile)
+        all_sprites.add(projectile)
+        super().update()
+        

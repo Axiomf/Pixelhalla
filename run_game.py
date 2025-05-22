@@ -3,8 +3,8 @@ import pygame  # Import pygame for game functionality
 import config  # Import configuration settings like scene dimensions and FPS
 
 # Import platform and dynamic object classes from the new files
-from src.engine.platforms import Platform, MovingPlatform
-from src.engine.dynamic_objects import Fighter, NPC, DynamicObject
+from src.engine.platforms import *
+from src.engine.dynamic_objects import *
 
 pygame.init()  # Initialize all imported pygame modules
 
@@ -40,7 +40,7 @@ fighter1 = Fighter(350, 450,width=32, color=(0, 0, 255),
 fighter2 = Fighter(650, 450, color=(255, 255, 0), 
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges
-enemy = NPC(400, 450, speed=1)
+enemy = NPC(400, 450, speed=config.NPC_SPEED)
 
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
@@ -59,7 +59,6 @@ while running:
                 projectile = fighter1.shoot()
                 all_sprites.add(projectile)
                 projectiles.add(projectile)
-
     # Update all game objects (calls update() on each sprite in all_sprites)
     all_sprites.update()
 
@@ -67,13 +66,21 @@ while running:
     for sprite in all_sprites:
         if isinstance(sprite, DynamicObject):
             sprite.handle_platform_collision(platforms)
-
+        if isinstance(sprite, Projectile):
+            # Check for collisions with enemies and remove the projectile if it hits
+            hit_enemies = pygame.sprite.spritecollide(sprite, enemies, False)
+            if hit_enemies:
+                for enemy in hit_enemies:
+                    enemy.take_damage(sprite.damage)
+                    sprite.kill()
+               
+    
     # Draw phase: clear the screen, draw background, and then all sprites
     scene.fill((0, 0, 0))
     scene.blit(background, (config.SCENE_WIDTH/2 - 408, config.SCENE_HEIGHT/2 - 240))
     all_sprites.draw(scene)
 
-    pygame.display.flip()  # Refresh the display
+    pygame.display.flip()  # Refresh the ng = Falsedisplay
     clock.tick(config.FPS)  # Maintain the FPS defined in config
 
 pygame.quit()  # Clean up and close the pygame window
