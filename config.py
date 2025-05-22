@@ -19,3 +19,9 @@ GLOBAL_GRAVITY = 0.5
 
 CAPTION = "Welcome to pixelhalla"
 FPS = 60
+
+
+# config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3 let it be here 
+
+
+

@@ -94,7 +94,7 @@ class Fighter(Player):
             "shoot": pygame.K_SPACE
         }
     """
-    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), controls=None, health=100, damage=config.PLAYER_DAMAGE,
+    def __init__(self, x, y, width=32, height=48, color=(0, 0, 255), controls=None, health=100, damage=config.PLAYER_DAMAGE,
                  image_path=None):
         super().__init__(x, y, width, height, color, health, damage,image_path)
         self.controls = controls or {}  # Store control keys for this fighter
