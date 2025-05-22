@@ -1,11 +1,15 @@
+# my h & g keys are broken so I put them here
 import pygame  # Import pygame for game functionality
 import config  # Import configuration settings like scene dimensions and FPS
-from src.engine.game import *  # Import all game classes (Platform, Fighter, Enemy, etc.)
+
+# Import platform and dynamic object classes from the new files
+from src.engine.platforms import Platform, MovingPlatform
+from src.engine.dynamic_objects import Fighter, NPC, DynamicObject
 
 pygame.init()  # Initialize all imported pygame modules
 
 # Set up the main game window using dimensions from config
-scene = pygame.display.set_mode((config.scene_WIDTH, config.scene_HEIGHT)) 
+scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT)) 
 
 # Load a background image located in the assets folder
 background = pygame.image.load("src/assets/images/blue-preview.png")
@@ -22,14 +26,14 @@ platforms = pygame.sprite.Group()      # Contains all platform objects
 enemies = pygame.sprite.Group()        # Contains all enemy objects
 
 # Create game objects with specified positions, sizes, and behaviors
-static_platform = Platform(config.scene_WIDTH/4, config.scene_HEIGHT*3/5, config.scene_WIDTH/2, config.scene_HEIGHT/3)
+static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3)
 # MovingPlatform moves horizontally within a given range and speed
-moving_platform = MovingPlatform(config.scene_WIDTH/8, config.scene_HEIGHT/4, config.scene_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
+moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4, config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 # Two fighter objects using custom control keys for movement and jumping
 fighter1 = Fighter(350, 450, color=(0, 0, 255), controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w})
-fighter2 = Fighter(650, 450, color=(255, 255, 0), controls={"left": pygame.K_LEFT, "Protocolright": pygame.K_RIGHT, "jump": pygame.K_UP})
+fighter2 = Fighter(650, 450, color=(255, 255, 0), controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges
-enemy = Enemy(400, 450, speed=1)
+enemy = NPC(400, 450, speed=1)
 
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
@@ -47,20 +51,17 @@ while running:
     # Update all game objects (calls update() on each sprite in all_sprites)
     all_sprites.update()
 
-    # Handle collisions for dynamic objects so that they can stand on platforms.
-    # (Assumes that objects like Fighter and Enemy inherit from DynamicObject.)
+    # Handle collisions so dynamic objects can stand on platforms.
     for sprite in all_sprites:
-        # Check if the sprite is a dynamic object by confirming it has the collision handler.
         if isinstance(sprite, DynamicObject):
             sprite.handle_platform_collision(platforms)
 
     # Draw phase: clear the screen, draw background, and then all sprites
-    scene.fill((0, 0, 0))  # Clear the screen by filling it with black
-    # Draw the background image centered based on predetermined offsets
-    scene.blit(background, (config.scene_WIDTH/2-408, config.scene_HEIGHT/2-240))
-    all_sprites.draw(scene)  # Draw all sprites onto the scene
+    scene.fill((0, 0, 0))
+    scene.blit(background, (config.SCENE_WIDTH/2 - 408, config.SCENE_HEIGHT/2 - 240))
+    all_sprites.draw(scene)
 
-    pygame.display.flip()  # Refresh the display surface to show new drawings
+    pygame.display.flip()  # Refresh the display
     clock.tick(config.FPS)  # Maintain the FPS defined in config
 
 pygame.quit()  # Clean up and close the pygame window

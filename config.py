@@ -1,5 +1,19 @@
 # my h & g keys are broken so I put them here
-scene_WIDTH = 1200
-scene_HEIGHT = 600
+SCENE_WIDTH = 1200
+SCENE_HEIGHT = 600
+
+PLAYER_DAMAGE = 10
+PLAYER_SPEED = 5
+PLAYER_JUMP = 10
+PLAYER_GRAVITY = 0.5
+
+NPC_DAMAGE = 10
+NPC_SPEED = 2
+NPC_JUMP = 10
+NPC_GRAVITY = 0.5
+
+GLOBAL_GRAVITY = 0.5
+
+
 CAPTION = "Welcome to pixelhalla"
 FPS = 60
