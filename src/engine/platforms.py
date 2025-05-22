@@ -3,10 +3,10 @@ import pygame
 import config
 from .base import GameObject
 
-# Platform class that represents static surfaces for characters to stand on.
+# Platform class that now accepts an optional image.
 class Platform(GameObject):
-    def __init__(self, x, y, width, height, color=(0, 255, 0)):
-        super().__init__(x, y, width, height, color)
+    def __init__(self, x, y, width, height, color=(0, 255, 0), image_path=None):
+        super().__init__(x, y, width, height, color, image_path)
 
 # A platform that automatically moves within a specified range.
 class MovingPlatform(Platform):

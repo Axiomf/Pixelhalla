@@ -27,14 +27,16 @@ enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
 
 # Create game objects with specified positions, sizes, and behaviors
-static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5,
-                           config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3)
+static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, 
+                           config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3, 
+                           image_path="src/assets/images/country-platform-preview.png")
 # MovingPlatform moves horizontally within a given range and speed
 moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                  config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
 fighter1 = Fighter(350, 450, color=(0, 0, 255), 
-                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE})
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+                   image_path="src/assets/images/death-lamp-walk6.png")
 fighter2 = Fighter(650, 450, color=(255, 255, 0), 
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges

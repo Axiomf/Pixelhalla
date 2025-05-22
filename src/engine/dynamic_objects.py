@@ -6,8 +6,8 @@ from .base import GameObject
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
-    def __init__(self, x, y, width, height, color):
-        super().__init__(x, y, width, height, color)
+    def __init__(self, x, y, width, height, color, image_path=None):
+        super().__init__(x, y, width, height, color, image_path)
         self.change_x = 0  # Horizontal velocity
         self.change_y = 0  # Vertical velocity
 
@@ -38,8 +38,9 @@ class DynamicObject(GameObject):
 
 # Player class that can later be expanded with collision detection and other behaviors.
 class Player(DynamicObject):
-    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=config.PLAYER_DAMAGE):
-        super().__init__(x, y, width, height, color)
+    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=config.PLAYER_DAMAGE,
+                 image_path=None):
+        super().__init__(x, y, width, height, color,image_path)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
@@ -63,8 +64,8 @@ class Player(DynamicObject):
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=5, height=5, color=(255,255,0), velocity=(10, 0), use_gravity=False):
-        super().__init__(x, y, width, height, color)
+    def __init__(self, x, y, width=5, height=5, color=(255,255,0), velocity=(10, 0), use_gravity=False,image_path=None):
+        super().__init__(x, y, width, height, color,image_path)
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
         # For projectiles we typically do not use the standard gravity unless needed.
@@ -93,8 +94,9 @@ class Fighter(Player):
             "shoot": pygame.K_SPACE
         }
     """
-    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), controls=None, health=100, damage=config.PLAYER_DAMAGE):
-        super().__init__(x, y, width, height, color, health, damage)
+    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), controls=None, health=100, damage=config.PLAYER_DAMAGE,
+                 image_path=None):
+        super().__init__(x, y, width, height, color, health, damage,image_path)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = 5                 # Horizontal speed
         self.jump_strength = -15       # Vertical speed for jumping (negative to move up)
@@ -122,8 +124,9 @@ class Fighter(Player):
 # NPC class represents non-player enemies.
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
-    def __init__(self, x, y, width=30, height=30, color=(255, 0, 0), speed=2, health=100, damage=config.NPC_DAMAGE):
-        super().__init__(x, y, width, height, color, health, damage)
+    def __init__(self, x, y, width=30, height=30, color=(255, 0, 0), speed=2, health=100, damage=config.NPC_DAMAGE,
+                 image_path=None):
+        super().__init__(x, y, width, height, color, health, damage,image_path)
         self.change_x = speed  # Set initial horizontal patrol speed
 
     def update(self):
