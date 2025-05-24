@@ -1,4 +1,4 @@
-# my h & g keys are broken so I put them here
+# my h & g    keys are broken so I put them here
 import pygame
 import config
 from .base import GameObject
