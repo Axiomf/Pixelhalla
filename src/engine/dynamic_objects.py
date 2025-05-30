@@ -125,13 +125,34 @@ class NPC(Player):
         self.change_x = speed  # Set initial horizontal patrol speed
 
     def update(self):
-        self.rect.x += self.change_x  # Move enemy horizontally
-        # Reverse direction when enemy hits either side of the game scene
-        if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
-            self.change_x *= -1
         # Apply gravity and update vertical position
         self.calc_grav()
         self.rect.y += self.change_y
+        from run_game import platforms
+        # Check if the NPC is on a platform
+        print(self.change_y)
+        if self.change_y == 1:  # NPC is on a platform (not falling)
+            collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
+            if collided_platforms:  # If on a platform
+                print("yes")
+                platform = collided_platforms[0]  # Assume standing on the first collided platform
+                # Check if NPC is at the left or right edge of the platform
+                if self.rect.right >= platform.rect.right and self.change_x > 0:  # At right edge, moving right
+                    self.change_x *= -1  # Reverse direction
+                elif self.rect.left <= platform.rect.left and self.change_x < 0:  # At left edge, moving left
+                    self.change_x *= -1  # Reverse direction
+            else:
+                # If not on a platform, check scene boundaries
+                if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
+                    self.change_x *= -1
+        else:
+            # If falling, check scene boundaries
+            if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
+                self.change_x *= -1
+
+        # Update horizontal position
+        self.rect.x += self.change_x
+
         projectile = self.shoot()
         from run_game import projectiles
         from run_game import all_sprites

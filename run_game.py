@@ -12,7 +12,8 @@ pygame.init()  # Initialize all imported pygame modules
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT)) 
 
 # Load a background image located in the assets folder
-background = pygame.image.load("src/assets/images/blue-preview.png")
+background = pygame.image.load("src/assets/images/country-platform-preview.png")
+background = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
 # Set the window title using the caption defined in config
 pygame.display.set_caption(config.CAPTION)
@@ -28,8 +29,8 @@ projectiles = pygame.sprite.Group()        # Contains all projectile objects
 
 # Create game objects with specified positions, sizes, and behaviors
 static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, 
-                           384,224, 
-                           image_path="src/assets/images/country-platform-preview.png")
+                           500,100, 
+                           color=(139,69,19))
 # MovingPlatform moves horizontally within a given range and speed
 moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                  config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
@@ -40,7 +41,9 @@ fighter1 = Fighter(350, 450,width=32, color=(0, 0, 255),
 fighter2 = Fighter(650, 450, color=(255, 255, 0), 
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges
-enemy = NPC(400, 450, speed=config.NPC_SPEED)
+enemy = NPC(static_platform.rect.x + (static_platform.rect.width / 2) - (30 / 2),  
+            static_platform.rect.y - 30, 
+            speed=config.NPC_SPEED)
 
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
@@ -77,7 +80,7 @@ while running:
     
     # Draw phase: clear the screen, draw background, and then all sprites
     scene.fill((0, 0, 0))
-    scene.blit(background, (config.SCENE_WIDTH/2 - 408, config.SCENE_HEIGHT/2 - 240))
+    scene.blit(background, (0, 0))
     all_sprites.draw(scene)
 
     pygame.display.flip()  # Refresh the ng = Falsedisplay
