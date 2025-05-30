@@ -26,6 +26,7 @@ all_sprites = pygame.sprite.Group()      # Contains all objects for global updat
 platforms = pygame.sprite.Group()          # Contains all platform objects
 enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
+fighters = pygame.sprite.Group()        # Contains all fighter objects
 
 # Create game objects with specified positions, sizes, and behaviors
 static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, 
@@ -35,20 +36,21 @@ static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5,
 moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                  config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
-fighter1 = Fighter(350, 450,width=32, color=(0, 0, 255), 
+fighter1 = Fighter(350, 450, color=(0, 0, 255), 
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                   image_path="src/assets/images/death-lamp-walk6.png")
+                   image_path="src/assets/images/fighter.png")
 fighter2 = Fighter(650, 450, color=(255, 255, 0), 
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP})
 # An enemy that patrols horizontally and bounces at screen edges
 enemy = NPC(static_platform.rect.x + (static_platform.rect.width / 2) - (30 / 2),  
             static_platform.rect.y - 30, 
-            speed=config.NPC_SPEED)
+            speed=config.NPC_SPEED, image_path="src/assets/images/death-lamp-walk6.png")
 
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(static_platform, moving_platform, fighter1, fighter2, enemy)
 platforms.add(static_platform, moving_platform)
 enemies.add(enemy)
+fighters.add(fighter1, fighter2)
 
 running = True
 while running:
@@ -76,13 +78,21 @@ while running:
                 for enemy in hit_enemies:
                     enemy.take_damage(sprite.damage)
                     sprite.kill()
+            # Check for collisions with fighters, but not with the projectile's owner
+            hit_fighters = pygame.sprite.spritecollide(sprite, fighters, False)
+            for fighter in hit_fighters:
+                if fighter != sprite.owner:  # Prevent projectile from damaging its owner
+                    fighter.take_damage(sprite.damage)
+                    sprite.kill()
                
     
     # Draw phase: clear the screen, draw background, and then all sprites
     scene.fill((0, 0, 0))
     scene.blit(background, (0, 0))
     all_sprites.draw(scene)
-
+    for sprite in all_sprites:
+        if isinstance(sprite, Player):  #NFC and Fither
+            sprite.draw_health_bar(scene)
     pygame.display.flip()  # Refresh the ng = Falsedisplay
     clock.tick(config.FPS)  # Maintain the FPS defined in config
 
