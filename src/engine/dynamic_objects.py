@@ -61,7 +61,7 @@ class Player(DynamicObject):
         """Draws a health bar above the player based on current health."""
         # Health bar dimensions
         bar_width = self.rect.width  # Same width as the player sprite
-        bar_height = 10  # Height of the health bar
+        bar_height = config.PLAYER_BAR_HEIGHT  # Height of the health bar
         bar_x = self.rect.x  # Align with the player's x position
         bar_y = self.rect.y - bar_height - 5  # Position above the player
 
@@ -70,8 +70,8 @@ class Player(DynamicObject):
         health_width = bar_width * health_ratio
 
         # Draw background (gray) and health (red)
-        pygame.draw.rect(surface, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))  # Background
-        pygame.draw.rect(surface, (255, 0, 0), (bar_x, bar_y, health_width, bar_height))  # Health
+        pygame.draw.rect(surface, config.PLAYER_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height))  # Background
+        pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
 
     def update(self):
         # Call DynamicObject's update to apply gravity and movement.
@@ -81,14 +81,14 @@ class Player(DynamicObject):
             self.kill()
     def shoot(self):
         """Creates a projectile moving in the direction the NPC is facing."""
-        velocity_x = 5 if self.facing_right else -5
-        return Projectile(self.rect.centerx + (5 if self.facing_right else -5), self.rect.centery, velocity=(velocity_x, 0), image_path="src/assets/images/bullet.png", owner=self)
+        velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
+        return Projectile(self.rect.centerx + (config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED), self.rect.centery, velocity=(velocity_x, 0), image_path="src/assets/images/bullet.png", owner=self)
 
 # Projectile class acts like a bullet or arrow.
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=20, height=20, color=(255,255,0), velocity=(10, 0),damage=config.PROJECTILE_DAMAGE, use_gravity=False,image_path=None, owner=None):
+    def __init__(self, x, y, width=30, height=30, color=(255,255,0), velocity=(10, 0),damage=config.PROJECTILE_DAMAGE, use_gravity=False,image_path=None, owner=None):
         super().__init__(x, y, width, height, color,image_path)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
@@ -126,28 +126,54 @@ class Fighter(Player):
 
         # Move left if the assigned 'left' key is pressed
         if self.controls.get("left") and keys[self.controls["left"]]:
-            self.rect.x -= self.speed
+            self.change_x = (-1) * self.speed
             self.facing_right = False  # Face left
         # Move right if the assigned 'right' key is pressed
         elif self.controls.get("right") and keys[self.controls["right"]]:
-            self.rect.x += self.speed
+            self.change_x = self.speed
             self.facing_right = True  # Face right
-        # If no movement keys are pressed, keep the last direction
-        # (You can modify this to reset to a default direction if needed)
-
-        # Update the image based on direction
-        if self.facing_right != previous_facing:  # Only flip if direction changed
-            self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+        else:
+            self.change_x = 0  # Stop horizontal movement if no keys are pressed
 
         # Initiate jump if the 'jump' key is pressed (only if on the ground)
         if self.controls.get("jump") and keys[self.controls["jump"]]:
             if self.change_y == 0:  # Simplistic ground check
                 self.change_y = self.jump_strength
 
+        # Check for horizontal collisions with platforms
+        from run_game import platforms
+        # Apply horizontal movement temporarily to check for collisions
+        self.rect.x += self.change_x
+        collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
+        for platform in collided_platforms:
+            if self.change_x > 0 and self.rect.right > platform.rect.left:  # Moving right, hit left side of platform
+                self.rect.right = platform.rect.left
+                self.change_x = 0
+            elif self.change_x < 0 and self.rect.left < platform.rect.right:  # Moving left, hit right side of platform
+                self.rect.left = platform.rect.right
+                self.change_x = 0
+        # Check for vertical collisions when moving upward (jumping)
+        self.rect.y += self.change_y
+        collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
+        for platform in collided_platforms:
+            if self.change_y < 0 and self.rect.top < platform.rect.bottom:  # Moving up, hit bottom of platform
+                self.rect.top = platform.rect.bottom
+                self.change_y = 0
+
+        # Check for scene boundaries
+        if self.rect.right + self.change_x > config.SCENE_WIDTH:
+            self.rect.right = config.SCENE_WIDTH
+            self.change_x = 0
+        elif self.rect.left + self.change_x < 0:
+            self.rect.left = 0
+            self.change_x = 0
+
+        # Update the image based on direction
+        if self.facing_right != previous_facing:  # Only flip if direction changed
+            self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+
         # Call the parent's update to apply gravity and update movement
         super().update()
-
-    
 
 # NPC class represents non-player enemies.
 class NPC(Player):
@@ -173,12 +199,17 @@ class NPC(Player):
         if self.change_y == 1:  # NPC is on a platform (not falling)
             collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
             if collided_platforms:  # If on a platform
-                platform = collided_platforms[0]  # Assume standing on the first collided platform
-                # Check if NPC is at the left or right edge of the platform
-                if self.rect.right >= platform.rect.right and self.change_x > 0:  # At right edge, moving right
-                    self.change_x *= -1  # Reverse direction
-                elif self.rect.left <= platform.rect.left and self.change_x < 0:  # At left edge, moving left
-                    self.change_x *= -1  # Reverse direction
+                for platform in collided_platforms:
+                    if self.rect.bottom == platform.rect.top + 1:
+                        if self.rect.right >= platform.rect.right and self.change_x > 0:  # At right edge, moving right
+                            self.change_x *= -1  # Reverse direction
+                        elif self.rect.left <= platform.rect.left and self.change_x < 0:  # At left edge, moving left
+                            self.change_x *= -1  # Reverse direction
+                    else:
+                        if self.rect.right >= platform.rect.left and self.change_x > 0:  # At right edge, moving right
+                            self.change_x *= -1  # Reverse direction
+                        elif self.rect.left <= platform.rect.right and self.change_x < 0:  # At left edge, moving left
+                            self.change_x *= -1  # Reverse direction
             else:
                 # If not on a platform, check scene boundaries
                 if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
