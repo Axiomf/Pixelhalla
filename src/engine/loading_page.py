@@ -16,6 +16,3 @@ start_button_text_rect = start_button_text.get_rect(center=start_button.center) 
 loading_background = pygame.image.load("src/assets/images/blue-preview.png")  # Load background image
 loading_background = pygame.transform.scale(loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Scale to scene size
 
-# Variable to debounce mouse clicks
-last_click_time = 0
-CLICK_COOLDOWN = 200  # 200ms cooldown between clicks
