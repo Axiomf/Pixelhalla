@@ -5,10 +5,23 @@ import config  # Import configuration settings like scene dimensions and FPS
 pygame.init()  # Initialize all imported pygame modules
 pygame.display.set_caption(config.CAPTION) # Set the window title using the caption defined in config
 clock = pygame.time.Clock()# Create a clock to manage the game's frame rate
-
 # import from maps for example map1
 from src.engine.map1 import *
+from src.engine.loading_page import *
 
+while game_state:
+    # Handle events in loading screen
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Check for left mouse click
+            if start_button.collidepoint(event.pos):  # Check if button is clicked
+                game_state = GAME_STATE_PLAYING  # Switch to main game
+    scene.fill((0, 0, 0))
+    scene.blit(loading_background, (0, 0))
+    pygame.draw.rect(scene, button_color, start_button)  # Draw button
+    scene.blit(button_text, button_text_rect)  # Draw button text
+    pygame.display.flip()  # Update display
 
 running = True
 while running:
