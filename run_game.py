@@ -9,7 +9,7 @@ clock = pygame.time.Clock()# Create a clock to manage the game's frame rate
 # import from maps for example map1
 from src.engine.map1 import *
 
-
+# game loop
 running = True
 while running:
     # Process input events (such as closing the window or shooting projectiles)

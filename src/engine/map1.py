@@ -16,10 +16,6 @@ projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
 
 
-
-
-
-
 static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, 
                            500,100, 
                            color=(139,69,19))
@@ -46,9 +42,6 @@ fighter2 = Fighter(650, 450, color=(255, 255, 0),
 enemy = NPC(static_platform.rect.x + (static_platform.rect.width / 2) - (30 / 2),  
             static_platform.rect.y - 30, 
             speed=config.NPC_SPEED, image_path="src/assets/images/death-lamp-walk6.png")
-
-
-
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
