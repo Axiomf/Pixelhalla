@@ -6,7 +6,7 @@ pygame.init()  # Initialize all imported pygame modules
 pygame.display.set_caption(config.CAPTION) # Set the window title using the caption defined in config
 clock = pygame.time.Clock()# Create a clock to manage the game's frame rate
 # import from maps for example map1
-from src.engine.map1 import *
+from src.engine.map2 import *
 from src.engine.loading_page import *
 
 # game loop
@@ -60,14 +60,12 @@ while running:
             for platform in hit_platforms:
                 sprite.kill()
                
-    
     # Draw phase: clear the screen, draw background, and then all sprites
-    scene.fill((0, 0, 0))
-    scene.blit(background, (0, 0))
+    draw_background()
     all_sprites.draw(scene)
-    for sprite in all_sprites:
-        if isinstance(sprite, Player):  #NFC and Fither
-            sprite.draw_health_bar(scene)
+    
+
+
     pygame.display.flip()  # Refresh the ng = Falsedisplay
     clock.tick(config.FPS)  # Maintain the FPS defined in config
 

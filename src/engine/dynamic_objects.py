@@ -3,8 +3,6 @@ import pygame
 import config
 from .base import GameObject
 
-
-
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""

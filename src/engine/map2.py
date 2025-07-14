@@ -1,6 +1,6 @@
 from .platforms import *
 from .dynamic_objects import *
-
+from .base import CustomGroup
 
 # Set up the main game window using dimensions from config
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT)) 
@@ -8,8 +8,16 @@ scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))
 background = pygame.image.load("src/assets/images/country-platform-preview.png")
 background = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
+background2 = pygame.image.load("src/assets/images/country-platform-preview.png")
+background2 = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
+
+background3 = pygame.image.load("src/assets/images/country-platform-preview.png")
+background3 = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
+
+
+
 # Create sprite groups to better organize and manage game objects.
-all_sprites = pygame.sprite.Group()      # Contains all objects for global update and drawing
+all_sprites = CustomGroup()      # Contains all objects for global update and drawing
 platforms = pygame.sprite.Group()          # Contains all platform objects
 enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
@@ -49,3 +57,9 @@ all_sprites.add(static_platform,static_platform2, moving_platform, fighter1, fig
 platforms.add(static_platform, static_platform2, moving_platform, static_platform3)
 enemies.add(enemy)
 fighters.add(fighter1, fighter2)
+
+def draw_background():
+    scene.fill((0, 0, 0))
+    scene.blit(background, (0, 0))
+    scene.blit(background2, (400, 0))
+    scene.blit(background3, (800, 0))

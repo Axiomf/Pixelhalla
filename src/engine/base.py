@@ -16,3 +16,18 @@ class GameObject(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+
+
+
+
+import pygame
+
+class CustomGroup(pygame.sprite.Group):
+    def draw(self, surface):
+        # Draw all sprites (their image and rect)
+        super().draw(surface)
+        # Now draw extra elements (like health bars) if available
+        for sprite in self.sprites():
+            if hasattr(sprite, "draw_health_bar"):
+                sprite.draw_health_bar(surface)
+        
