@@ -82,7 +82,7 @@ class Player(DynamicObject):
     def shoot(self):
         """Creates a projectile moving in the direction the NPC is facing."""
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
-        return Projectile(self.rect.centerx + (config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED), self.rect.centery, velocity=(velocity_x, 0), image_path="src/assets/images/bullet.png", owner=self)
+        return Projectile(self.rect.centerx + (config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED), self.rect.centery, velocity=(velocity_x, -abs(velocity_x)), image_path="src/assets/images/bullet.png", owner=self)
 
 # Projectile class acts like a bullet or arrow.
 class Projectile(DynamicObject):
@@ -178,13 +178,13 @@ class Fighter(Player):
 # NPC class represents non-player enemies.
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
-    def __init__(self, x, y, width=32, height=48, color=(255, 0, 0), speed=2, health=config.NPC_HEALTH, damage=config.NPC_DAMAGE,
+    def __init__(self, x, y, width=32, height=48, color=(122, 132, 0), speed=2, health=config.NPC_HEALTH, damage=config.NPC_DAMAGE,
                  image_path=None):
         super().__init__(x, y, width, height, color, health, damage, image_path)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.facing_right = True  # Track the direction the NPC is facing (True for right, False for left)
         # Store the original image to avoid quality loss when flipping repeatedly
-        self.original_image = self.image if image_path else pygame.Surface([width, height])
+        self.original_image = self.image if image_path else pygame.Surface([width, height],masks=color)
         self.original_image.fill(color) if not image_path else None
 
     def update(self):

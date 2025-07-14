@@ -31,3 +31,6 @@ class MovingPlatform(Platform):
             self.rect.y += self.speed * self.direction
             if abs(self.rect.y - self.start_y) >= self.range_y:
                 self.direction *= -1  # Reverse vertical direction upon reaching range limit
+
+
+
