@@ -1,4 +1,3 @@
-# my h & g keys are broken so I put them here
 import pygame
 import config
 from .base import GameObject
@@ -32,15 +31,14 @@ class DynamicObject(GameObject):
         collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
         for platform in collided_platforms:
             # Only resolve collision if falling downward.
-            if self.change_y > 0: #   and self.rect.bottom <= platform.rect.bottom
+            if self.change_y > 0:
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
 # Player class that can later be expanded with collision detection and other behaviors.
 class Player(DynamicObject):
-    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=100,
-                 image_path=None):
-        super().__init__(x, y, width, height, color,image_path)
+    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=100, image_path=None):
+        super().__init__(x, y, width, height, color, image_path)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
@@ -77,17 +75,23 @@ class Player(DynamicObject):
         # Additional player-specific logic (collision, animation, etc.) may be added here.
         if self.is_dead():
             self.kill()
+
     def shoot(self):
         """Creates a projectile moving in the direction the NPC is facing."""
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
-        return Projectile(self.rect.centerx + (config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED), self.rect.centery, velocity=(velocity_x, -abs(velocity_x)), image_path="src/assets/images/bullet.png", owner=self)
+        return Projectile(self.rect.centerx + (config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED), 
+                         self.rect.centery, 
+                         velocity=(velocity_x, -abs(velocity_x)), 
+                         image_path="src/assets/images/bullet.png", 
+                         owner=self)
 
 # Projectile class acts like a bullet or arrow.
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=30, height=30, color=(255,255,0), velocity=(10, 0),damage=config.PROJECTILE_DAMAGE, use_gravity=False,image_path=None, owner=None):
-        super().__init__(x, y, width, height, color,image_path)
+    def __init__(self, x, y, width=30, height=30, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
+                 use_gravity=False, image_path=None, owner=None):
+        super().__init__(x, y, width, height, color, image_path)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
@@ -107,12 +111,14 @@ class Projectile(DynamicObject):
 
 # Fighter class implements control logic for player actions such as movement, jumping, and shooting.
 class Fighter(Player):
-    def __init__(self, x, y, width=70, height=70, color=(0, 0, 255), controls=None, health=config.PLAYER_HEALTH, damage=config.PLAYER_DAMAGE, image_path=None):
+    def __init__(self, x, y, width=70, height=70, color=(0, 0, 255), controls=None, health=config.PLAYER_HEALTH, 
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None):
         super().__init__(x, y, width, height, color, health, damage, image_path)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
         self.facing_right = True  # Track the direction the fighter is facing (True for right, False for left)
+        self.platforms = platforms  # Store platforms group
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height])
         self.original_image.fill(color) if not image_path else None
@@ -139,24 +145,23 @@ class Fighter(Player):
                 self.change_y = self.jump_strength
 
         # Check for horizontal collisions with platforms
-        from run_game import platforms
-        # Apply horizontal movement temporarily to check for collisions
-        self.rect.x += self.change_x
-        collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
-        for platform in collided_platforms:
-            if self.change_x > 0 and self.rect.right > platform.rect.left:  # Moving right, hit left side of platform
-                self.rect.right = platform.rect.left
-                self.change_x = 0
-            elif self.change_x < 0 and self.rect.left < platform.rect.right:  # Moving left, hit right side of platform
-                self.rect.left = platform.rect.right
-                self.change_x = 0
-        # Check for vertical collisions when moving upward (jumping)
-        self.rect.y += self.change_y
-        collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
-        for platform in collided_platforms:
-            if self.change_y < 0 and self.rect.top < platform.rect.bottom:  # Moving up, hit bottom of platform
-                self.rect.top = platform.rect.bottom
-                self.change_y = 0
+        if self.platforms:
+            self.rect.x += self.change_x
+            collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
+            for platform in collided_platforms:
+                if self.change_x > 0 and self.rect.right > platform.rect.left:  # Moving right, hit left side of platform
+                    self.rect.right = platform.rect.left
+                    self.change_x = 0
+                elif self.change_x < 0 and self.rect.left < platform.rect.right:  # Moving left, hit right side of platform
+                    self.rect.left = platform.rect.right
+                    self.change_x = 0
+            # Check for vertical collisions when moving upward (jumping)
+            self.rect.y += self.change_y
+            collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
+            for platform in collided_platforms:
+                if self.change_y < 0 and self.rect.top < platform.rect.bottom:  # Moving up, hit bottom of platform
+                    self.rect.top = platform.rect.bottom
+                    self.change_y = 0
 
         # Check for scene boundaries
         if self.rect.right + self.change_x > config.SCENE_WIDTH:
@@ -176,13 +181,16 @@ class Fighter(Player):
 # NPC class represents non-player enemies.
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
-    def __init__(self, x, y, width=32, height=48, color=(122, 132, 0), speed=2, health=config.NPC_HEALTH, damage=config.NPC_DAMAGE,
-                 image_path=None):
+    def __init__(self, x, y, width=32, height=48, color=(122, 132, 0), speed=2, health=config.NPC_HEALTH, 
+                 damage=config.NPC_DAMAGE, image_path=None, platforms=None, projectiles=None, all_sprites=None):
         super().__init__(x, y, width, height, color, health, damage, image_path)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.facing_right = True  # Track the direction the NPC is facing (True for right, False for left)
+        self.platforms = platforms  # Store platforms group
+        self.projectiles = projectiles  # Store projectiles group
+        self.all_sprites = all_sprites  # Store all_sprites group
         # Store the original image to avoid quality loss when flipping repeatedly
-        self.original_image = self.image if image_path else pygame.Surface([width, height],masks=color)
+        self.original_image = self.image if image_path else pygame.Surface([width, height])
         self.original_image.fill(color) if not image_path else None
 
     def update(self):
@@ -192,10 +200,9 @@ class NPC(Player):
         # Apply gravity and update vertical position
         self.calc_grav()
         self.rect.y += self.change_y
-        from run_game import platforms
         # Check if the NPC is on a platform
-        if self.change_y == 1:  # NPC is on a platform (not falling)
-            collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
+        if self.platforms and self.change_y == 1:  # NPC is on a platform (not falling)
+            collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
             if collided_platforms:  # If on a platform
                 for platform in collided_platforms:
                     if self.rect.bottom == platform.rect.top + 1:
@@ -227,9 +234,11 @@ class NPC(Player):
         # Update horizontal position
         self.rect.x += self.change_x
 
-        projectile = self.shoot()
-        from run_game import projectiles
-        from run_game import all_sprites
-        # projectiles.add(projectile)
-        # all_sprites.add(projectile)
+        # Optional: Add projectile shooting for NPC (uncomment if needed)
+        # if self.projectiles and self.all_sprites:
+        #     projectile = self.shoot()
+        #     self.projectiles.add(projectile)
+        #     self.all_sprites.add(projectile)
+
+        # Call the parent's update to apply gravity and update movement
         super().update()
