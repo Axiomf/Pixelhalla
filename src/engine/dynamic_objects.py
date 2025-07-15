@@ -2,6 +2,21 @@ import pygame
 import config
 from .base import GameObject
 
+# New helper function to load frames from a sprite sheet
+def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
+    sheet = pygame.image.load(path).convert_alpha()
+    sheet_rect = sheet.get_rect()
+    frames = []
+    for y in range(0, sheet_rect.height, frame_height):
+        for x in range(0, sheet_rect.width, frame_width):
+            frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+            if scale != 1:
+                frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
+            if colorkey is not None:
+                frame.set_colorkey(colorkey)
+            frames.append(frame)
+    return frames
+
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
@@ -35,13 +50,25 @@ class DynamicObject(GameObject):
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
-# Player class that can later be expanded with collision detection and other behaviors.
+
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=100, image_path=None):
         super().__init__(x, y, width, height, color, image_path)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
+
+        # Animation attributes for states like idle, walk, attack
+        self.animations = {}  # e.g., {'idle': [frame1, frame2, ...], 'walk': [...], 'attack': [...]}
+        self.current_animation = "idle"
+        self.current_frame = 0
+        self.animation_speed = 100  # milliseconds per frame
+        self.last_update = pygame.time.get_ticks()
+        # Example usage if the provided image_path is a sprite sheet:
+        # self.animations["idle"] = load_sprite_sheet(image_path, frame_width, frame_height, colorkey, scale)
+        self.animations["idle"] = load_sprite_sheet("src/assets/images/Bloody_Eye.png", 32, 32, colorkey=None, scale=1)
+
+        
 
     def take_damage(self, amount):
         """Subtracts the given amount from player's health."""
@@ -69,12 +96,20 @@ class Player(DynamicObject):
         pygame.draw.rect(surface, config.PLAYER_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height))  # Background
         pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
 
+    def update_animation(self):
+        now = pygame.time.get_ticks()
+        if self.animations.get(self.current_animation) and now - self.last_update > self.animation_speed:
+            self.last_update = now
+            self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
+            self.image = self.animations[self.current_animation][self.current_frame]
+
     def update(self):
         # Call DynamicObject's update to apply gravity and movement.
         super().update()
-        # Additional player-specific logic (collision, animation, etc.) may be added here.
+        # Additional player-specific logic (collision, animation, etc.).
         if self.is_dead():
             self.kill()
+        self.update_animation()
 
     def shoot(self):
         """Creates a projectile moving in the direction the NPC is facing."""
