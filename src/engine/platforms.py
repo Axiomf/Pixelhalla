@@ -11,7 +11,7 @@ class Platform(GameObject):
 # A platform that automatically moves within a specified range.
 class MovingPlatform(Platform):
     """A platform that moves horizontally or vertically within a range."""
-    def __init__(self, x, y, width, height, color=(0, 255, 0), range_x=0, range_y=0, speed=2):
+    def __init__(self, x, y, width, height, color=(255, 0, 0), range_x=0, range_y=0, speed=2):
         super().__init__(x, y, width, height, color)
         self.start_x = x  # Initial horizontal position to measure the movement range
         self.start_y = y  # Initial vertical position to measure the movement range

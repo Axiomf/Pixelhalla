@@ -11,7 +11,7 @@ clock = pygame.time.Clock()  # Create a clock to manage the game's frame rate
 from src.engine.loading_page import *
 from src.engine.mode_select import *
 # Import from maps after loading screen setup to avoid resetting game_state
-from src.engine.map3 import *
+from src.engine.map_levels import *
 
 last_click_time = 0
 
