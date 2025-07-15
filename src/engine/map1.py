@@ -5,7 +5,7 @@ from .base import CustomGroup
 # Set up the main game window using dimensions from config
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT)) 
 # Load a background image located in the assets folder
-background = pygame.image.load("src/assets/images/country-platform-preview.png")
+background = pygame.image.load("src/assets/images/background/country-platform-preview.png")
 background = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
 # Create sprite groups to better organize and manage game objects.
@@ -16,19 +16,12 @@ projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
 
 
-static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, 
-                           500,100, 
+static_platform = Platform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT*4/5, 
+                           config.SCENE_WIDTH*6/8,config.SCENE_HEIGHT*1/5, 
                            color=(139,69,19))
-static_platform2 = Platform(config.SCENE_WIDTH/4 + 450, config.SCENE_HEIGHT*3/5 - 50, 
-                           50,50, 
-                           color=(139,78,45))
-static_platform3 = Platform(0, config.SCENE_HEIGHT - 20, 
-                           1200,20, 
-                           color=(139,140,78))
 
-# MovingPlatform moves horizontally within a given range and speed
-moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
-                                 config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
+
+
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
 fighter1 = Fighter(450,  
             static_platform.rect.y - 70, color=(0, 0, 255), 
@@ -45,12 +38,12 @@ enemy = NPC(static_platform.rect.x + (static_platform.rect.width / 2) - (30 / 2)
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(static_platform,static_platform2, moving_platform, fighter1, fighter2, enemy, static_platform3)
-platforms.add(static_platform, static_platform2, moving_platform, static_platform3)
+all_sprites.add(static_platform, fighter1, fighter2, enemy)
+platforms.add(static_platform)
 enemies.add(enemy)
 fighters.add(fighter1, fighter2)
-
 
 def draw_background():
     scene.fill((0, 0, 0))
     scene.blit(background, (0, 0))
+    

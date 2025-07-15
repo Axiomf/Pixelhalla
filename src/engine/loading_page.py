@@ -18,5 +18,5 @@ button_text_rect = button_text.get_rect(center=start_button.center)  # Center te
 
 # Draw loading screen
 
-loading_background = pygame.image.load("src/assets/images/blue-preview.png")
+loading_background = pygame.image.load("src/assets/images/background/blue-preview.png")
 loading_background = pygame.transform.scale(loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))

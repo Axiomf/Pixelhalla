@@ -5,13 +5,13 @@ from .base import CustomGroup
 # Set up the main game window using dimensions from config
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT)) 
 # Load a background image located in the assets folder
-background = pygame.image.load("src/assets/images/country-platform-preview.png")
+background = pygame.image.load("src/assets/images/background/country-platform-preview.png")
 background = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
-background2 = pygame.image.load("src/assets/images/country-platform-preview.png")
+background2 = pygame.image.load("src/assets/images/background/country-platform-preview.png")
 background2 = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
-background3 = pygame.image.load("src/assets/images/country-platform-preview.png")
+background3 = pygame.image.load("src/assets/images/background/country-platform-preview.png")
 background3 = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
 

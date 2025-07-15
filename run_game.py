@@ -6,10 +6,10 @@ pygame.init()  # Initialize all imported pygame modules
 pygame.display.set_caption(config.CAPTION) # Set the window title using the caption defined in config
 clock = pygame.time.Clock()# Create a clock to manage the game's frame rate
 # import from maps for example map1
-from src.engine.map2 import *
+from src.engine.map1 import *
 from src.engine.loading_page import *
 
-# game loop
+# game loop 
 while game_state:
     # Handle events in loading screen
     for event in pygame.event.get():
