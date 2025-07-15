@@ -27,6 +27,12 @@ GLOBAL_GRAVITY = 0.25
 CAPTION = "Welcome to pixelhalla"
 FPS = 60
 
+PULSE_TIME = 0  # Track time for pulse effect
+PULSE_SPEED = 0.05  # Speed of pulse animation
+PULSE_SCALE = 10  # Max scale change in pixels
+
+# Variable to debounce mouse clicks
+CLICK_COOLDOWN = 200  # 200ms cooldown between clicks
 
 # config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3 let it be here 
 
