@@ -75,11 +75,11 @@ class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None):
         super().__init__(x, y, width, height, color, image_path)
         self.health = health          # Current health of the player
-        self.shield = False
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
         self.facing_right = True
         self.state = "idle"
+        self.shield = False
 ########################################################################################3
         # Animation attributes
         self.animations = {}
@@ -87,6 +87,8 @@ class Player(DynamicObject):
         self.current_frame = 0
         self.animation_speeds = {"idle": 100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
+
+    
 
         self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
         #self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
@@ -109,9 +111,9 @@ class Player(DynamicObject):
             self.image = pygame.transform.flip(self.image, not self.facing_right, False)
 #####################################################################################################
 
-
-
     def take_damage(self, amount):
+        if self.shield:
+            return
         """Subtracts the given amount from player's health."""
         self.health -= amount
         if self.health < 0:
@@ -153,6 +155,7 @@ class Player(DynamicObject):
         return Projectile(self.rect.centerx + offset_x, 
                          self.rect.centery, 
                          velocity=(velocity_x, 0),  # Only horizontal movement
+                         damage= self.damage,
                          image_path="src/assets/images/bullet.png", 
                          owner=self)
 
@@ -205,7 +208,13 @@ class Fighter(Player):
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
         self.platforms = platforms  # Store platforms group
+        
+        self.powered=False
         self.left_duration_powerup = 0
+        self.started_powerup = 0
+        self.powered_up_type = ""
+        self.powered_up_amount = 0
+
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
@@ -214,16 +223,43 @@ class Fighter(Player):
     # Optionally override setup_animations if Fighter has unique sprites.
     # def setup_animations(self):
     #     self.add_animation("idle", "src/assets/images/fighter_idle.png", 32, 32)
-    def upgrade(self,type,amount):
+    def upgrade(self, type, amount):
+        print("upgrade")
+        self.powered_up_amount = amount
+        self.started_powerup = pygame.time.get_ticks() 
+        self.left_duration_powerup = 5000  # 5 seconds in milliseconds
         if type == "damage":
             self.damage += amount
         elif type == "double_jump":
-            self.jump_strength -=amount
+            self.jump_strength -= amount
         elif type == "shield":
             self.shield = True
 
+        self.powered = True
+        self.powered_up_type = type
+
+    def check_power_up(self):
+        print(self.left_duration_powerup)
+        if not self.powered:
+            return
+        now = pygame.time.get_ticks()
+        if now - self.started_powerup >= self.left_duration_powerup:
+            if self.powered_up_type == "damage":
+                self.damage -= self.powered_up_amount
+            elif self.powered_up_type == "double_jump":
+                self.jump_strength += self.powered_up_amount
+            elif self.powered_up_type == "shield":
+                self.shield = False
+
+            self.powered = False
+            self.left_duration_powerup = 0
+            self.started_powerup = 0
+            self.powered_up_type = ""
+            self.powered_up_amount = 0
 
     def update(self):
+        #print (self.jump_strength)
+        self.check_power_up()
         keys = pygame.key.get_pressed()  # Get the state of keyboard keys
         # Track previous direction to detect changes
         previous_facing = self.facing_right
@@ -270,6 +306,9 @@ class Fighter(Player):
         elif self.rect.left + self.change_x < 0:
             self.rect.left = 0
             self.change_x = 0
+
+
+
 
         # Update the image based on direction
         if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation

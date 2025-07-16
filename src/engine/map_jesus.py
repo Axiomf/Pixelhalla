@@ -54,11 +54,13 @@ enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),
             projectiles=projectiles, 
             all_sprites=all_sprites)
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0),image_path=None)
+powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0),image_path=None)
+powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,75,0),image_path=None)
 
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(moving_platform, fighter1, fighter2, enemy, static_platform3,powerup)
+all_sprites.add(moving_platform, fighter1, fighter2, enemy, static_platform3,powerup,powerup2)
 platforms.add(moving_platform, static_platform3)
 enemies.add(enemy)
 fighters.add(fighter1, fighter2)
