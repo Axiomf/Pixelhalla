@@ -331,6 +331,14 @@ while running:
                 hit_platforms = pygame.sprite.spritecollide(sprite, platforms, False)
                 for platform in hit_platforms:
                     sprite.kill()
+##############################################################################
+            if isinstance(sprite, PowerUp):
+                # Check for collisions with fighter and remove it if it hits
+                hit_fighters = pygame.sprite.spritecollide(sprite, fighters, False)
+                if hit_fighters:
+                    for enemy in hit_fighters:
+                        enemy.upgrade(sprite.upgrade_type,sprite.amount)
+                        sprite.kill()
 
         # Draw phase: clear the screen, draw background, and then all sprites
         draw_background()  # Use draw_background from selected map

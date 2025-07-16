@@ -75,6 +75,7 @@ class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None):
         super().__init__(x, y, width, height, color, image_path)
         self.health = health          # Current health of the player
+        self.shield = False
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
         self.facing_right = True
@@ -186,13 +187,10 @@ class PowerUp(DynamicObject):
         super().__init__(x, y, width, height, color, image_path)
         self.upgrade_type = type
         self.amount = amount
-        # For projectiles we typically do not use the standard gravity unless needed.
-
-
+        self.duration = 10
+        self.use_gravity = False
+        
     def update(self):
-        # Move based on fixed velocity.
-        self.rect.x += self.velocity_x
-        self.rect.y += self.velocity_y
         # Optionally apply gravity.
         if self.use_gravity:
             self.calc_grav()
@@ -207,6 +205,7 @@ class Fighter(Player):
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
         self.platforms = platforms  # Store platforms group
+        self.left_duration_powerup = 0
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
@@ -215,6 +214,14 @@ class Fighter(Player):
     # Optionally override setup_animations if Fighter has unique sprites.
     # def setup_animations(self):
     #     self.add_animation("idle", "src/assets/images/fighter_idle.png", 32, 32)
+    def upgrade(self,type,amount):
+        if type == "damage":
+            self.damage += amount
+        elif type == "double_jump":
+            self.jump_strength -=amount
+        elif type == "shield":
+            self.shield = True
+
 
     def update(self):
         keys = pygame.key.get_pressed()  # Get the state of keyboard keys
