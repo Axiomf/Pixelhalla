@@ -199,7 +199,6 @@ class PowerUp(DynamicObject):
             self.calc_grav()
             self.rect.y += self.change_y
 
-
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
                  damage=config.PLAYER_DAMAGE, image_path=None, platforms=None):
