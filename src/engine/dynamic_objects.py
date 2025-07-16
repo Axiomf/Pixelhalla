@@ -20,7 +20,7 @@ def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
-    def __init__(self, x, y, width, height, color, image_path=None):
+    def __init__(self, x, y, width, height, color=None, image_path=None):
         super().__init__(x, y, width, height, color, image_path)
         self.change_x = 0  # Horizontal velocity
         self.change_y = 0  # Vertical velocity
@@ -52,23 +52,28 @@ class DynamicObject(GameObject):
 
 
 class Player(DynamicObject):
-    def __init__(self, x, y, width=30, height=30, color=(0, 0, 255), health=100, damage=100, image_path=None):
+    def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None):
         super().__init__(x, y, width, height, color, image_path)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
+        self.facing_right = True      # Track direction for animation flipping
 
         # Animation attributes for states like idle, walk, attack
         self.animations = {}  # e.g., {'idle': [frame1, frame2, ...], 'walk': [...], 'attack': [...]}
         self.current_animation = "idle"
         self.current_frame = 0
-        self.animation_speed = 100  # milliseconds per frame
+        self.animation_speeds = {"idle": 100}  # Milliseconds per frame for idle
         self.last_update = pygame.time.get_ticks()
         # Example usage if the provided image_path is a sprite sheet:
         # self.animations["idle"] = load_sprite_sheet(image_path, frame_width, frame_height, colorkey, scale)
-        self.animations["idle"] = load_sprite_sheet("src/assets/images/Bloody_Eye.png", 32, 32, colorkey=None, scale=1)
 
-        
+    def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1):
+        """Add a new animation state (e.g., idle) from a sprite sheet."""
+        self.animations[state] = load_sprite_sheet(path, frame_width, frame_height, colorkey, scale)
+        if state == self.current_animation:
+            self.current_frame = 0
+            self.image = self.animations[state][self.current_frame]
 
     def take_damage(self, amount):
         """Subtracts the given amount from player's health."""
@@ -97,11 +102,14 @@ class Player(DynamicObject):
         pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
 
     def update_animation(self):
+        """Updates the idle animation and handles flipping based on direction."""
         now = pygame.time.get_ticks()
-        if self.animations.get(self.current_animation) and now - self.last_update > self.animation_speed:
+        speed = self.animation_speeds.get(self.current_animation, 100)
+        if self.animations.get(self.current_animation) and now - self.last_update > speed:
             self.last_update = now
             self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
             self.image = self.animations[self.current_animation][self.current_frame]
+            self.image = pygame.transform.flip(self.image, not self.facing_right, False)
 
     def update(self):
         # Call DynamicObject's update to apply gravity and movement.
@@ -112,19 +120,21 @@ class Player(DynamicObject):
         self.update_animation()
 
     def shoot(self):
-        """Creates a projectile moving in the direction the NPC is facing."""
+        """Creates a projectile moving in the direction the player is facing."""
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
-        return Projectile(self.rect.centerx + (config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED), 
+        # Adjust projectile starting position to account for smaller fighter size
+        offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
+        return Projectile(self.rect.centerx + offset_x, 
                          self.rect.centery, 
-                         velocity=(velocity_x, -abs(velocity_x)), 
+                         velocity=(velocity_x, 0),  # Only horizontal movement
                          image_path="src/assets/images/bullet.png", 
                          owner=self)
 
-# Projectile class acts like a bullet or arrow.
+
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=30, height=30, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
+    def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
                  use_gravity=False, image_path=None, owner=None):
         super().__init__(x, y, width, height, color, image_path)
         self.damage = damage
@@ -144,19 +154,19 @@ class Projectile(DynamicObject):
             self.calc_grav()
             self.rect.y += self.change_y
 
-# Fighter class implements control logic for player actions such as movement, jumping, and shooting.
+
 class Fighter(Player):
-    def __init__(self, x, y, width=70, height=70, color=(0, 0, 255), controls=None, health=config.PLAYER_HEALTH, 
+    def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
                  damage=config.PLAYER_DAMAGE, image_path=None, platforms=None):
         super().__init__(x, y, width, height, color, health, damage, image_path)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
-        self.facing_right = True  # Track the direction the fighter is facing (True for right, False for left)
         self.platforms = platforms  # Store platforms group
         # Store the original image to avoid quality loss when flipping repeatedly
-        self.original_image = self.image if image_path else pygame.Surface([width, height])
-        self.original_image.fill(color) if not image_path else None
+        self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
+        if self.original_image and not image_path:
+            self.original_image.fill(color)
 
     def update(self):
         keys = pygame.key.get_pressed()  # Get the state of keyboard keys
@@ -207,16 +217,17 @@ class Fighter(Player):
             self.change_x = 0
 
         # Update the image based on direction
-        if self.facing_right != previous_facing:  # Only flip if direction changed
-            self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+        if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
+            if self.original_image:  # Only flip if original_image exists
+                self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
         # Call the parent's update to apply gravity and update movement
         super().update()
 
-# NPC class represents non-player enemies.
+
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
-    def __init__(self, x, y, width=32, height=48, color=(122, 132, 0), speed=2, health=config.NPC_HEALTH, 
+    def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
                  damage=config.NPC_DAMAGE, image_path=None, platforms=None, projectiles=None, all_sprites=None):
         super().__init__(x, y, width, height, color, health, damage, image_path)
         self.change_x = speed  # Set initial horizontal patrol speed
@@ -225,8 +236,9 @@ class NPC(Player):
         self.projectiles = projectiles  # Store projectiles group
         self.all_sprites = all_sprites  # Store all_sprites group
         # Store the original image to avoid quality loss when flipping repeatedly
-        self.original_image = self.image if image_path else pygame.Surface([width, height])
-        self.original_image.fill(color) if not image_path else None
+        self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
+        if self.original_image and not image_path:
+            self.original_image.fill(color)
 
     def update(self):
         # Track previous direction to detect changes
@@ -263,8 +275,9 @@ class NPC(Player):
         self.facing_right = self.change_x > 0
 
         # Update the image based on direction
-        if self.facing_right != previous_facing:  # Only flip if direction changed
-            self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+        if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
+            if self.original_image:  # Only flip if original_image exists
+                self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
         # Update horizontal position
         self.rect.x += self.change_x

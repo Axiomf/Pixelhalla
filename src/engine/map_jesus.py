@@ -40,24 +40,22 @@ moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                  config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
 fighter1 = Fighter(450,  
-                   config.SCENE_HEIGHT*3/5 - 70, 
-                   color=(0, 0, 255), 
+                   config.SCENE_HEIGHT*3/5 - 70, 32, 32,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                   image_path="src/assets/images/fighter.png",
                    platforms=platforms)
-fighter2 = Fighter(650, 450, 
-                   color=(255, 255, 0), 
+fighter1.add_animation("idle", "src/assets/images/Bloody_Eye.png", 32, 32)
+fighter2 = Fighter(650, 450,  32, 32,
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
                    platforms=platforms)
+fighter2.add_animation("idle", "src/assets/images/Bloody_Eye.png", 32, 32)
 # An enemy that patrols horizontally and bounces at screen edges
 enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),  
-            config.SCENE_HEIGHT*3/5 - 30, 
-            speed=config.NPC_SPEED, 
-            image_path="src/assets/images/death-lamp-walk6.png",
+            config.SCENE_HEIGHT*3/5 - 30, 32, 32,
+            speed=config.NPC_SPEED,
             platforms=platforms, 
             projectiles=projectiles, 
             all_sprites=all_sprites)
-
+enemy.add_animation("idle", "src/assets/images/Bloody_Eye.png", 32, 32)
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(moving_platform, fighter1, fighter2, enemy, static_platform3)
 platforms.add(moving_platform, static_platform3)
