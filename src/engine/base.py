@@ -17,7 +17,7 @@ class GameObject(pygame.sprite.Sprite):
             self.image = None
         self.rect = pygame.Rect(x, y, width, height)
     # polymorphic function to load frames from a sprite sheet, it will be rewritten for each charrecter
-    def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
+    def load_sprite_sheet(self,path, frame_width, frame_height, colorkey=None, scale=1):
         sheet = pygame.image.load(path).convert_alpha()
         sheet_rect = sheet.get_rect()
         frames = []

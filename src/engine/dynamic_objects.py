@@ -2,21 +2,6 @@ import pygame
 import config
 from .base import GameObject
 
-
-def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
-    sheet = pygame.image.load(path).convert_alpha()
-    sheet_rect = sheet.get_rect()
-    frames = []
-    for y in range(0, sheet_rect.height, frame_height):
-        for x in range(0, sheet_rect.width, frame_width):
-            frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
-            if scale != 1:
-                frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
-            if colorkey is not None:
-                frame.set_colorkey(colorkey)
-            frames.append(frame)
-    return frames
-
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
@@ -57,20 +42,23 @@ class Player(DynamicObject):
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
-        self.facing_right = True      # Track direction for animation flipping
+        self.facing_right = True
 
-        # Animation attributes for states like idle, walk, attack
-        self.animations = {}  # e.g., {'idle': [frame1, frame2, ...], 'walk': [...], 'attack': [...]}
+        # Animation attributes
+        self.animations = {}
         self.current_animation = "idle"
         self.current_frame = 0
-        self.animation_speeds = {"idle": 100}  # Milliseconds per frame for idle
+        self.animation_speeds = {"idle": 100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
-        # Example usage if the provided image_path is a sprite sheet:
-        # self.animations["idle"] = load_sprite_sheet(image_path, frame_width, frame_height, colorkey, scale)
+        self.setup_animations()
+
+    def setup_animations(self):
+        # Default animation for Player; can be overridden by subclasses.
+        self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
 
     def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1):
         """Add a new animation state (e.g., idle) from a sprite sheet."""
-        self.animations[state] = load_sprite_sheet(path, frame_width, frame_height, colorkey, scale)
+        self.animations[state] = self.load_sprite_sheet(path, frame_width, frame_height, colorkey, scale)
         if state == self.current_animation:
             self.current_frame = 0
             self.image = self.animations[state][self.current_frame]
@@ -170,6 +158,10 @@ class Fighter(Player):
         if self.original_image and not image_path:
             self.original_image.fill(color)
 
+    # Optionally override setup_animations if Fighter has unique sprites.
+    # def setup_animations(self):
+    #     self.add_animation("idle", "src/assets/images/fighter_idle.png", 32, 32)
+
     def update(self):
         keys = pygame.key.get_pressed()  # Get the state of keyboard keys
         # Track previous direction to detect changes
@@ -241,6 +233,11 @@ class NPC(Player):
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
             self.original_image.fill(color)
+        self.setup_animations()
+
+    def setup_animations(self):
+        # Custom animation for NPC using a different sprite sheet.
+        self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
 
     def update(self):
         # Track previous direction to detect changes
