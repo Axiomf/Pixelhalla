@@ -234,6 +234,7 @@ class NPC(Player):
         if self.original_image and not image_path:
             self.original_image.fill(color)
         self.setup_animations()
+    # polymorphic function to load frames from a sprite sheet, it will be rewritten for each charrecter
 
     def setup_animations(self):
         # Custom animation for NPC using a different sprite sheet.
