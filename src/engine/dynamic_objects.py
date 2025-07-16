@@ -2,7 +2,7 @@ import pygame
 import config
 from .base import GameObject
 
-# New helper function to load frames from a sprite sheet
+
 def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
@@ -96,11 +96,13 @@ class Player(DynamicObject):
         # Calculate the width of the health bar based on health percentage
         health_ratio = self.health / self.max_health
         health_width = bar_width * health_ratio
-
+ 
         # Draw background (gray) and health (red)
         pygame.draw.rect(surface, config.PLAYER_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height))  # Background
         pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
+    
 
+    
     def update_animation(self):
         """Updates the idle animation and handles flipping based on direction."""
         now = pygame.time.get_ticks()
