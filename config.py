@@ -1,4 +1,3 @@
-# my h & g keys are broken so I put them here
 SCENE_WIDTH = 1200
 SCENE_HEIGHT = 600
 
