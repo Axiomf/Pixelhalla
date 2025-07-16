@@ -10,10 +10,12 @@ clock = pygame.time.Clock()  # Create a clock to manage the game's frame rate
 
 from src.engine.loading_page import *
 from src.engine.mode_select import *
-# Import from maps after loading screen setup to avoid resetting game_state
-from src.engine.map_levels import *
+from src.engine.map_select import *
+
 
 last_click_time = 0
+game_mode = None  # Track single or multi mode
+current_map = None  # Track selected map
 
 running = True
 while running:
@@ -21,7 +23,7 @@ while running:
     config.PULSE_TIME += config.PULSE_SPEED  # Update pulse animation
     scale = config.PULSE_SCALE * abs(math.sin(config.PULSE_TIME))  # Calculate scale for pulse
 
-    if game_state == GAME_STATE_LOADING:
+    if game_state == config.GAME_STATE_LOADING:
         # Draw loading screen
         scene.blit(loading_background, (0, 0))  # Draw background image
         pulsed_start_button = pygame.Rect(start_button.x - scale / 2, start_button.y - scale / 2, 
@@ -42,11 +44,11 @@ while running:
                 break
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - last_click_time > config.CLICK_COOLDOWN:
                 if pulsed_start_button.collidepoint(event.pos):  # Check if Start button is clicked
-                    game_state = GAME_STATE_MODE_SELECT
+                    game_state = config.GAME_STATE_MODE_SELECT
                     last_click_time = current_time
                     pygame.event.clear()  # Clear event queue
 
-    elif game_state == GAME_STATE_MODE_SELECT:
+    elif game_state == config.GAME_STATE_MODE_SELECT:
         # Draw mode select screen
         scene.blit(loading_background, (0, 0))  # Same background
         pulsed_single_button = pygame.Rect(single_button.x - scale / 2, single_button.y - scale / 2, 
@@ -76,16 +78,79 @@ while running:
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - last_click_time > config.CLICK_COOLDOWN:
                 if pulsed_single_button.collidepoint(event.pos):
                     game_mode = "single"
-                    game_state = GAME_STATE_PLAYING
+                    game_state = config.GAME_STATE_MAP_SELECT  # Go to map select
                     last_click_time = current_time
                     pygame.event.clear()  # Clear event queue
                 elif pulsed_two_button.collidepoint(event.pos):
                     game_mode = "multi"
-                    game_state = GAME_STATE_PLAYING
+                    game_state = config.GAME_STATE_MAP_SELECT  # Go to map select
                     last_click_time = current_time
                     pygame.event.clear()  # Clear event queue
 
-    elif game_state == GAME_STATE_PLAYING:
+    elif game_state == config.GAME_STATE_MAP_SELECT:
+        # Draw map select screen
+        scene.blit(loading_background, (0, 0))  # Same background
+        # Define pulsed map buttons with scale
+        pulsed_map1_button = pygame.Rect(map1_button.x - scale / 2, map1_button.y - scale / 2, 
+                                         map1_button.width + scale, map1_button.height + scale)
+        pulsed_map2_button = pygame.Rect(map2_button.x - scale / 2, map2_button.y - scale / 2, 
+                                         map2_button.width + scale, map2_button.height + scale)
+        pulsed_map3_button = pygame.Rect(map3_button.x - scale / 2, map3_button.y - scale / 2, 
+                                         map3_button.width + scale, map3_button.height + scale)
+        pulsed_map4_button = pygame.Rect(map4_button.x - scale / 2, map4_button.y - scale / 2, 
+                                         map4_button.width + scale, map4_button.height + scale)
+        mouse_pos = pygame.mouse.get_pos()
+        # Draw map preview images with hover effect (border)
+        if pulsed_map1_button.collidepoint(mouse_pos):
+            pygame.draw.rect(scene, (0, 200, 255), pulsed_map1_button, 5)  # Blue border for hover
+        scene.blit(map1_preview, map1_button)
+        if pulsed_map2_button.collidepoint(mouse_pos):
+            pygame.draw.rect(scene, (0, 200, 255), pulsed_map2_button, 5)  # Blue border for hover
+        scene.blit(map2_preview, map2_button)
+        if pulsed_map3_button.collidepoint(mouse_pos):
+            pygame.draw.rect(scene, (0, 200, 255), pulsed_map3_button, 5)  # Blue border for hover
+        scene.blit(map3_preview, map3_button)
+        if pulsed_map4_button.collidepoint(mouse_pos):
+            pygame.draw.rect(scene, (0, 200, 255), pulsed_map4_button, 5)  # Blue border for hover
+        scene.blit(map4_preview, map4_button)
+        pygame.display.flip()  # Update display
+
+        # Handle events in map select screen
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                break
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - last_click_time > config.CLICK_COOLDOWN:
+                if pulsed_map1_button.collidepoint(event.pos):
+                    current_map = "map1"
+                    game_state = config.GAME_STATE_PLAYING
+                    last_click_time = current_time
+                    pygame.event.clear()  # Clear event queue
+                elif pulsed_map2_button.collidepoint(event.pos):
+                    current_map = "map_levels"
+                    game_state = config.GAME_STATE_PLAYING
+                    last_click_time = current_time
+                    pygame.event.clear()  # Clear event queue
+                elif pulsed_map3_button.collidepoint(event.pos):
+                    current_map = "map_jesus"
+                    game_state = config.GAME_STATE_PLAYING
+                    last_click_time = current_time
+                    pygame.event.clear()  # Clear event queue
+                elif pulsed_map4_button.collidepoint(event.pos):
+                    current_map = "map4"
+                    game_state = config.GAME_STATE_PLAYING
+                    last_click_time = current_time
+                    pygame.event.clear()  # Clear event queue
+
+    elif game_state == config.GAME_STATE_PLAYING:
+        if current_map == "map1":
+            from src.engine.map1 import *
+        elif current_map == "map_levels":
+            from src.engine.map_levels import *
+        elif current_map == "map_jesus":
+            from src.engine.map_jesus import *
+        elif current_map == "map4":
+            from src.engine.map4 import *
         # Process input events (such as closing the window or shooting projectiles)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -122,7 +187,7 @@ while running:
                     sprite.kill()
 
         # Draw phase: clear the screen, draw background, and then all sprites
-        draw_background()  # Use draw_background from map3.py
+        draw_background()  # Use draw_background from selected map
         all_sprites.draw(scene)
         for sprite in all_sprites:
             if isinstance(sprite, Player):  # NPC and Fighter

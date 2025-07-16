@@ -34,6 +34,11 @@ PULSE_SCALE = 10  # Max scale change in pixels
 # Variable to debounce mouse clicks
 CLICK_COOLDOWN = 200  # 200ms cooldown between clicks
 
+GAME_STATE_LOADING = 1
+GAME_STATE_PLAYING = 0
+GAME_STATE_MODE_SELECT = 2
+GAME_STATE_MAP_SELECT = 3
+
 # config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3 let it be here 
 
 

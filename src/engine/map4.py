@@ -3,14 +3,8 @@ from .dynamic_objects import *
 from .base import CustomGroup
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Set up the main game window
 # Load a background image located in the assets folder
-background = pygame.image.load("src/assets/images/background/country-platform-preview.png")
+background = pygame.image.load("src/assets/images/nature_1/orig.png")
 background = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
-
-background2 = pygame.image.load("src/assets/images/background/country-platform-preview.png")
-background2 = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
-
-background3 = pygame.image.load("src/assets/images/background/country-platform-preview.png")
-background3 = pygame.transform.scale(background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
 
 
@@ -63,5 +57,3 @@ fighters.add(fighter1, fighter2)
 def draw_background():
     scene.fill((0, 0, 0))
     scene.blit(background, (0, 0))
-    scene.blit(background2, (400, 0))
-    scene.blit(background3, (800, 0))
