@@ -2,6 +2,34 @@ import pygame
 import config
 from .base import GameObject
 
+def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
+        sheet = pygame.image.load(path).convert_alpha()
+        sheet_rect = sheet.get_rect()
+        frames = []
+        for y in range(0, sheet_rect.height, frame_height):
+            for x in range(0, sheet_rect.width, frame_width):
+                frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                if scale != 1:
+                    frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
+                if colorkey is not None:
+                    frame.set_colorkey(colorkey)
+                frames.append(frame)
+        return frames
+
+def load_sprite_sheet_bomb(path, frame_width, frame_height, colorkey=None, scale=1):
+        sheet = pygame.image.load(path).convert_alpha()
+        sheet_rect = sheet.get_rect()
+        frames = []
+        for y in range(0, sheet_rect.height, frame_height):
+            for x in range(0, sheet_rect.width, frame_width):
+                frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                if scale != 1:
+                    frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
+                if colorkey is not None:
+                    frame.set_colorkey(colorkey)
+                frames.append(frame)
+        return frames
+
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
@@ -9,12 +37,20 @@ class DynamicObject(GameObject):
         super().__init__(x, y, width, height, color, image_path)
         self.change_x = 0  # Horizontal velocity
         self.change_y = 0  # Vertical velocity
+        self.state = "idle"
+
+    def update_state(self):
+        if self.change_y >0:
+            self.state =  "falling"
+        elif self.change_x !=0:
+            self.state =  "walk"
 
     def update(self):
         self.calc_grav()  # Adjust vertical velocity due to gravity
         self.rect.x += self.change_x  # Update horizontal position
         self.rect.y += self.change_y  # Update vertical position
-
+        self.update_state()
+        
     def calc_grav(self):
         # Basic gravity simulation: if not already falling, start falling.
         if self.change_y == 0:
@@ -35,7 +71,6 @@ class DynamicObject(GameObject):
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
-
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None):
         super().__init__(x, y, width, height, color, image_path)
@@ -43,25 +78,37 @@ class Player(DynamicObject):
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
         self.facing_right = True
-
+        self.state = "idle"
+########################################################################################3
         # Animation attributes
         self.animations = {}
         self.current_animation = "idle"
         self.current_frame = 0
         self.animation_speeds = {"idle": 100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
-        self.setup_animations()
 
-    def setup_animations(self):
-        # Default animation for Player; can be overridden by subclasses.
-        self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
+        self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
+        #self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
 
     def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1):
         """Add a new animation state (e.g., idle) from a sprite sheet."""
-        self.animations[state] = self.load_sprite_sheet(path, frame_width, frame_height, colorkey, scale)
+        self.animations[state] = load_sprite_sheet(path, frame_width, frame_height, colorkey, scale)
         if state == self.current_animation:
             self.current_frame = 0
             self.image = self.animations[state][self.current_frame]
+
+    def update_animation(self):
+        """Updates the idle animation and handles flipping based on direction."""
+        now = pygame.time.get_ticks()
+        speed = self.animation_speeds.get(self.current_animation, 100)
+        if self.animations.get(self.current_animation) and now - self.last_update > speed:
+            self.last_update = now
+            self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
+            self.image = self.animations[self.current_animation][self.current_frame]
+            self.image = pygame.transform.flip(self.image, not self.facing_right, False)
+#####################################################################################################
+
+
 
     def take_damage(self, amount):
         """Subtracts the given amount from player's health."""
@@ -88,18 +135,6 @@ class Player(DynamicObject):
         # Draw background (gray) and health (red)
         pygame.draw.rect(surface, config.PLAYER_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height))  # Background
         pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
-    
-
-    
-    def update_animation(self):
-        """Updates the idle animation and handles flipping based on direction."""
-        now = pygame.time.get_ticks()
-        speed = self.animation_speeds.get(self.current_animation, 100)
-        if self.animations.get(self.current_animation) and now - self.last_update > speed:
-            self.last_update = now
-            self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
-            self.image = self.animations[self.current_animation][self.current_frame]
-            self.image = pygame.transform.flip(self.image, not self.facing_right, False)
 
     def update(self):
         # Call DynamicObject's update to apply gravity and movement.
@@ -120,7 +155,6 @@ class Player(DynamicObject):
                          image_path="src/assets/images/bullet.png", 
                          owner=self)
 
-
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
@@ -134,6 +168,26 @@ class Projectile(DynamicObject):
         # For projectiles we typically do not use the standard gravity unless needed.
         if not self.use_gravity:
             self.change_y = 0  
+
+    def update(self):
+        # Move based on fixed velocity.
+        self.rect.x += self.velocity_x
+        self.rect.y += self.velocity_y
+        # Optionally apply gravity.
+        if self.use_gravity:
+            self.calc_grav()
+            self.rect.y += self.change_y
+
+class PowerUp(DynamicObject):
+    """A projectile that moves with a fixed velocity.
+       Optionally, it can be affected by gravity (e.g., for arrows)."""
+    def __init__(self, x, y,type,amount, width=10, height=10, color=(255,255,0),image_path=None):
+        
+        super().__init__(x, y, width, height, color, image_path)
+        self.upgrade_type = type
+        self.amount = amount
+        # For projectiles we typically do not use the standard gravity unless needed.
+
 
     def update(self):
         # Move based on fixed velocity.
@@ -218,7 +272,6 @@ class Fighter(Player):
         # Call the parent's update to apply gravity and update movement
         super().update()
 
-
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
@@ -233,12 +286,9 @@ class NPC(Player):
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
             self.original_image.fill(color)
-        self.setup_animations()
-    # polymorphic function to load frames from a sprite sheet, it will be rewritten for each charrecter
 
-    def setup_animations(self):
-        # Custom animation for NPC using a different sprite sheet.
-        self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
+        ##################################################################################
+
 
     def update(self):
         # Track previous direction to detect changes
@@ -290,3 +340,20 @@ class NPC(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
