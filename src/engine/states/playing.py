@@ -1,6 +1,6 @@
 import pygame
 import config
-from src.engine.dynamic_objects import DynamicObject, Projectile, Player, PowerUp
+from src.engine.dynamic_objects import DynamicObject, Projectile, Player, PowerUp,NPC
 
 class PlayingState:
     def __init__(self, scene):
@@ -104,6 +104,8 @@ class PlayingState:
         self.draw_background()  # Use draw_background from selected map
         self.all_sprites.draw(scene)
         for sprite in self.all_sprites:
+            if isinstance(sprite, NPC):
+                sprite.draw_vision_line(scene)
             if isinstance(sprite, Player):  # NPC and Fighter
                 sprite.draw_health_bar(scene)
 
