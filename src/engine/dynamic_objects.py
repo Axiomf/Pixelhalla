@@ -2,19 +2,28 @@ import pygame
 import config
 from .base import GameObject
 
-def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1):
-        sheet = pygame.image.load(path).convert_alpha()
-        sheet_rect = sheet.get_rect()
-        frames = []
-        for y in range(0, sheet_rect.height, frame_height):
-            for x in range(0, sheet_rect.width, frame_width):
-                frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
-                if scale != 1:
-                    frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
-                if colorkey is not None:
-                    frame.set_colorkey(colorkey)
-                frames.append(frame)
-        return frames
+
+def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
+    sheet = pygame.image.load(path).convert_alpha()
+    sheet_rect = sheet.get_rect()
+    frames = []
+    if crop_width == None:
+        crop_width = frame_width
+    if crop_height == None:
+        crop_height = frame_height
+    for y in range(0, sheet_rect.height, frame_height):
+        for x in range(0, sheet_rect.width, frame_width):
+            # Define the full frame
+            full_frame = pygame.Rect(x, y, frame_width, frame_height)
+            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
+            crop_rect = pygame.Rect(x + crop_x, y + crop_y, crop_width, crop_height)
+            frame = sheet.subsurface(crop_rect)
+            if scale != 1:
+                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
+            if colorkey is not None:
+                frame.set_colorkey(colorkey)
+            frames.append(frame)
+    return frames
 
 def load_sprite_sheet_bomb(path, frame_width, frame_height, colorkey=None, scale=1):
         sheet = pygame.image.load(path).convert_alpha()
@@ -93,9 +102,9 @@ class Player(DynamicObject):
         #self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
         #self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
 
-    def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1):
+    def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
         """Add a new animation state (e.g., idle) from a sprite sheet."""
-        self.animations[state] = load_sprite_sheet(path, frame_width, frame_height, colorkey, scale)
+        self.animations[state] = load_sprite_sheet(path, frame_width, frame_height, colorkey, scale, crop_x, crop_y, crop_width, crop_height)
         if state == self.current_animation:
             self.current_frame = 0
             self.image = self.animations[state][self.current_frame]
@@ -414,20 +423,3 @@ class NPC(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

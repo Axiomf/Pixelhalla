@@ -34,14 +34,13 @@ fighter2 = Fighter(650, static_platform2.rect.y - 50,
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
                    platforms=platforms)
 # An enemy that patrols horizontally and bounces at screen edges
-enemy = NPC(static_platform1.rect.x + (static_platform1.rect.width / 2) - (30 / 2),  
-            static_platform1.rect.y - 10, 
+enemy = NPC(static_platform1.rect.x + 30,  
+            static_platform1.rect.y -  10, 30, 35,
             speed=config.NPC_SPEED, 
-            image_path="src/assets/images/death-lamp-walk6.png",
             platforms=platforms, 
             projectiles=projectiles, 
             all_sprites=all_sprites)
-enemy.add_animation("idle", "src/assets/images/enemies/Goblin/Run.png",150,150,scale=1/3)
+enemy.add_animation("idle", "src/assets/images/enemies/Goblin/Run.png",150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35)
 # Add each object to the appropriate sprite groups for updating and drawing
 all_sprites.add(static_platform1, static_platform2, fighter1, fighter2, enemy)
 platforms.add(static_platform1, static_platform2)
