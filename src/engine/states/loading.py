@@ -6,7 +6,7 @@ class LoadingState:
     def __init__(self, scene):
         self.scene = scene
         self.back_button = pygame.Rect(20, 20, 100, 50)  # Top-left corner
-        self.font = pygame.font.Font(None, 74)  # Use default font, size 74 for button text
+        self.font = pygame.font.Font(None, 60)  # Use default font, size 74 for button text
         self.button_color = (0, 128, 255)  # Blue button for Start
         self.loading_background = pygame.image.load("src/assets/images/blue-preview.png").convert_alpha()
         self.loading_background = pygame.transform.scale(self.loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))

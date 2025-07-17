@@ -32,6 +32,8 @@ PULSE_SCALE = 10  # Max scale change in pixels
 
 # Variable to debounce mouse clicks
 CLICK_COOLDOWN = 200  # 200ms cooldown between clicks
+COLLISION_COOLDOWN = 5000  # 5 seconds cooldown for Fighter-Enemy collisions
+
 
 GAME_STATE_LOADING = 1
 GAME_STATE_PLAYING = 0

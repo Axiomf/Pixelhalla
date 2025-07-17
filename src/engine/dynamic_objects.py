@@ -90,7 +90,7 @@ class Player(DynamicObject):
 
     
 
-        self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
+        #self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
         #self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
 
     def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1):
