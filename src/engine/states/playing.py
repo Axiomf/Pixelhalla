@@ -1,10 +1,11 @@
 import pygame
 import config
-from src.engine.dynamic_objects import DynamicObject, Projectile, Player, PowerUp,NPC
+from src.engine.dynamic_objects import DynamicObject, Projectile, Player, PowerUp, NPC
+from src.engine.states.base_state import BaseState
 
-class PlayingState:
+class PlayingState(BaseState):
     def __init__(self, scene):
-        self.scene = scene
+        super().__init__(scene)
         self.back_button = pygame.Rect(20, 20, 100, 50)  # Top-left corner
         self.font = pygame.font.Font(None, 36)  # Use default font, size 36 for button text
         self.button_color = (0, 128, 255)  # Blue button
@@ -16,35 +17,35 @@ class PlayingState:
         self.draw_background = None
 
     def load_map(self, map_name):
-        """Load the specified map and its components."""
-        try:
-            if map_name == "map1":
-                from src.engine.map1 import all_sprites, platforms, enemies, fighters, projectiles, draw_background
-            elif map_name == "map_levels":
-                from src.engine.map_levels import all_sprites, platforms, enemies, fighters, projectiles, draw_background
-            elif map_name == "map_jesus":
-                from src.engine.map_jesus import all_sprites, platforms, enemies, fighters, projectiles, draw_background
-            elif map_name == "map4":
-                from src.engine.map4 import all_sprites, platforms, enemies, fighters, projectiles, draw_background
-            self.all_sprites = all_sprites
-            self.platforms = platforms
-            self.enemies = enemies
-            self.fighters = fighters
-            self.projectiles = projectiles
-            self.draw_background = draw_background
-        except ImportError as e:
-            return
+        """Load map components using a module mapping."""
+        map_modules = {
+            "map1": "src.engine.map1",
+            "map_levels": "src.engine.map_levels",
+            "map_jesus": "src.engine.map_jesus",
+            "map4": "src.engine.map4"
+        }
+        module_path = map_modules.get(map_name)
+        if module_path:
+            try:
+                mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'enemies', 'fighters', 'projectiles', 'draw_background'])
+                self.all_sprites = mod.all_sprites
+                self.platforms = mod.platforms
+                self.enemies = mod.enemies
+                self.fighters = mod.fighters
+                self.projectiles = mod.projectiles
+                self.draw_background = mod.draw_background
+            except ImportError as e:
+                return
 
     def handle_event(self, event, current_time, scale, state_manager):
-        """Handle events in playing screen."""
+        """Handle events in playing state."""
         if not state_manager.current_map:
             state_manager.change_state(config.GAME_STATE_MAP_SELECT)
             return
 
-        # Load map if not already loaded
         if not self.all_sprites:
             self.load_map(state_manager.current_map)
-
+        
         if event.type == pygame.KEYDOWN:
             for fighter in self.fighters:
                 if event.key == fighter.controls.get("shoot"):
@@ -53,11 +54,11 @@ class PlayingState:
                     self.projectiles.add(projectile)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - state_manager.last_click_time > config.CLICK_COOLDOWN:
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
-                                            self.back_button.width + scale, self.back_button.height + scale)
+                                              self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_back_button.collidepoint(event.pos):  # Back to map select
                 state_manager.change_state(config.GAME_STATE_MAP_SELECT)
                 state_manager.last_click_time = current_time
-                # Clear sprite groups to reset the map
+                # Reset the state by clearing sprite groups
                 self.all_sprites.empty()
                 self.platforms.empty()
                 self.enemies.empty()
@@ -65,13 +66,8 @@ class PlayingState:
                 self.projectiles.empty()
                 pygame.event.clear()  # Clear event queue
 
-    def update(self, current_time, scale, state_manager):
-        """Update logic for playing screen."""
-        if not self.all_sprites:
-            self.load_map(state_manager.current_map)
-        self.all_sprites.update()  # Call update for all sprites
-
-        # Handle collisions
+    def handle_collisions(self):
+        """Handle collisions between sprites."""
         for sprite in self.all_sprites:
             if isinstance(sprite, DynamicObject):
                 sprite.handle_platform_collision(self.platforms)
@@ -96,12 +92,19 @@ class PlayingState:
                         fighter.upgrade(sprite.upgrade_type, sprite.amount)
                         sprite.kill()
 
+    def update(self, current_time, scale, state_manager):
+        """Update logic for playing state."""
+        if not self.all_sprites:
+            self.load_map(state_manager.current_map)
+        self.all_sprites.update()  # Call update for all sprites
+        self.handle_collisions()  # Process all collisions
+
     def draw(self, scene, scale, state_manager):
         """Draw playing screen."""
         if not self.draw_background:
             return
         mouse_pos = pygame.mouse.get_pos()
-        self.draw_background()  # Use draw_background from selected map
+        self.draw_background()  # Draw map background
         self.all_sprites.draw(scene)
         for sprite in self.all_sprites:
             if isinstance(sprite, NPC):
@@ -111,7 +114,7 @@ class PlayingState:
 
         # Draw Back button
         pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
-                                        self.back_button.width + scale, self.back_button.height + scale)
+                                          self.back_button.width + scale, self.back_button.height + scale)
         if pulsed_back_button.collidepoint(mouse_pos):
             pygame.draw.rect(scene, (0, 200, 255), pulsed_back_button)  # Brighter blue for hover
         else:
