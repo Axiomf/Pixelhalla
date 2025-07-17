@@ -1,4 +1,5 @@
 import pygame
+
 # Updated GameObject that uses an image if provided.
 class GameObject(pygame.sprite.Sprite):
     """Base class for objects that can move or be affected by forces."""
