@@ -52,7 +52,7 @@ enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),
             speed=config.NPC_SPEED,
             platforms=platforms, 
             projectiles=projectiles, 
-            all_sprites=all_sprites)
+            all_sprites=all_sprites,fighter = fighter1)
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0),image_path=None)
 powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0),image_path=None)
 powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,75,0),image_path=None)

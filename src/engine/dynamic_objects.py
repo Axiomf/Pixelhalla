@@ -192,7 +192,7 @@ class PowerUp(DynamicObject):
         self.amount = amount
         self.duration = 10
         self.use_gravity = False
-        
+        print()
     def update(self):
         # Optionally apply gravity.
         if self.use_gravity:
@@ -223,7 +223,6 @@ class Fighter(Player):
     # def setup_animations(self):
     #     self.add_animation("idle", "src/assets/images/fighter_idle.png", 32, 32)
     def upgrade(self, type, amount):
-        print("upgrade")
         self.powered_up_amount = amount
         self.started_powerup = pygame.time.get_ticks() 
         self.left_duration_powerup = 5000  # 5 seconds in milliseconds
@@ -238,7 +237,6 @@ class Fighter(Player):
         self.powered_up_type = type
 
     def check_power_up(self):
-        print(self.left_duration_powerup)
         if not self.powered:
             return
         now = pygame.time.get_ticks()
@@ -320,22 +318,53 @@ class Fighter(Player):
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
-                 damage=config.NPC_DAMAGE, image_path=None, platforms=None, projectiles=None, all_sprites=None):
+                damage=config.NPC_DAMAGE, image_path=None, platforms=None,
+                projectiles=None, all_sprites=None, fighter=None):
         super().__init__(x, y, width, height, color, health, damage, image_path)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.facing_right = True  # Track the direction the NPC is facing (True for right, False for left)
         self.platforms = platforms  # Store platforms group
         self.projectiles = projectiles  # Store projectiles group
         self.all_sprites = all_sprites  # Store all_sprites group
+
+        self.single_fighter = fighter
+        self.can_see_the_fighter = False
+        self.show_vision_line = True  # New flag to toggle vision line visibility
+        
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
             self.original_image.fill(color)
-
         ##################################################################################
 
 
+    def update_vision(self):
+        # Calculate vision: check if the imaginary line between NPC and fighter collides with any platform.
+        if not self.single_fighter or not self.platforms:
+            self.can_see_the_fighter = False
+            return
+        npc_center = self.rect.center
+        fighter_center = self.single_fighter.rect.center
+        collision = False
+        for platform in self.platforms:
+            if platform.rect.clipline(npc_center, fighter_center):
+                collision = True
+                break
+        self.can_see_the_fighter = not collision
+
+    def draw_vision_line(self, surface):
+        # Draw the vision line only if show_vision_line is True.
+        if not self.single_fighter or not self.show_vision_line:
+            return
+        npc_center = self.rect.center
+        fighter_center = self.single_fighter.rect.center
+        color = (0, 255, 0) if self.can_see_the_fighter else (255, 0, 0)
+        pygame.draw.line(surface, color, npc_center, fighter_center, 2)
+        
+
     def update(self):
+        # Update vision before doing other movements.
+        self.update_vision()
         # Track previous direction to detect changes
         previous_facing = self.facing_right
 

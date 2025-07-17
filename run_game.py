@@ -346,6 +346,8 @@ while running:
         for sprite in all_sprites:
             if isinstance(sprite, Player):  # NPC and Fighter
                 sprite.draw_health_bar(scene)
+            if isinstance(sprite, NPC):
+                sprite.draw_vision_line(scene)
         # Draw Back button last to ensure it’s on top
         if pulsed_back_button.collidepoint(mouse_pos):
             pygame.draw.rect(scene, (0, 200, 255), pulsed_back_button)  # Brighter blue for hover
