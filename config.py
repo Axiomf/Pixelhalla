@@ -27,8 +27,8 @@ CAPTION = "Welcome to pixelhalla"
 FPS = 60
 
 PULSE_TIME = 0  # Track time for pulse effect
-PULSE_SPEED = 0.05  # Speed of pulse animation
-PULSE_SCALE = 10  # Max scale change in pixels
+PULSE_SPEED = 0  # Speed of pulse animation
+PULSE_SCALE = 1  # Max scale change in pixels
 
 # Variable to debounce mouse clicks
 CLICK_COOLDOWN = 200  # 200ms cooldown between clicks

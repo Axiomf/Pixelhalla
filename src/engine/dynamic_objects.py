@@ -49,7 +49,7 @@ class DynamicObject(GameObject):
         self.state = "idle"
 
     def update_state(self):
-        if self.change_y >0:
+        if self.change_y >= 5:
             self.state =  "falling"
         elif self.change_x !=0:
             self.state =  "walk"
@@ -94,9 +94,9 @@ class Player(DynamicObject):
         self.animations = {}
         self.current_animation = "idle"
         self.current_frame = 0
-        self.animation_speeds = {"idle": 100}  # ms per frame
+        self.animation_speeds = {"idle": 100, "death" : 200}  # ms per frame
         self.last_update = pygame.time.get_ticks()
-
+        self.is_dying = False  # New flag to track death animation
     
 
         #self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
@@ -118,6 +118,9 @@ class Player(DynamicObject):
             self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
             self.image = self.animations[self.current_animation][self.current_frame]
             self.image = pygame.transform.flip(self.image, not self.facing_right, False)
+            # If death animation is complete, kill the sprite
+            if self.is_dying and self.current_frame == 0 and len(self.animations[self.current_animation]) > 1:
+                self.kill()
 #####################################################################################################
 
     def take_damage(self, amount):
@@ -152,9 +155,20 @@ class Player(DynamicObject):
         # Call DynamicObject's update to apply gravity and movement.
         super().update()
         # Additional player-specific logic (collision, animation, etc.).
-        if self.is_dead():
-            self.kill()
-        self.update_animation()
+        if self.is_dead() and not self.is_dying:
+            print(f"Triggering death animation, Health: {self.health}")  # Debug
+            self.state = "death"
+            self.current_animation = "death"  # Sync current_animation with state
+            self.is_dying = True
+            self.change_x = 0  # Stop movement
+            self.change_y = 0
+            if not self.animations.get("death"):
+                print(f"No death animation found, killing sprite directly, Health: {self.health}")
+                self.kill()
+        if self.is_dying:
+            self.update_animation()
+        else:
+            self.update_animation()
 
     def shoot(self):
         """Creates a projectile moving in the direction the player is facing."""
