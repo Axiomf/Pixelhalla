@@ -2,6 +2,57 @@ import pygame
 import config
 from .base import GameObject
 
+# trying to make a general template (Suicide_bomber is an example) for loading animations outside of objects, dict : ( "state" : frames )
+def load_animations_template(path, frame_width, frame_height, colorkey=None,
+                                   scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
+    """ "walk", "death" ("run" is the same as walk with increased speed)"""
+    animations = {} # output
+    sheet = pygame.image.load(path).convert_alpha()
+    sheet_rect = sheet.get_rect()
+    frames = [] # slut for temporary storing frames
+    if crop_width == None:
+        crop_width = frame_width
+    if crop_height == None:
+        crop_height = frame_height
+
+################################################################
+    frames.clear()
+    for x in range(0, sheet_rect.width, frame_width): # first row is ""
+            # Define the full frame
+            full_frame = pygame.Rect(x, 0, frame_width, frame_height)
+            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
+            crop_rect = pygame.Rect(x + crop_x, 0 + crop_y, crop_width, crop_height)
+            frame = sheet.subsurface(crop_rect)
+            if scale != 1:
+                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
+            if colorkey is not None:
+                frame.set_colorkey(colorkey)
+            frames.append(frame)
+    animations["walk"] = frames
+################################################################
+    frames.clear()
+    for x in range(0, frame_width*6, frame_width): # first row is ""
+            # Define the full frame
+            full_frame = pygame.Rect(x, frame_height, frame_width, frame_height)
+            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
+            crop_rect = pygame.Rect(x + crop_x, frame_height + crop_y, crop_width, crop_height)
+            frame = sheet.subsurface(crop_rect)
+            if scale != 1:
+                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
+            if colorkey is not None:
+                frame.set_colorkey(colorkey)
+            frames.append(frame)
+    animations["death"] = frames
+################################################################
+    return animations
+
+
+
+
+
+
+
+
 
 def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     sheet = pygame.image.load(path).convert_alpha()
@@ -81,7 +132,7 @@ class DynamicObject(GameObject):
                 self.change_y = 0
 
 class Player(DynamicObject):
-    def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None):
+    def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None):
         super().__init__(x, y, width, height, color, image_path)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
@@ -89,25 +140,18 @@ class Player(DynamicObject):
         self.facing_right = True
         self.state = "idle"
         self.shield = False
-########################################################################################3
-        # Animation attributes
-        self.animations = {}
-        self.current_animation = "idle"
+################################################################################
+        # Animation attributes now injected during construction
+        self.animations = animations if animations is not None else {}
+        self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
         self.current_frame = 0
         self.animation_speeds = {"idle": 100, "death" : 200}  # ms per frame
         self.last_update = pygame.time.get_ticks()
         self.is_dying = False  # New flag to track death animation
-    
-
+################################################################################
+        # Removed previously used add_animation calls for cleaner architecture
         #self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
         #self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
-
-    def add_animation(self, state, path, frame_width, frame_height, colorkey=None, scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-        """Add a new animation state (e.g., idle) from a sprite sheet."""
-        self.animations[state] = load_sprite_sheet(path, frame_width, frame_height, colorkey, scale, crop_x, crop_y, crop_width, crop_height)
-        if state == self.current_animation:
-            self.current_frame = 0
-            self.image = self.animations[state][self.current_frame]
 
     def update_animation(self):
         """Updates the idle animation and handles flipping based on direction."""
@@ -430,6 +474,13 @@ class NPC(Player):
         self.rect.x += self.change_x
 
         # Optional: Add projectile shooting for NPC (uncomment if needed)
+        # if self.projectiles and self.all_sprites:
+        #     projectile = self.shoot()
+        #     self.projectiles.add(projectile)
+        #     self.all_sprites.add(projectile)
+
+        # Call the parent's update to apply gravity and update movement
+        super().update()
         # if self.projectiles and self.all_sprites:
         #     projectile = self.shoot()
         #     self.projectiles.add(projectile)
