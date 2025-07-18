@@ -8,7 +8,7 @@ class MapSelectState:
         self.back_button = pygame.Rect(20, 20, 100, 50)  # Top-left corner
         self.font = pygame.font.Font(None, 55)  # Use default font, size 36 for button text
         self.button_color = (0, 128, 255)  # Blue button
-        self.loading_background = pygame.image.load("src/assets/images/blue-preview.png").convert_alpha()
+        self.loading_background = pygame.image.load("src/assets/images/background/blue-preview.png").convert_alpha()
         self.loading_background = pygame.transform.scale(self.loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
         self.map1_preview = pygame.image.load("src/assets/images/background/country-platform-preview.png").convert_alpha()
         self.map1_preview = pygame.transform.scale(self.map1_preview, (300, 150))

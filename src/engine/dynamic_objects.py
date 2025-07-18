@@ -128,15 +128,15 @@ class Player(DynamicObject):
                          self.rect.centery, 
                          velocity=(velocity_x, 0),  # Only horizontal movement
                          damage= self.damage,
-                         image_path="src/assets/images/bullet.png", 
+                         image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
 
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
     def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
-                 use_gravity=False, image_path=None, owner=None):
-        super().__init__(x, y, width, height, color, image_path)
+                 use_gravity=False, image_path=None, owner=None,animations = None):
+        super().__init__(x, y, width, height, color, image_path,animations)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
@@ -157,9 +157,9 @@ class Projectile(DynamicObject):
 class PowerUp(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y,type,amount, width=10, height=10, color=(255,255,0),image_path=None):
+    def __init__(self, x, y,type,amount, width=10, height=10, color=(255,255,0),image_path=None,animations=None):
         
-        super().__init__(x, y, width, height, color, image_path)
+        super().__init__(x, y, width, height, color, image_path,animations)
         self.upgrade_type = type
         self.amount = amount
         self.duration = 10
@@ -173,8 +173,8 @@ class PowerUp(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None):
-        super().__init__(x, y, width, height, color, health, damage, image_path)
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, animations = None):
+        super().__init__(x, y, width, height, color, health, damage, image_path,animations)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
@@ -291,8 +291,8 @@ class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
                 damage=config.NPC_DAMAGE, image_path=None, platforms=None,
-                projectiles=None, all_sprites=None, fighter=None):
-        super().__init__(x, y, width, height, color, health, damage, image_path)
+                projectiles=None, all_sprites=None, fighter=None,animations=None):
+        super().__init__(x, y, width, height, color, health, damage, image_path,animations)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.facing_right = True  # Track the direction the NPC is facing (True for right, False for left)
         self.platforms = platforms  # Store platforms group

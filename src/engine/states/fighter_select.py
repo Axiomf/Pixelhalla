@@ -8,15 +8,15 @@ class FighterSelectState:
         self.back_button = pygame.Rect(20, 20, 100, 50)  # Top-left corner
         self.font = pygame.font.Font(None, 55)  # Use default font, size 36 for button text
         self.button_color = (0, 128, 255)  # Blue button
-        self.loading_background = pygame.image.load("src/assets/images/blue-preview.png").convert_alpha()
+        self.loading_background = pygame.image.load("src/assets/images/background/blue-preview.png").convert_alpha()
         self.loading_background = pygame.transform.scale(self.loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
-        self.fighter1_preview = pygame.image.load("src/assets/images/fighter.png").convert_alpha()
+        self.fighter1_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
         self.fighter1_preview = pygame.transform.scale(self.fighter1_preview, (150, 150))
-        self.fighter2_preview = pygame.image.load("src/assets/images/fighter.png").convert_alpha()
+        self.fighter2_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
         self.fighter2_preview = pygame.transform.scale(self.fighter2_preview, (150, 150))
-        self.fighter3_preview = pygame.image.load("src/assets/images/fighter.png").convert_alpha()
+        self.fighter3_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
         self.fighter3_preview = pygame.transform.scale(self.fighter3_preview, (150, 150))
-        self.fighter4_preview = pygame.image.load("src/assets/images/fighter.png").convert_alpha()
+        self.fighter4_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
         self.fighter4_preview = pygame.transform.scale(self.fighter4_preview, (150, 150))
 
     def handle_event(self, event, current_time, scale, state_manager):

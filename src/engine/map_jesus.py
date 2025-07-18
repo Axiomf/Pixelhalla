@@ -22,7 +22,6 @@ background5 = pygame.image.load("src/assets/images/background/jesus/j4.jpg")
 background5 = pygame.transform.scale(background5, (config.SCENE_WIDTH/4, config.SCENE_HEIGHT))
 
 
-
 # Create sprite groups to better organize and manage game objects.
 all_sprites = CustomGroup()      # Contains all objects for global update and drawing
 platforms = pygame.sprite.Group()          # Contains all platform objects
@@ -45,11 +44,11 @@ fighter1 = Fighter(450,
                    config.SCENE_HEIGHT*3/5 - 70, 32, 32,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    platforms=platforms,
-                   animations=load_animations_template("src/assets/images/fighter_idle.png", 32, 32))
+                   animations=load_animations_template("src/assets/images/inused_single_images/fighter.png", 32, 32))
 fighter2 = Fighter(650, 450, 32, 32,
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
                    platforms=platforms,
-                   animations=load_animations_template("src/assets/images/fighter_idle.png", 32, 32))
+                   animations=load_animations_template("src/assets/images/inused_single_images/fighter.png", 32, 32))
 # An enemy that patrols horizontally with animations provided using a custom loader.
 enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),  
             config.SCENE_HEIGHT*3/5 - 30, 32, 32,
@@ -58,7 +57,8 @@ enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),
             projectiles=projectiles, 
             all_sprites=all_sprites,
             fighter=fighter1,
-            animations=load_animations_Suicide_Bomber("src/assets/images/enemy_1_suicide_bomb/sprite_sheet.png", 40, 32))
+            animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
+
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0),image_path=None)
 powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0),image_path=None)
 powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,75,0),image_path=None)
