@@ -2,102 +2,34 @@ import pygame
 import config
 from .base import GameObject
 
-# trying to make a general template (Suicide_bomber is an example) for loading animations outside of objects, dict : ( "state" : frames )
-def load_animations_template(path, frame_width, frame_height, colorkey=None,
-                                   scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-    """ "walk", "death" ("run" is the same as walk with increased speed)"""
-    animations = {} # output
-    sheet = pygame.image.load(path).convert_alpha()
-    sheet_rect = sheet.get_rect()
-    frames = [] # slut for temporary storing frames
-    if crop_width == None:
-        crop_width = frame_width
-    if crop_height == None:
-        crop_height = frame_height
-
-################################################################
-    frames.clear()
-    for x in range(0, sheet_rect.width, frame_width): # first row is ""
-            # Define the full frame
-            full_frame = pygame.Rect(x, 0, frame_width, frame_height)
-            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
-            crop_rect = pygame.Rect(x + crop_x, 0 + crop_y, crop_width, crop_height)
-            frame = sheet.subsurface(crop_rect)
-            if scale != 1:
-                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
-            if colorkey is not None:
-                frame.set_colorkey(colorkey)
-            frames.append(frame)
-    animations["walk"] = frames
-################################################################
-    frames.clear()
-    for x in range(0, frame_width*6, frame_width): # first row is ""
-            # Define the full frame
-            full_frame = pygame.Rect(x, frame_height, frame_width, frame_height)
-            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
-            crop_rect = pygame.Rect(x + crop_x, frame_height + crop_y, crop_width, crop_height)
-            frame = sheet.subsurface(crop_rect)
-            if scale != 1:
-                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
-            if colorkey is not None:
-                frame.set_colorkey(colorkey)
-            frames.append(frame)
-    animations["death"] = frames
-################################################################
-    return animations
-
-
-
-
-
-
-
-
-
-def load_sprite_sheet(path, frame_width, frame_height, colorkey=None, scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-    sheet = pygame.image.load(path).convert_alpha()
-    sheet_rect = sheet.get_rect()
-    frames = []
-    if crop_width == None:
-        crop_width = frame_width
-    if crop_height == None:
-        crop_height = frame_height
-    for y in range(0, sheet_rect.height, frame_height):
-        for x in range(0, sheet_rect.width, frame_width):
-            # Define the full frame
-            full_frame = pygame.Rect(x, y, frame_width, frame_height)
-            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
-            crop_rect = pygame.Rect(x + crop_x, y + crop_y, crop_width, crop_height)
-            frame = sheet.subsurface(crop_rect)
-            if scale != 1:
-                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
-            if colorkey is not None:
-                frame.set_colorkey(colorkey)
-            frames.append(frame)
-    return frames
-
-def load_sprite_sheet_bomb(path, frame_width, frame_height, colorkey=None, scale=1):
-        sheet = pygame.image.load(path).convert_alpha()
-        sheet_rect = sheet.get_rect()
-        frames = []
-        for y in range(0, sheet_rect.height, frame_height):
-            for x in range(0, sheet_rect.width, frame_width):
-                frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
-                if scale != 1:
-                    frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
-                if colorkey is not None:
-                    frame.set_colorkey(colorkey)
-                frames.append(frame)
-        return frames
-
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
-    def __init__(self, x, y, width, height, color=None, image_path=None):
+    def __init__(self, x, y, width, height, color=None, image_path=None, animations=None):
         super().__init__(x, y, width, height, color, image_path)
         self.change_x = 0  # Horizontal velocity
         self.change_y = 0  # Vertical velocity
         self.state = "idle"
+        # New animation attributes available for every DynamicObject
+        self.animations = animations if animations is not None else {}
+        self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
+        self.current_frame = 0
+        self.animation_speeds = {"idle": 100, "death": 200}  # ms per frame
+        self.last_update = pygame.time.get_ticks()
+        self.is_dying = False  # New flag to track death animation
+
+    def update_animation(self):
+        now = pygame.time.get_ticks()
+        speed = self.animation_speeds.get(self.current_animation, 100)
+        if self.animations.get(self.current_animation) and now - self.last_update > speed:
+            self.last_update = now
+            self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
+            self.image = self.animations[self.current_animation][self.current_frame]
+            if hasattr(self, "facing_right"):
+                self.image = pygame.transform.flip(self.image, not self.facing_right, False)
+            # If death animation is complete, kill the sprite
+            if self.is_dying and self.current_frame == 0 and len(self.animations[self.current_animation]) > 1:
+                self.kill()
 
     def update_state(self):
         if self.change_y >= 5:
@@ -133,39 +65,15 @@ class DynamicObject(GameObject):
 
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None):
-        super().__init__(x, y, width, height, color, image_path)
+        # Pass animations into DynamicObject for centralized animation management
+        super().__init__(x, y, width, height, color, image_path, animations)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
         self.facing_right = True
         self.state = "idle"
         self.shield = False
-################################################################################
-        # Animation attributes now injected during construction
-        self.animations = animations if animations is not None else {}
-        self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
-        self.current_frame = 0
-        self.animation_speeds = {"idle": 100, "death" : 200}  # ms per frame
-        self.last_update = pygame.time.get_ticks()
-        self.is_dying = False  # New flag to track death animation
-################################################################################
-        # Removed previously used add_animation calls for cleaner architecture
-        #self.add_animation("idle", "src/assets/images/enemy_1_suicide_bomb/death_bomb.png",40,32)
-        #self.add_animation("idle", "src/assets/images/eye.png", 32, 32)
-
-    def update_animation(self):
-        """Updates the idle animation and handles flipping based on direction."""
-        now = pygame.time.get_ticks()
-        speed = self.animation_speeds.get(self.current_animation, 100)
-        if self.animations.get(self.current_animation) and now - self.last_update > speed:
-            self.last_update = now
-            self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
-            self.image = self.animations[self.current_animation][self.current_frame]
-            self.image = pygame.transform.flip(self.image, not self.facing_right, False)
-            # If death animation is complete, kill the sprite
-            if self.is_dying and self.current_frame == 0 and len(self.animations[self.current_animation]) > 1:
-                self.kill()
-#####################################################################################################
+        # Removed animation initialization code; now available via DynamicObject
 
     def take_damage(self, amount):
         if self.shield:
@@ -198,7 +106,7 @@ class Player(DynamicObject):
     def update(self):
         # Call DynamicObject's update to apply gravity and movement.
         super().update()
-        # Additional player-specific logic (collision, animation, etc.).
+        # Additional player-specific logic (collision, etc.).
         if self.is_dead() and not self.is_dying:
             print(f"Triggering death animation, Health: {self.health}")  # Debug
             self.state = "death"
@@ -209,10 +117,7 @@ class Player(DynamicObject):
             if not self.animations.get("death"):
                 print(f"No death animation found, killing sprite directly, Health: {self.health}")
                 self.kill()
-        if self.is_dying:
-            self.update_animation()
-        else:
-            self.update_animation()
+        self.update_animation()
 
     def shoot(self):
         """Creates a projectile moving in the direction the player is facing."""
@@ -487,4 +392,11 @@ class NPC(Player):
         #     self.all_sprites.add(projectile)
 
         # Call the parent's update to apply gravity and update movement
+        super().update()
+        #     projectile = self.shoot()
+        #     self.projectiles.add(projectile)
+        #     self.all_sprites.add(projectile)
+
+        # Call the parent's update to apply gravity and update movement
+        super().update()
         super().update()
