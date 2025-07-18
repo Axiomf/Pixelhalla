@@ -14,7 +14,7 @@ class DynamicObject(GameObject):
         self.animations = animations if animations is not None else {}
         self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
         self.current_frame = 0
-        self.animation_speeds = {"idle": 100, "death": 200}  # ms per frame
+        self.animation_speeds = {"idle": 100, "death": 200, "walk":100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
         self.is_dying = False  # New flag to track death animation
 
@@ -71,7 +71,7 @@ class Player(DynamicObject):
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
         self.facing_right = True
-        self.state = "idle"
+        #self.state = "idle"
         self.shield = False
         # Removed animation initialization code; now available via DynamicObject
 
@@ -165,6 +165,7 @@ class PowerUp(DynamicObject):
         self.duration = 10
         self.use_gravity = False
         print()
+        
     def update(self):
         # Optionally apply gravity.
         if self.use_gravity:
@@ -290,7 +291,7 @@ class Fighter(Player):
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
-                damage=config.NPC_DAMAGE, image_path=None, platforms=None,
+                damage=config.NPC_DAMAGE, image_path=None, platforms=None, 
                 projectiles=None, all_sprites=None, fighter=None,animations=None):
         super().__init__(x, y, width, height, color, health, damage, image_path,animations)
         self.change_x = speed  # Set initial horizontal patrol speed
@@ -308,7 +309,6 @@ class NPC(Player):
         if self.original_image and not image_path:
             self.original_image.fill(color)
         ##################################################################################
-
 
     def update_vision(self):
         # Calculate vision: check if the imaginary line between NPC and fighter collides with any platform.
@@ -333,7 +333,6 @@ class NPC(Player):
         color = (0, 255, 0) if self.can_see_the_fighter else (255, 0, 0)
         pygame.draw.line(surface, color, npc_center, fighter_center, 2)
         
-
     def update(self):
         # Update vision before doing other movements.
         self.update_vision()
@@ -383,20 +382,5 @@ class NPC(Player):
         #     projectile = self.shoot()
         #     self.projectiles.add(projectile)
         #     self.all_sprites.add(projectile)
-
-        # Call the parent's update to apply gravity and update movement
         super().update()
-        # if self.projectiles and self.all_sprites:
-        #     projectile = self.shoot()
-        #     self.projectiles.add(projectile)
-        #     self.all_sprites.add(projectile)
-
-        # Call the parent's update to apply gravity and update movement
-        super().update()
-        #     projectile = self.shoot()
-        #     self.projectiles.add(projectile)
-        #     self.all_sprites.add(projectile)
-
-        # Call the parent's update to apply gravity and update movement
-        super().update()
-        super().update()
+        

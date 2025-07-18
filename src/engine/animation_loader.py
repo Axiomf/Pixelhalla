@@ -2,7 +2,7 @@ import pygame
 # trying to make a general template  for loading animations outside of objects, dict : ( "state" : frames )
 def load_animations_template(path, frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-    """ "walk", "death" ("run" is the same as walk with increased speed)"""
+    """ "walk", "death" """
     animations = {} # output
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
@@ -30,7 +30,7 @@ def load_animations_template(path, frame_width, frame_height, colorkey=None,
 
 def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-    """ "walk", "death" ("run" is the same as walk with increased speed)"""
+    """ "walk", "death" """
     animations = {} # output
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
@@ -41,7 +41,6 @@ def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=Non
         crop_height = frame_height
 
 ################################################################
-    frames.clear()
     for x in range(0, sheet_rect.width, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, 0, frame_width, frame_height)
@@ -125,7 +124,6 @@ def load_animations_Arcane_Archer(path, frame_width, frame_height, colorkey=None
     animations["shoot"] = frames
 ################################################################
     return animations
-
 
 def load_animations_Deadly_Effect(path, frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
