@@ -1,47 +1,20 @@
 import pygame
 # trying to make a general template  for loading animations outside of objects, dict : ( "state" : frames )
-def load_animations_template(path, frame_width, frame_height, colorkey=None,
-                                   scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-    """ "walk", "death" """
-    animations = {} # output
-    sheet = pygame.image.load(path).convert_alpha()
-    sheet_rect = sheet.get_rect()
-    frames = [] # slut for temporary storing frames
-    if crop_width == None:
-        crop_width = frame_width
-    if crop_height == None:
-        crop_height = frame_height
-
-################################################################
-    frames.clear()
-    for y in range(0, sheet_rect.height, frame_height):
-            for x in range(0, sheet_rect.width, frame_width):
-                frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
-                if scale != 1:
-                    frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
-                if colorkey is not None:
-                    frame.set_colorkey(colorkey)
-                frames.append(frame)
-    animations["idle"] = frames
-################################################################
-    return animations
-################################################################
 # these have shared loader: HellDude, Eye,
 
 def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "walk", "death" """
-    animations = {} # output
+    animations = {}
+    frames = []
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
-    frames = [] # slut for temporary storing frames
     if crop_width == None:
         crop_width = frame_width
     if crop_height == None:
         crop_height = frame_height
-
 ################################################################
-    for x in range(0, sheet_rect.width, frame_width): # first row is ""
+    for x in range(0, sheet_rect.width, frame_width):
             # Define the full frame
             full_frame = pygame.Rect(x, 0, frame_width, frame_height)
             # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
@@ -54,8 +27,8 @@ def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=Non
             frames.append(frame)
     animations["walk"] = frames
 ################################################################
-    frames.clear()
-    for x in range(0, frame_width*6, frame_width): # first row is ""
+    frames = []
+    for x in range(0, frame_width*6, frame_width):
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height, frame_width, frame_height)
             # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
@@ -95,7 +68,7 @@ def load_animations_Arcane_Archer(path, frame_width, frame_height, colorkey=None
             frames.append(frame)
     animations["walk"] = frames
 ################################################################
-    frames.clear()
+    frames = []  # replaced frames.clear() with new list
     for x in range(0, sheet_rect.width, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height, frame_width, frame_height)
@@ -109,7 +82,7 @@ def load_animations_Arcane_Archer(path, frame_width, frame_height, colorkey=None
             frames.append(frame)
     animations["death"] = frames
 ################################################################
-    frames.clear()
+    frames = []  # replaced frames.clear() with new list
     for x in range(0, sheet_rect.width - frame_width, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height*3, frame_width, frame_height)
@@ -176,7 +149,7 @@ def load_animations_NightBorne(path, frame_width, frame_height, colorkey=None,
             frames.append(frame)
     animations["idle"] = frames
 ################################################################
-    frames.clear()
+    frames = []  # replaced frames.clear() with new list for walk
     for x in range(0, frame_width*6, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height, frame_width, frame_height)
@@ -190,7 +163,7 @@ def load_animations_NightBorne(path, frame_width, frame_height, colorkey=None,
             frames.append(frame)
     animations["walk"] = frames
 ################################################################
-    frames.clear()
+    frames = []  # replaced frames.clear() with new list for attack
     for x in range(0, frame_width*12, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height*2, frame_width, frame_height)
@@ -204,7 +177,7 @@ def load_animations_NightBorne(path, frame_width, frame_height, colorkey=None,
             frames.append(frame)
     animations["attack"] = frames
 ################################################################
-    frames.clear()
+    frames = []  # replaced frames.clear() with new list for hurt
     for x in range(0, frame_width*5, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height*3, frame_width, frame_height)
@@ -218,7 +191,7 @@ def load_animations_NightBorne(path, frame_width, frame_height, colorkey=None,
             frames.append(frame)
     animations["hurt"] = frames
 ################################################################
-    frames.clear()
+    frames = []  # replaced frames.clear() with new list for death
     for x in range(0, frame_width*23, frame_width): # first row is ""
             # Define the full frame
             full_frame = pygame.Rect(x, frame_height*4, frame_width, frame_height)
@@ -314,7 +287,6 @@ def load_animations_Medusa(path_list, frame_width, frame_height, colorkey=None,
             animations[action] = frames
 
     return animations
-
 
 
 
