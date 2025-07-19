@@ -45,14 +45,22 @@ moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
 fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64,scale=1))
-fighter2 = Fighter(650, 450, 32, 32,platforms=platforms,
-                   controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
-                   animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
+#fighter2 = Fighter(650, 450, 32, 32,platforms=platforms,controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP}, animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
 
-# An enemy that patrols horizontally with animations provided using a custom loader.
+# Existing enemy instance
 enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),  config.SCENE_HEIGHT*3/5 - 30, 32, 32,
-            speed=config.NPC_SPEED,platforms=platforms,projectiles=projectiles, all_sprites=all_sprites,fighter=fighter1,
+            speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles, all_sprites=all_sprites, fighter=fighter1,
             animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64))
+            
+# New enemy variants using added classes
+melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
+                    speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
+                    all_sprites=all_sprites, fighter=fighter1,
+                    animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64))
+ranged_enemy = Ranged(config.SCENE_WIDTH/4 + 200, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
+                      speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
+                      all_sprites=all_sprites, fighter=fighter1,
+                      animations=load_animations_NightBorne("src/assets/images/inused_sheets/NightBorne.png", 80, 80))
 
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0),image_path=None)
 powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0),image_path=None)
@@ -61,10 +69,10 @@ powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=1
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(moving_platform, fighter1, fighter2, enemy, static_platform3,powerup,powerup2)
+all_sprites.add(moving_platform, fighter1, enemy, static_platform3,powerup,powerup2, melee_enemy, ranged_enemy)
 platforms.add(moving_platform, static_platform3)
-enemies.add(enemy)
-fighters.add(fighter1, fighter2)
+enemies.add(enemy, melee_enemy, ranged_enemy)
+fighters.add(fighter1)
 
 def draw_background():
     scene.fill((0, 0, 0))

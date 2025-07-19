@@ -1,6 +1,7 @@
 import pygame
 import config
 from .base import GameObject
+import math  # added for distance calculations
 
 # Base class for objects that require movement or are affected by physics (e.g., gravity).
 class DynamicObject(GameObject):
@@ -85,6 +86,23 @@ class DynamicObject(GameObject):
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
+class PowerUp(DynamicObject):
+    """A projectile that moves with a fixed velocity.
+       Optionally, it can be affected by gravity (e.g., for arrows)."""
+    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None):
+        super().__init__(x, y, width, height, color, image_path, animations)
+        self.upgrade_type = type
+        self.amount = amount
+        self.duration = 10
+        self.use_gravity = False
+        
+    def update(self):
+        # Optionally apply gravity.
+        if self.use_gravity:
+            self.calc_grav()
+            self.rect.y += self.change_y
+
+
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None):
         # Pass animations into DynamicObject for centralized animation management
@@ -156,46 +174,6 @@ class Player(DynamicObject):
                          damage=self.damage,
                          image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
-
-class Projectile(DynamicObject):
-    """A projectile that moves with a fixed velocity.
-       Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
-                 use_gravity=False, image_path=None, owner=None, animations=None):
-        super().__init__(x, y, width, height, color, image_path, animations)
-        self.damage = damage
-        self.velocity_x, self.velocity_y = velocity
-        self.use_gravity = use_gravity
-        self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
-        # For projectiles we typically do not use the standard gravity unless needed.
-        if not self.use_gravity:
-            self.change_y = 0  
-
-    def update(self):
-        # Move based on fixed velocity.
-        self.rect.x += self.velocity_x
-        self.rect.y += self.velocity_y
-        # Optionally apply gravity.
-        if self.use_gravity:
-            self.calc_grav()
-            self.rect.y += self.change_y
-
-class PowerUp(DynamicObject):
-    """A projectile that moves with a fixed velocity.
-       Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None):
-        super().__init__(x, y, width, height, color, image_path, animations)
-        self.upgrade_type = type
-        self.amount = amount
-        self.duration = 10
-        self.use_gravity = False
-        
-    def update(self):
-        # Optionally apply gravity.
-        if self.use_gravity:
-            self.calc_grav()
-            self.rect.y += self.change_y
-
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
                  damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, animations=None):
@@ -300,7 +278,6 @@ class Fighter(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
-
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
@@ -394,9 +371,31 @@ class NPC(Player):
         #     self.projectiles.add(projectile)
         #     self.all_sprites.add(projectile)
         super().update()
+class Projectile(DynamicObject):
+    """A projectile that moves with a fixed velocity.
+       Optionally, it can be affected by gravity (e.g., for arrows)."""
+    def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
+                 use_gravity=False, image_path=None, owner=None, animations=None):
+        super().__init__(x, y, width, height, color, image_path, animations)
+        self.damage = damage
+        self.velocity_x, self.velocity_y = velocity
+        self.use_gravity = use_gravity
+        self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
+        # For projectiles we typically do not use the standard gravity unless needed.
+        if not self.use_gravity:
+            self.change_y = 0  
+
+    def update(self):
+        # Move based on fixed velocity.
+        self.rect.x += self.velocity_x
+        self.rect.y += self.velocity_y
+        # Optionally apply gravity.
+        if self.use_gravity:
+            self.calc_grav()
+            self.rect.y += self.change_y
+
 
 # Derived NPC variants
-
 class Melee(NPC):
     """Melee NPC uses close combat attacks."""
     def __init__(self, *args, **kwargs):
@@ -405,45 +404,40 @@ class Melee(NPC):
         self.attack_power = self.damage  # melee uses base damage
 
     def update(self):
-        # ...existing code and melee-specific behavior...
+        # Added melee attack logic: if fighter is within range, attack
+        if self.single_fighter:
+            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+                              self.rect.centery - self.single_fighter.rect.centery)
+            if dist <= self.attack_range:
+                print("Melee attack triggered")
+                self.single_fighter.take_damage(self.attack_power)
+        # ...existing code...
         super().update()
-        # e.g., melee attack logic (placeholder)
-        # print("Melee NPC attack executed")
 
 class Ranged(NPC):
     """Ranged NPC uses projectile attacks."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attack_range = 200  # ranged attack distance
+        self.attack_range = 1200  # ranged attack distance
         self.reload_time = 1000  # milliseconds between shots
         self.last_shot = pygame.time.get_ticks()
 
     def update(self):
-        # ...existing code and ranged-specific behavior...
+        #
+        projectile = self.shoot()
+        self.projectiles.add(projectile)
+        self.all_sprites.add(projectile)
+        #
         now = pygame.time.get_ticks()
-        if now - self.last_shot >= self.reload_time and self.can_see_the_fighter:
-            projectile = self.shoot()
-            if self.projectiles and self.all_sprites:
-                self.projectiles.add(projectile)
-                self.all_sprites.add(projectile)
-            self.last_shot = now
+        if self.single_fighter:
+            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+                              self.rect.centery - self.single_fighter.rect.centery)
+            if now - self.last_shot >= self.reload_time and self.can_see_the_fighter and dist <= self.attack_range:
+                print("Ranged attack triggered")
+                projectile = self.shoot()
+                if self.projectiles and self.all_sprites:
+                    self.projectiles.add(projectile)
+                    self.all_sprites.add(projectile)
+                self.last_shot = now
         super().update()
 
-class Magical(NPC):
-    """Magical NPC casts spells."""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.mana = 100
-        self.spell_power = self.damage  # base spell power tied to damage
-
-    def update(self):
-        # ...existing code and magical-specific behavior...
-        if self.mana >= 20 and self.can_see_the_fighter:
-            self.cast_spell()
-            self.mana -= 20
-        super().update()
-
-    def cast_spell(self):
-        # Spell casting logic (placeholder)
-        # print("Magical NPC casts a spell!")
-        pass
