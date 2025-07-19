@@ -50,22 +50,26 @@ fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platform
 # Existing enemy instance
            
 # New enemy variants using added classes
+melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
+                    speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
+                    all_sprites=all_sprites, fighter=fighter1,
+                    animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64))
 
 ranged_enemy = Ranged(config.SCENE_WIDTH/4 + 200, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                       speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                       all_sprites=all_sprites, fighter=fighter1,
                       animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64))
 
-powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0),image_path=None)
-powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0),image_path=None)
-powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,0,0),image_path=None)
+powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0))
+powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0))
+powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,0,0))
 
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2, ranged_enemy)
+all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2, ranged_enemy,melee_enemy)
 platforms.add(moving_platform, static_platform3)
-enemies.add(ranged_enemy)
+enemies.add(ranged_enemy,melee_enemy)
 fighters.add(fighter1)
 
 def draw_background():

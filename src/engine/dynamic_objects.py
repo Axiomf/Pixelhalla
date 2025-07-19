@@ -15,7 +15,7 @@ class DynamicObject(GameObject):
         self.animations = animations if animations is not None else {}
         self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
         self.current_frame = 0
-        self.animation_speeds = {"idle": 100, "death": 200, "walk": 100, "hurt": 200}  # ms per frame
+        self.animation_speeds = {"idle": 100, "death": 200, "walk": 75, "hurt": 200}  # ms per frame
         self.last_update = pygame.time.get_ticks()
         self.is_dying = False  # New flag to track death animation
         self.is_hurt = False  # New flag to track hurt animation
@@ -433,8 +433,6 @@ class Ranged(NPC):
                 projectile = self.shoot()
                 self.projectiles.add(projectile)
                 self.all_sprites.add(projectile)
-                if self.projectiles and self.all_sprites:
-                    pass
                 self.last_shot = now
 
         super().update()

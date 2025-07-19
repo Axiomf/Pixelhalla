@@ -136,8 +136,8 @@ class PlayingState(BaseState):
         self.all_sprites.draw(scene)
         for sprite in self.all_sprites:
             if isinstance(sprite, NPC):
-                sprite.draw_vision_line(scene)
-            if isinstance(sprite, Player):  # NPC and Fighter
+                sprite.draw_vision_line(scene)# I wish this was handled somewhere else
+            if isinstance(sprite, Player):  # I wish this was handled somewhere else
                 sprite.draw_health_bar(scene)
 
         # Draw Back button
