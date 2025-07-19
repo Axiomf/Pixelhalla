@@ -5,6 +5,7 @@ from src.engine.state_manager import StateManager
 
 # Initialize pygame
 pygame.init()  # Initialize all imported pygame modules
+pygame.mixer.init()  # Initialize mixer for audio
 pygame.font.init()  # Explicitly initialize font module
 pygame.display.set_caption(config.CAPTION)  # Set the window title
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Set up the main game window

@@ -15,6 +15,7 @@ class PlayingState(BaseState):
         self.fighters = pygame.sprite.Group()
         self.projectiles = pygame.sprite.Group()
         self.draw_background = None
+        self.audio_playing = False  # Flag to track audio state
 
     def load_map(self, map_name):
         """Load map components using a module mapping."""
@@ -34,6 +35,22 @@ class PlayingState(BaseState):
                 self.fighters = mod.fighters
                 self.projectiles = mod.projectiles
                 self.draw_background = mod.draw_background
+                if map_name == "map1" and not self.audio_playing:
+                    pygame.mixer.music.load("src/assets/sounds/Level03.mp3.mpeg")  # Load audio file
+                    pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
+                    self.audio_playing = True
+                if map_name == "map_levels" and not self.audio_playing:
+                    pygame.mixer.music.load("src/assets/sounds/Level02.mp3.mpeg")  # Load audio file
+                    pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
+                    self.audio_playing = True
+                if map_name == "map_jesus" and not self.audio_playing:
+                    pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")  # Load audio file
+                    pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
+                    self.audio_playing = True
+                if map_name == "map4" and not self.audio_playing:
+                    pygame.mixer.music.load("src/assets/sounds/LevelCTF.mp3.mpeg")  # Load audio file
+                    pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
+                    self.audio_playing = True
             except ImportError as e:
                 return
 
