@@ -42,9 +42,6 @@ class DynamicObject(GameObject):
                 else:
                     self.state = "idle"
                 self.current_animation = self.state
-                print(f"Hurt animation ended, returning to State: {self.state}, Current Animation: {self.current_animation}")  # Debug
-        elif self.is_hurt and not self.animations.get("hurt"):
-            print(f"No 'hurt' animation found in animations: {self.animations.keys()}")  # Debug
 
     def update_state(self):
         if not hasattr(self, 'is_dying') or not self.is_dying or not self.is_hurt:  # Only update state if not dying
@@ -57,7 +54,6 @@ class DynamicObject(GameObject):
             # Sync current_animation with state
             if self.state in self.animations:
                 self.current_animation = self.state
-        print(f"Change_x: {self.change_x}, State: {self.state}, Current Animation: {self.current_animation}, Is Hurt: {self.is_hurt}")  # Debug
 
     def update(self):
         self.calc_grav()  # Adjust vertical velocity due to gravity
@@ -117,7 +113,6 @@ class Player(DynamicObject):
         if self.shield:
             return
         """Subtracts the given amount from player's health."""
-        print(f"Taking damage: {amount}, Current Health: {self.health}, Is Hurt: {self.is_hurt}")  # Debug
         self.health -= amount
         if self.health < 0:
             self.health = 0  # Ensure health doesn't go negative
@@ -126,7 +121,6 @@ class Player(DynamicObject):
             self.hurt_start_time = pygame.time.get_ticks()
             self.state = "hurt"
             self.current_animation = "hurt"
-            print(f"Triggering hurt state, Health: {self.health}")  # Debug
 
     def is_dead(self):
         """Returns True if the player's health has dropped to 0."""
@@ -153,14 +147,12 @@ class Player(DynamicObject):
         super().update()
         # Additional player-specific logic (collision, etc.).
         if self.is_dead() and not self.is_dying:
-            print(f"Triggering death animation, Health: {self.health}")  # Debug
             self.state = "death"
             self.current_animation = "death"  # Sync current_animation with state
             self.is_dying = True
             self.change_x = 0  # Stop movement
             self.change_y = 0
             if not self.animations.get("death"):
-                print(f"No death animation found, killing sprite directly, Health: {self.health}")
                 self.kill()
 
     def shoot(self):
@@ -409,35 +401,37 @@ class Melee(NPC):
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
             if dist <= self.attack_range:
-                print("Melee attack triggered")
                 self.single_fighter.take_damage(self.attack_power)
         # ...existing code...
         super().update()
-
 class Ranged(NPC):
     """Ranged NPC uses projectile attacks."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.attack_range = 1200  # ranged attack distance
-        self.reload_time = 1000  # milliseconds between shots
+        self.reload_time = 500  # milliseconds between shots
         self.last_shot = pygame.time.get_ticks()
 
     def update(self):
         #
-        projectile = self.shoot()
-        self.projectiles.add(projectile)
-        self.all_sprites.add(projectile)
+        #print(self.can_see_the_fighter)
+        #print(self.single_fighter)
+        #
+        #projectile = self.shoot()
+        #self.projectiles.add(projectile)
+        #self.all_sprites.add(projectile)
         #
         now = pygame.time.get_ticks()
         if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
             if now - self.last_shot >= self.reload_time and self.can_see_the_fighter and dist <= self.attack_range:
-                print("Ranged attack triggered")
                 projectile = self.shoot()
+                self.projectiles.add(projectile)
+                self.all_sprites.add(projectile)
                 if self.projectiles and self.all_sprites:
-                    self.projectiles.add(projectile)
-                    self.all_sprites.add(projectile)
+                    pass
                 self.last_shot = now
+
         super().update()
 
