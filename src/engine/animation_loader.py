@@ -45,7 +45,7 @@ def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=Non
 
 def load_animations_Arcane_Archer(path, frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
-    """ "walk", "death" , "shoot" """
+    """ "walk", "death" , "shoot" , "idle" """
     animations = {} # output
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
@@ -95,6 +95,20 @@ def load_animations_Arcane_Archer(path, frame_width, frame_height, colorkey=None
                 frame.set_colorkey(colorkey)
             frames.append(frame)
     animations["shoot"] = frames
+################################################################
+    frames = []  # replaced frames.clear() with new list
+    for x in range(0, sheet_rect.width - frame_width*4, frame_width): # first row is ""
+            # Define the full frame
+            full_frame = pygame.Rect(x, frame_height*5, frame_width, frame_height)
+            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
+            crop_rect = pygame.Rect(x + crop_x, frame_height*5 + crop_y, crop_width, crop_height)
+            frame = sheet.subsurface(crop_rect)
+            if scale != 1:
+                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
+            if colorkey is not None:
+                frame.set_colorkey(colorkey)
+            frames.append(frame)
+    animations["idle"] = frames
 ################################################################
     return animations
 

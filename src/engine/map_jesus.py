@@ -37,7 +37,6 @@ static_platform3 = Platform(0, config.SCENE_HEIGHT - 20,
                            1200, 20, 
                            color=(139, 140, 78))
 
-# MovingPlatform moves horizontally within a given range and speed
 moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                  config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 
@@ -47,9 +46,6 @@ fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platform
                    animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64,scale=1))
 #fighter2 = Fighter(650, 450, 32, 32,platforms=platforms,controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP}, animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
 
-# Existing enemy instance
-           
-# New enemy variants using added classes
 melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                     speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                     all_sprites=all_sprites, fighter=fighter1,
@@ -73,9 +69,7 @@ enemies.add(ranged_enemy,melee_enemy)
 fighters.add(fighter1)
 
 def draw_background():
-    scene.fill((0, 0, 0))
-    #scene.blit(background, (0, 0))
-    
+    scene.fill((0, 0, 0))    
     scene.blit(background2, (config.SCENE_WIDTH/2, 0))
     scene.blit(background3, (config.SCENE_WIDTH/4, 0))
     scene.blit(background4, (config.SCENE_WIDTH*3/4, 0))
