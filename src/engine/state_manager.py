@@ -28,6 +28,8 @@ class StateManager:
         self.last_click_time = 0
         # Load click sound
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
+        # Load menu music (only load once)
+        pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
 
     def handle_event(self, event, current_time, scale):
         """Handle events for the current state."""
@@ -43,4 +45,10 @@ class StateManager:
 
     def change_state(self, new_state):
         """Change the current game state."""
+        previous_state = self.game_state
         self.game_state = new_state
+        # Manage music based on state
+        if new_state != config.GAME_STATE_PLAYING and (previous_state == config.GAME_STATE_PLAYING or not pygame.mixer.music.get_busy()):
+            pygame.mixer.music.play(-1)  # Play menu music in loop when leaving PlayingState or if not playing
+        elif new_state == config.GAME_STATE_PLAYING and pygame.mixer.music.get_busy():
+            pygame.mixer.music.stop()  # Stop menu music when entering PlayingState
