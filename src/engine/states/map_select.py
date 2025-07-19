@@ -33,26 +33,31 @@ class MapSelectState:
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
                                             self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_map1_button.collidepoint(event.pos):
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.current_map = "map1"
                 state_manager.change_state(config.GAME_STATE_FIGHTER_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_map2_button.collidepoint(event.pos):
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.current_map = "map_levels"
                 state_manager.change_state(config.GAME_STATE_FIGHTER_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_map3_button.collidepoint(event.pos):
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.current_map = "map_jesus"
                 state_manager.change_state(config.GAME_STATE_FIGHTER_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_map4_button.collidepoint(event.pos):
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.current_map = "map4"
                 state_manager.change_state(config.GAME_STATE_FIGHTER_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_back_button.collidepoint(event.pos):  # Back to mode select
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.change_state(config.GAME_STATE_MODE_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
