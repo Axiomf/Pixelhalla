@@ -169,7 +169,7 @@ class Player(DynamicObject):
         # Adjust projectile starting position to account for smaller fighter size
         offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
         return Projectile(self.rect.centerx + offset_x, 
-                         self.rect.centery-200, 
+                         self.rect.centery, 
                          velocity=(velocity_x, 0),  # Only horizontal movement
                          damage=self.damage,
                          image_path="src/assets/images/inused_single_images/bullet.png", 

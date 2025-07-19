@@ -1,6 +1,6 @@
 import pygame
 import config
-from src.engine.dynamic_objects import DynamicObject, Projectile, Player, PowerUp, NPC
+from src.engine.dynamic_objects import *
 from src.engine.states.base_state import BaseState
 
 class PlayingState(BaseState):
@@ -72,19 +72,25 @@ class PlayingState(BaseState):
             if isinstance(sprite, DynamicObject):
                 sprite.handle_platform_collision(self.platforms)
             if isinstance(sprite, Projectile):
-                hit_enemies = pygame.sprite.spritecollide(sprite, self.enemies, False)
-                if hit_enemies:
-                    for enemy in hit_enemies:
-                        enemy.take_damage(sprite.damage)
-                        sprite.kill()
-                hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
-                for fighter in hit_fighters:
-                    if fighter != sprite.owner:  # Prevent projectile from damaging its owner
-                        fighter.take_damage(sprite.damage)
-                        sprite.kill()
-                hit_platforms = pygame.sprite.spritecollide(sprite, self.platforms, False)
-                for platform in hit_platforms:
-                    sprite.kill()
+                if isinstance(sprite.owner, Fighter):
+                    hit_enemies = pygame.sprite.spritecollide(sprite, self.enemies, False)
+                    if hit_enemies:
+                        for enemy in hit_enemies:
+                            enemy.take_damage(sprite.damage)
+                            sprite.kill()
+
+                    hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
+                    if hit_fighters:
+                        for fighter in hit_fighters:
+                            if fighter != sprite.owner:  # Prevent projectile from damaging its owner
+                                fighter.take_damage(sprite.damage)
+                                sprite.kill()
+                else:# it is a projectile of an enemy
+                    hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
+                    if hit_fighters:
+                        for fighter in hit_fighters:
+                            fighter.take_damage(sprite.damage)
+                            sprite.kill()           
             if isinstance(sprite, PowerUp):
                 hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
                 if hit_fighters:
