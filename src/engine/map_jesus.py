@@ -63,7 +63,7 @@ powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=1
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2, ranged_enemy,melee_enemy)
+all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2,powerup3, ranged_enemy,melee_enemy)
 platforms.add(moving_platform, static_platform3)
 enemies.add(ranged_enemy,melee_enemy)
 fighters.add(fighter1)
