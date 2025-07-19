@@ -394,14 +394,18 @@ class Melee(NPC):
         super().__init__(*args, **kwargs)
         self.attack_range = 40  # custom melee range
         self.attack_power = self.damage  # melee uses base damage
+        self.last_attack_time = 0  # Time of the last attack
+        self.attack_cooldown = 3000  # 5 seconds cooldown in milliseconds
 
     def update(self):
-        # Added melee attack logic: if fighter is within range, attack
+        # Added melee attack logic: if fighter is within range and cooldown is over, attack
         if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
-            if dist <= self.attack_range:
+            now = pygame.time.get_ticks()
+            if dist <= self.attack_range and now - self.last_attack_time >= self.attack_cooldown:
                 self.single_fighter.take_damage(self.attack_power)
+                self.last_attack_time = now
         # ...existing code...
         super().update()
 class Ranged(NPC):
