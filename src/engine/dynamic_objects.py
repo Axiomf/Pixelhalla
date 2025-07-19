@@ -394,3 +394,56 @@ class NPC(Player):
         #     self.projectiles.add(projectile)
         #     self.all_sprites.add(projectile)
         super().update()
+
+# Derived NPC variants
+
+class Melee(NPC):
+    """Melee NPC uses close combat attacks."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attack_range = 40  # custom melee range
+        self.attack_power = self.damage  # melee uses base damage
+
+    def update(self):
+        # ...existing code and melee-specific behavior...
+        super().update()
+        # e.g., melee attack logic (placeholder)
+        # print("Melee NPC attack executed")
+
+class Ranged(NPC):
+    """Ranged NPC uses projectile attacks."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attack_range = 200  # ranged attack distance
+        self.reload_time = 1000  # milliseconds between shots
+        self.last_shot = pygame.time.get_ticks()
+
+    def update(self):
+        # ...existing code and ranged-specific behavior...
+        now = pygame.time.get_ticks()
+        if now - self.last_shot >= self.reload_time and self.can_see_the_fighter:
+            projectile = self.shoot()
+            if self.projectiles and self.all_sprites:
+                self.projectiles.add(projectile)
+                self.all_sprites.add(projectile)
+            self.last_shot = now
+        super().update()
+
+class Magical(NPC):
+    """Magical NPC casts spells."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mana = 100
+        self.spell_power = self.damage  # base spell power tied to damage
+
+    def update(self):
+        # ...existing code and magical-specific behavior...
+        if self.mana >= 20 and self.can_see_the_fighter:
+            self.cast_spell()
+            self.mana -= 20
+        super().update()
+
+    def cast_spell(self):
+        # Spell casting logic (placeholder)
+        # print("Magical NPC casts a spell!")
+        pass
