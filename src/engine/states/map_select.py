@@ -10,7 +10,7 @@ class MapSelectState:
         self.button_color = (0, 128, 255)  # Blue button
         self.loading_background = pygame.image.load("src/assets/images/background/blue-preview.png").convert_alpha()
         self.loading_background = pygame.transform.scale(self.loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
-        self.map1_preview = pygame.image.load("src/assets/images/background/country-platform-preview.png").convert_alpha()
+        self.map1_preview = pygame.image.load("src/assets/images/background/map-ShorwindFishingPort.png").convert_alpha()
         self.map1_preview = pygame.transform.scale(self.map1_preview, (300, 150))
         self.map2_preview = pygame.image.load("src/assets/images/nature_3/origbig.png").convert_alpha()
         self.map2_preview = pygame.transform.scale(self.map2_preview, (300, 150))

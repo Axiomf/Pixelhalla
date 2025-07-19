@@ -39,7 +39,7 @@ fighter2 = Fighter(static_platform1.rect.x + 30, static_platform1.rect.y, 32, 32
                    animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
 
 # An enemy that patrols horizontally and bounces at screen edges
-enemy = NPC(static_platform1.rect.x + 30,  
+enemy = Melee(static_platform1.rect.x + 60,  
             static_platform1.rect.y, 30, 35,
             speed=config.NPC_SPEED, 
             platforms=platforms, 
