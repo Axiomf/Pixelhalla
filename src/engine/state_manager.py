@@ -24,6 +24,10 @@ class StateManager:
             config.GAME_STATE_FIGHTER_SELECT: FighterSelectState(scene),
             config.GAME_STATE_PLAYING: PlayingState(scene)
         }
+        self.current_map = None
+        self.last_click_time = 0
+        # Load click sound
+        self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
 
     def handle_event(self, event, current_time, scale):
         """Handle events for the current state."""

@@ -73,6 +73,7 @@ class PlayingState(BaseState):
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
                                               self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_back_button.collidepoint(event.pos):  # Back to map select
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.change_state(config.GAME_STATE_MAP_SELECT)
                 state_manager.last_click_time = current_time
                 # Reset the state by clearing sprite groups
@@ -81,6 +82,10 @@ class PlayingState(BaseState):
                 self.enemies.empty()
                 self.fighters.empty()
                 self.projectiles.empty()
+                # Stop audio when leaving playing state
+                if self.audio_playing:
+                    pygame.mixer.music.stop()
+                    self.audio_playing = False
                 pygame.event.clear()  # Clear event queue
 
     def handle_collisions(self):

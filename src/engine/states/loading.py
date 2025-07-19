@@ -19,10 +19,12 @@ class LoadingState:
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
                                             self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_start_button.collidepoint(event.pos):
+                state_manager.click_sound.play()  # Play click sound
                 state_manager.change_state(config.GAME_STATE_MODE_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_back_button.collidepoint(event.pos):  # Back button quits the game
+                state_manager.click_sound.play()  # Play click sound
                 pygame.quit()
                 exit()
 
