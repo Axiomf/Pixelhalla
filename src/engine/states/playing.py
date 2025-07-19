@@ -44,7 +44,7 @@ class PlayingState(BaseState):
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 if map_name == "map_jesus" and not self.audio_playing:
-                    pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")  # Load audio file
+                    pygame.mixer.music.load("src/assets/sounds/jesus_theme.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 if map_name == "map4" and not self.audio_playing:
