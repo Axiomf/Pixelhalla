@@ -256,7 +256,7 @@ class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
                 damage=config.NPC_DAMAGE, image_path=None, platforms=None, 
-                projectiles=None, all_sprites=None, fighter=None, animations=None):
+                projectiles=None, all_sprites=None, fighter=None, animations=None,roam=True):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.speed = speed
@@ -267,6 +267,10 @@ class NPC(Player):
         self.single_fighter = fighter
         self.can_see_the_fighter = False
         self.show_vision_line = True  # New flag to toggle vision line visibility
+
+        self.roam = roam # if it is a standing or patroling npc
+        
+
         
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
@@ -295,7 +299,7 @@ class NPC(Player):
         fighter_center = self.single_fighter.rect.center
         color = (0, 255, 0) if self.can_see_the_fighter else (255, 0, 0)
         pygame.draw.line(surface, color, npc_center, fighter_center, 2)
-        
+
     def update(self):
         # Update vision before doing other movements
         self.update_vision()
@@ -305,40 +309,51 @@ class NPC(Player):
         # Apply gravity and update vertical position
         self.calc_grav()
         self.rect.y += self.change_y
-        # Check if the NPC is on a platform
-        if self.platforms and self.change_y == 1:  # NPC is on a platform (not falling)
-            collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
-            if collided_platforms:  # If on a platform
-                for platform in collided_platforms:
-                    if self.rect.bottom == platform.rect.top + 1:
-                        if self.rect.right >= platform.rect.right and self.change_x > 0:  # At right edge, moving right
-                            self.change_x *= -1  # Reverse direction
-                        elif self.rect.left <= platform.rect.left and self.change_x < 0:  # At left edge, moving left
-                            self.change_x *= -1  # Reverse direction
-                    else:
-                        if self.rect.right >= platform.rect.left and self.change_x > 0:  # At right edge, moving right
-                            self.change_x *= -1  # Reverse direction
-                        elif self.rect.left <= platform.rect.right and self.change_x < 0:  # At left edge, moving left
-                            self.change_x *= -1  # Reverse direction
+        if self.roam:
+            # Check if the NPC is on a platform
+            if self.platforms and self.change_y == 1:  # NPC is on a platform (not falling)
+                collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
+                if collided_platforms:  # If on a platform
+                    for platform in collided_platforms:
+                        if self.rect.bottom == platform.rect.top + 1:
+                            if self.rect.right >= platform.rect.right and self.change_x > 0:  # At right edge, moving right
+                                self.change_x *= -1  # Reverse direction
+                            elif self.rect.left <= platform.rect.left and self.change_x < 0:  # At left edge, moving left
+                                self.change_x *= -1  # Reverse direction
+                        else:
+                            if self.rect.right >= platform.rect.left and self.change_x > 0:  # At right edge, moving right
+                                self.change_x *= -1  # Reverse direction
+                            elif self.rect.left <= platform.rect.right and self.change_x < 0:  # At left edge, moving left
+                                self.change_x *= -1  # Reverse direction
+                else:
+                    # If not on a platform, check scene boundaries
+                    if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
+                        self.change_x *= -1
             else:
-                # If not on a platform, check scene boundaries
+                # If falling, check scene boundaries
                 if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
                     self.change_x *= -1
-        else:
-            # If falling, check scene boundaries
-            if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
-                self.change_x *= -1
 
-        # Update facing direction based on movement
+            # Update facing direction based on movement
+            self.facing_right = self.change_x > 0
+
+            # Update the image based on direction
+            if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
+                if self.original_image:  # Only flip if original_image exists
+                    self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+
+            # Update horizontal position
+            self.rect.x += self.change_x
+        else:
+            self.change_x = 0
+            # NPC remains stationary
+        
         self.facing_right = self.change_x > 0
 
         # Update the image based on direction
         if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
             if self.original_image:  # Only flip if original_image exists
                 self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
-
-        # Update horizontal position
-        self.rect.x += self.change_x
 
         super().update()
 
