@@ -471,7 +471,7 @@ class NPC(Player):
         self.rect.y += self.change_y
         if self.roam:
             # Check if the NPC is on a platform
-            if self.platforms and self.change_y == 1:  # NPC is on a platform (not falling)
+            if self.platforms and self.change_y <= 1:  # NPC is on a platform (not falling)
                 collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
                 if collided_platforms:  # If on a platform
                     for platform in collided_platforms:
