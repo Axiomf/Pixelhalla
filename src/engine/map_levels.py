@@ -42,18 +42,16 @@ fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platform
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    animations=load_animations_Arcane_Archer(64, 64,scale=1))
 
-support = Eye(900, config.SCENE_HEIGHT*3/5 - 200
-            ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=platforms)
 
-death_bomb = Suicide_Bomb(900, config.SCENE_HEIGHT*3/5 - 300
+death_bomb = Suicide_Bomb(500, config.SCENE_HEIGHT*3/5 - 300
                           , speed=1, health=50, 
                  damage=20, platforms=platforms, projectiles=projectiles, 
                  all_sprites=all_sprites, fighter=fighter1, animations=load_animations_Suicide_Bomber(), roam=True)
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform, static_right_platform,  fighter1, death_bomb,support)
+all_sprites.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform, static_right_platform,  fighter1, death_bomb)
 platforms.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform,static_right_platform)
-enemies.add(death_bomb,support)
+enemies.add(death_bomb)
 fighters.add(fighter1)
 
 def draw_background():

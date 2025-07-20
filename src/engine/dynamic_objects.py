@@ -426,7 +426,7 @@ class Melee(NPC):
     
 
     def update(self):
-        # Added melee attack logic: if fighter is within range and cooldown is over, attack
+        # Added melee attack logic: if fighter is within range and cooldown has passed, attack
         if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
@@ -585,6 +585,36 @@ class Fighter(Player):
                          image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
     
+
+class Medusa(Melee):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set freeze duration in milliseconds (example: 3000ms = 3 seconds)
+        self.freeze_duration = 3000
+
+    def update(self):
+        # Override update to freeze the fighter instead of dealing repeated damage
+        if self.single_fighter:
+            now = pygame.time.get_ticks()
+            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+                              self.rect.centery - self.single_fighter.rect.centery)
+            if not self.is_attacking and dist <= self.attack_range and now - self.last_attack_time >= self.attack_cooldown:
+                # Freeze fighter: set freeze flag and record freeze time
+                self.single_fighter.freeze = True
+                self.single_fighter.freezed_time = now
+                self.last_attack_time = now
+
+                self.is_attacking = True
+                self.attack_start_time = now
+                self.state = "attack"
+                self.current_animation = "attack"
+                self.original_change_x = self.speed  # Save current movement speed
+                self.change_x = 0  # Stop movement during attack animation
+            elif not self.is_attacking:
+                self.change_x = self.speed if self.facing_right else -self.speed
+        # Continue with the default update behavior
+        # ...existing code...
+        super().update()
 
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.

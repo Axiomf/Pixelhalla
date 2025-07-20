@@ -44,7 +44,7 @@ def load_animations_Suicide_Bomber(frame_width = 40, frame_height = 32, colorkey
 ################################################################
     return animations
 
-def load_animations_Arcane_Archer(frame_width, frame_height, colorkey=None,
+def load_animations_Arcane_Archer(frame_width= 64, frame_height= 64, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "walk", "death" , "shoot" , "idle" """
     path = "src/assets/images/inused_sheets/Arcane_Archer.png"
@@ -276,11 +276,15 @@ def load_animations_Eye(frame_width, frame_height, colorkey=None,
 ################################################################
     return animations
 
-def load_animations_Medusa(path_list, frame_width, frame_height, colorkey=None,
+def load_animations_Medusa(frame_width=128, frame_height=128, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "idle" "hurt" "walk" "death" "attack" """
     animations = {} # output
-
+    path_list = {"idle" : "src/assets/images/inused_sheets/Medusa_purple/idle.png"
+                 ,"hurt" : "src/assets/images/inused_sheets/Medusa_purple/hurt.png"
+                 ,"walk" : "src/assets/images/inused_sheets/Medusa_purple/walk.png"
+                 ,"death" : "src/assets/images/inused_sheets/Medusa_purple/death.png"
+                 ,"attack" : "src/assets/images/inused_sheets/Medusa_purple/attack.png"}
     for action in path_list:
         sheet = pygame.image.load(path_list[action]).convert_alpha()
         sheet_rect = sheet.get_rect()
