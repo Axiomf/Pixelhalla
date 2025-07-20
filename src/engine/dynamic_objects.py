@@ -21,6 +21,7 @@ class DynamicObject(GameObject):
         self.hurt_start_time = 0  # Time when hurt animation started
         self.hurt_duration = 1000  # Duration of hurt animation in ms (1 second)
         self.original_change_x = 0  # Store original horizontal velocity
+        self.last_hurt_time = 0  # Track the last time hurt occurred
 
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image.
@@ -118,12 +119,16 @@ class Player(DynamicObject):
         if self.health < 0:
             self.health = 0  # Ensure health doesn't go negative
         if self.health > 0 and not self.is_dying:  # If not dead, trigger hurt state
-            self.is_hurting = True
-            self.hurt_start_time = pygame.time.get_ticks()
-            self.state = "hurt"
-            self.current_animation = "hurt"
-            self.original_change_x = self.change_x  # Save original movement
-            self.change_x = 0  # Stop movement during hurt animation
+            now = pygame.time.get_ticks()
+            # Only start new hurt animation if enough time has passed since last hurt
+            if not self.is_hurting or (now - self.last_hurt_time > 500):  # 500ms cooldown
+                self.is_hurting = True
+                self.hurt_start_time = now
+                self.state = "hurt"
+                self.current_animation = "hurt"
+                self.original_change_x = self.change_x  # Save original movement
+                self.change_x = 0  # Stop movement during hurt animation
+            self.last_hurt_time = now  # Update last hurt time
 
     def is_dead(self):
         """Returns True if the player's health has dropped to 0."""
@@ -166,6 +171,7 @@ class Player(DynamicObject):
                          owner=self)
     
     def update_animation(self):
+        print(self.rect.x, self.animations.keys())
         # If currently playing shoot animation, handle it separately.
         if self.current_animation == "shoot":
             now = pygame.time.get_ticks()
