@@ -1,8 +1,9 @@
 import pygame
 import config
 from .base import GameObject
-import math  # added for distance calculations
-# "animations" is a dictionary with keys of states and values of coresponding frames in order 
+import math  # Added for distance calculations
+
+# "animations" is a dictionary with keys of states and values of corresponding frames in order
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
     def __init__(self, x, y, width, height, color=None, image_path=None, animations=None):
@@ -14,7 +15,7 @@ class DynamicObject(GameObject):
         self.animations = animations if animations is not None else {}
         self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
         self.current_frame = 0
-        self.animation_speeds = {"idle": 75, "death": 200, "walk": 75, "hurt": 200, "shoot":100}  # ms per frame
+        self.animation_speeds = {"idle": 75, "death": 200, "walk": 75, "hurt": 200, "shoot": 100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
         self.is_dying = False  # New flag to track death animation
         self.is_hurting = False  # New flag to track hurt animation
@@ -22,9 +23,13 @@ class DynamicObject(GameObject):
         self.hurt_duration = 1000  # Duration of hurt animation in ms (1 second)
         self.original_change_x = 0  # Store original horizontal velocity
         self.last_hurt_time = 0  # Track the last time hurt occurred
+        self.is_shooting = False
+        self.shoot_start_time = 0
+        self.shoot_duration = 500  # Duration of shoot animation in ms
+        self.last_shoot_time = 0  # Track the last time shoot occurred
 
     def _cycle_frame(self):
-        # Advance to the next frame and update the sprite image.
+        # Advance to the next frame and update the sprite image
         self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
         self.image = self.animations[self.current_animation][self.current_frame]
         if hasattr(self, "facing_right"):
@@ -34,12 +39,13 @@ class DynamicObject(GameObject):
         # Retrieve the current time for animation timing
         now = pygame.time.get_ticks()
         frame_duration = self.animation_speeds.get(self.current_animation, 100)
-        # Only cycle frames here.
+        # Only cycle frames here
         if self.animations.get(self.current_animation) and now - self.last_update > frame_duration:
             self.last_update = now
             self._cycle_frame()
-        # Hurt state handling is checked each update regardless of frame timing.
+        # Hurt and shoot state handling is checked each update regardless of frame timing
         self._handle_hurt_animation(now)
+        self._handle_shoot_animation(now)
         # Debug: Check if hurt frames are loaded
         if self.current_animation == "hurt" and hasattr(self, "animations"):
             if "hurt" in self.animations:
@@ -48,8 +54,8 @@ class DynamicObject(GameObject):
                 print(f"No hurt animation frames loaded for object at position {self.rect.x}")
 
     def update_state(self):
-        # Only update the state if not currently in a death or hurt animation, unless hurt is active
-        if not self.is_hurting and (not hasattr(self, 'is_dying') or not self.is_dying):
+        # Only update the state if not currently in a death, hurt, or shoot animation
+        if not self.is_hurting and not self.is_shooting and (not hasattr(self, 'is_dying') or not self.is_dying):
             # Determine state based on vertical and horizontal velocities
             if self.change_y >= 5:
                 self.state = "falling"  # Falling when vertical speed is high
@@ -60,6 +66,8 @@ class DynamicObject(GameObject):
             # Synchronize the current animation with the determined state if available
         if self.is_hurting and "hurt" in self.animations:
             self.state = "hurt"
+        if self.is_shooting and "shoot" in self.animations:
+            self.state = "shoot"
         if self.state in self.animations:
             self.current_animation = self.state
 
@@ -71,7 +79,7 @@ class DynamicObject(GameObject):
         self.update_animation()
     
     def calc_grav(self):
-        # Basic gravity simulation: if not already falling, start falling.
+        # Basic gravity simulation: if not already falling, start falling
         if self.change_y == 0:
             self.change_y = 1
         else:
@@ -85,15 +93,23 @@ class DynamicObject(GameObject):
         """
         collided_platforms = pygame.sprite.spritecollide(self, platforms, False)
         for platform in collided_platforms:
-            # Only resolve collision if falling downward.
+            # Only resolve collision if falling downward
             if self.change_y > 0:
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
     def _handle_hurt_animation(self, now):
-        # If hurt duration has passed, reset hurt state.
+        # If hurt duration has passed, reset hurt state
         if self.is_hurting and now - self.hurt_start_time >= self.hurt_duration:
             self.is_hurting = False
+            self.change_x = self.original_change_x  # Restore original movement
+            self.state = "walk" if self.change_x != 0 else "idle"
+            self.current_animation = self.state
+
+    def _handle_shoot_animation(self, now):
+        # If shoot duration has passed, reset shoot state
+        if self.is_shooting and now - self.shoot_start_time >= self.shoot_duration:
+            self.is_shooting = False
             self.change_x = self.original_change_x  # Restore original movement
             self.state = "walk" if self.change_x != 0 else "idle"
             self.current_animation = self.state
@@ -108,8 +124,6 @@ class Player(DynamicObject):
         self.facing_right = True
         self.shield = False
         # Added shooting state attributes
-        self.is_shooting = False
-        self.shoot_triggered = False
 
     def take_damage(self, amount):
         if self.shield:
@@ -137,6 +151,9 @@ class Player(DynamicObject):
     def is_hurt(self):
         return self.health > 0 and not self.is_dying
 
+    def is_shoot(self):
+        return not self.is_dying and not self.is_hurting
+
     def draw_health_bar(self, surface):
         """Draws a health bar above the player based on current health."""
         # Health bar dimensions
@@ -154,13 +171,23 @@ class Player(DynamicObject):
         pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
     
     def _handle_death_animation(self):
-        # If death animation is playing and the current frame cycle resets, remove the sprite.
+        # If death animation is playing and the current frame cycle resets, remove the sprite
         if self.is_dying and self.current_frame == 0 and len(self.animations[self.current_animation]) > 1:
             self.kill()
 
     def shoot(self):
         """Creates a projectile moving in the direction the player is facing."""
-        velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
+        if self.is_shoot():
+            now = pygame.time.get_ticks()
+            if not self.is_shooting or (now - self.last_shoot_time > 500):  # 500ms cooldown
+                self.is_shooting = True
+                self.shoot_start_time = now
+                self.state = "shoot"
+                self.current_animation = "shoot"
+                self.original_change_x = self.change_x  # Save original movement
+                self.change_x = 0  # Stop movement during shoot animation
+            self.last_shoot_time = now  # Update last shoot time
+        velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1) * config.PROJECTILE_SPEED
         # Adjust projectile starting position to account for smaller fighter size
         offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
         return Projectile(self.rect.centerx + offset_x, 
@@ -171,41 +198,22 @@ class Player(DynamicObject):
                          owner=self)
     
     def update_animation(self):
-        print(self.rect.x, self.animations.keys())
-        # If currently playing shoot animation, handle it separately.
-        if self.current_animation == "shoot":
-            now = pygame.time.get_ticks()
-            frame_duration = self.animation_speeds.get("shoot", 100)
-            if now - self.last_update > frame_duration:
-                self.last_update = now
-                if self.current_frame < len(self.animations.get("shoot", [])) - 1:
-                    self.current_frame += 1
-                    self.image = self.animations["shoot"][self.current_frame]
-                else:
-                    if not self.shoot_triggered:
-                        projectile = self._spawn_projectile()
-                        # Optionally add the projectile to relevant groups here.
-                        self.shoot_triggered = True
-                    self.is_shooting = False
-                    self.state = "idle"
-                    self.current_animation = "idle"
-                    self.current_frame = 0
-            return
         # Retrieve the current time for animation timing
         now = pygame.time.get_ticks()
         frame_duration = self.animation_speeds.get(self.current_animation, 100)
-        # Cycle frames just as in the parent.
+        # Cycle frames just as in the parent
         if self.animations.get(self.current_animation) and now - self.last_update > frame_duration:
             self.last_update = now
             self._cycle_frame()
             self._handle_death_animation()
-        # Hurt state handling is checked each update regardless of frame timing.
+        # Hurt and shoot state handling is checked each update regardless of frame timing
         self._handle_hurt_animation(now)
+        self._handle_shoot_animation(now)
 
     def update(self):
-        # Call DynamicObject's update to apply gravity and movement.
+        # Call DynamicObject's update to apply gravity and movement
         super().update()
-        # Additional player-specific logic (collision, etc.).
+        # Additional player-specific logic (collision, etc.)
         if self.is_dead() and not self.is_dying:
             self.state = "death"
             self.current_animation = "death"  # Sync current_animation with state
@@ -237,7 +245,7 @@ class NPC(Player):
             self.original_image.fill(color)
 
     def update_vision(self):
-        # Calculate vision: check if the imaginary line between NPC and fighter collides with any platform.
+        # Calculate vision: check if the imaginary line between NPC and fighter collides with any platform
         if not self.single_fighter or not self.platforms:
             self.can_see_the_fighter = False
             return
@@ -251,7 +259,7 @@ class NPC(Player):
         self.can_see_the_fighter = not collision
 
     def draw_vision_line(self, surface):
-        # Draw the vision line only if show_vision_line is True.
+        # Draw the vision line only if show_vision_line is True
         if not self.single_fighter or not self.show_vision_line:
             return
         npc_center = self.rect.center
@@ -260,7 +268,7 @@ class NPC(Player):
         pygame.draw.line(surface, color, npc_center, fighter_center, 2)
         
     def update(self):
-        # Update vision before doing other movements.
+        # Update vision before doing other movements
         self.update_vision()
         # Track previous direction to detect changes
         previous_facing = self.facing_right
@@ -314,20 +322,28 @@ class Ranged(NPC):
     """Ranged NPC uses projectile attacks."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attack_range = 1200  # ranged attack distance
-        self.reload_time = 500  # milliseconds between shots
+        self.attack_range = 100  # Ranged attack distance
+        self.reload_time = 3000  # Milliseconds between shots
         self.last_shot = pygame.time.get_ticks()
 
     def update(self):
+        print(self.change_x)
         now = pygame.time.get_ticks()
         if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
-            if now - self.last_shot >= self.reload_time and self.can_see_the_fighter and dist <= self.attack_range:
+            if not self.is_shooting and now - self.last_shot >= self.reload_time and self.can_see_the_fighter and dist <= self.attack_range:
+                self.is_shooting = True
+                self.shoot_start_time = now
+                self.state = "shoot"
+                self.current_animation = "shoot"
+                self.original_change_x = self.speed  # Save original movement speed
+                self.change_x = 0  # Stop movement during shoot animation
                 projectile = self.shoot()
                 self.projectiles.add(projectile)
                 self.all_sprites.add(projectile)
                 self.last_shot = now
+                self.last_shoot_time = now  # Update last shoot time
 
         super().update()
 
@@ -341,22 +357,22 @@ class Projectile(DynamicObject):
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
         self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
-        # For projectiles we typically do not use the standard gravity unless needed.
+        # For projectiles we typically do not use the standard gravity unless needed
         if not self.use_gravity:
             self.change_y = 0  
 
     def update(self):
-        # Move based on fixed velocity.
+        # Move based on fixed velocity
         self.rect.x += self.velocity_x
         self.rect.y += self.velocity_y
-        # Optionally apply gravity.
+        # Optionally apply gravity
         if self.use_gravity:
             self.calc_grav()
             self.rect.y += self.change_y
 
 class PowerUp(DynamicObject):
-    """A projectile that moves with a fixed velocity.
-       Optionally, it can be affected by gravity (e.g., for arrows)."""
+    """A power-up that moves with a fixed velocity.
+       Optionally, it can be affected by gravity."""
     def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), animations=None):
         super().__init__(x, y, width, height, color, animations)
         self.upgrade_type = type
@@ -365,7 +381,7 @@ class PowerUp(DynamicObject):
         self.use_gravity = False
         
     def update(self):
-        # Optionally apply gravity.
+        # Optionally apply gravity
         if self.use_gravity:
             self.calc_grav()
             self.rect.y += self.change_y
@@ -474,15 +490,15 @@ class Fighter(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
-# Derived NPC variants
+
 class Melee(NPC):
     """Melee NPC uses close combat attacks."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attack_range = 40  # custom melee range
-        self.attack_power = self.damage  # melee uses base damage
+        self.attack_range = 40  # Custom melee range
+        self.attack_power = self.damage  # Melee uses base damage
         self.last_attack_time = 0  # Time of the last attack
-        self.attack_cooldown = 3000  # 5 seconds cooldown in milliseconds
+        self.attack_cooldown = 3000  # 3 seconds cooldown in milliseconds
 
     def update(self):
         # Added melee attack logic: if fighter is within range and cooldown is over, attack
@@ -493,5 +509,4 @@ class Melee(NPC):
             if dist <= self.attack_range and now - self.last_attack_time >= self.attack_cooldown:
                 self.single_fighter.take_damage(self.attack_power)
                 self.last_attack_time = now
-        # ...existing code...
         super().update()
