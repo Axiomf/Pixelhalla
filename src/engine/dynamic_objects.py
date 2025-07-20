@@ -303,7 +303,9 @@ class NPC(Player):
     def update(self):
         # Update vision before doing other movements
         self.update_vision()
-        # Track previous direction to detect changes
+        # Initially, if the fighter is visible, face towards the fighter.
+        if self.single_fighter and self.can_see_the_fighter:
+            self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
         previous_facing = self.facing_right
 
         # Apply gravity and update vertical position
@@ -348,9 +350,11 @@ class NPC(Player):
             self.change_x = 0
             # NPC remains stationary
         
-        self.facing_right = self.change_x > 0
+        # Enforce fighter-facing if visible; otherwise, base on movement
+        if not (self.single_fighter and self.can_see_the_fighter):
+            self.facing_right = self.change_x > 0
 
-        # Update the image based on direction
+        # Update image flipping if facing changed
         if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
             if self.original_image:  # Only flip if original_image exists
                 self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
