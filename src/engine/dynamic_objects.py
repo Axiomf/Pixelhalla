@@ -98,9 +98,6 @@ class DynamicObject(GameObject):
             self.freezed_time = 0 
 
         self.calc_grav()  # Adjust vertical velocity due to gravity
-        if self.freeze:
-            self.change_x = 0
-            self.change_y = 0
         self.rect.x += self.change_x  # Update horizontal position
         self.rect.y += self.change_y  # Update vertical position
         self.update_state()
@@ -168,8 +165,6 @@ class Player(DynamicObject):
         self.shield = False
         # Added shooting state attributes
 
-        
-
     def take_damage(self, amount):
         if self.shield:
             return
@@ -198,6 +193,7 @@ class Player(DynamicObject):
 
     def is_shoot(self):
         return not self.is_dying and not self.is_hurting
+    
     def is_attack(self):
         return not self.is_dying and not self.is_hurting
 
@@ -243,7 +239,6 @@ class Player(DynamicObject):
                          damage=self.damage,
                          image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
-    
     
     def attack(self):
         if self.is_attack():
@@ -344,27 +339,31 @@ class Fighter(Player):
 
     def update(self):
         self.check_power_up()
-        keys = pygame.key.get_pressed()  # Get the state of keyboard keys
-        # Track previous direction to detect changes
-        previous_facing = self.facing_right
 
-        # Move left if the assigned 'left' key is pressed
-        if self.controls.get("left") and keys[self.controls["left"]]:
-            self.change_x = (-1) * self.speed
-            self.facing_right = False  # Face left
-        # Move right if the assigned 'right' key is pressed
-        elif self.controls.get("right") and keys[self.controls["right"]]:
-            self.change_x = self.speed
-            self.facing_right = True  # Face right
-        else:
-            self.change_x = 0  # Stop horizontal movement if no keys are pressed
+        if not self.freeze:
+            keys = pygame.key.get_pressed()  # Get the state of keyboard keys
+            # Track previous direction to detect changes
+            previous_facing = self.facing_right
+            # Move left if the assigned 'left' key is pressed
+            if self.controls.get("left") and keys[self.controls["left"]]:
+                self.change_x = (-1) * self.speed
+                self.facing_right = False  # Face left
+            # Move right if the assigned 'right' key is pressed
+            elif self.controls.get("right") and keys[self.controls["right"]]:
+                self.change_x = self.speed
+                self.facing_right = True  # Face right
+            else:
+                self.change_x = 0  # Stop horizontal movement if no keys are pressed
+            # Initiate jump if the 'jump' key is pressed (only if on the ground)
+            if self.controls.get("jump") and keys[self.controls["jump"]]:
+                if self.change_y == 0:  # Simplistic ground check
+                    self.change_y = self.jump_strength
+            # Update the image based on direction
+            if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
+                if self.original_image:  # Only flip if original_image exists
+                    self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
-        # Initiate jump if the 'jump' key is pressed (only if on the ground)
-        if self.controls.get("jump") and keys[self.controls["jump"]]:
-            if self.change_y == 0:  # Simplistic ground check
-                self.change_y = self.jump_strength
-
-        # Check for horizontal collisions with platforms
+        #@@@@@@@ Check for horizontal collisions with platforms
         if self.platforms:
             self.rect.x += self.change_x
             collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
@@ -382,19 +381,13 @@ class Fighter(Player):
                 if self.change_y < 0 and self.rect.top < platform.rect.bottom:  # Moving up, hit bottom of platform
                     self.rect.top = platform.rect.bottom
                     self.change_y = 0
-
-        # Check for scene boundaries
+        #@@@@@@@ Check for scene boundaries
         if self.rect.right + self.change_x > config.SCENE_WIDTH:
             self.rect.right = config.SCENE_WIDTH
             self.change_x = 0
         elif self.rect.left + self.change_x < 0:
             self.rect.left = 0
             self.change_x = 0
-
-        # Update the image based on direction
-        if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
-            if self.original_image:  # Only flip if original_image exists
-                self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
         # Call the parent's update to apply gravity and update movement
         super().update()
@@ -677,7 +670,7 @@ class Medusa(Melee):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Set freeze duration in milliseconds (example: 3000ms = 3 seconds)
-        self.freeze_duration = 2000
+        self.freeze_duration = 10000
 
     def update(self):
         # Override update to freeze the fighter instead of dealing repeated damage
