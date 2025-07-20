@@ -93,8 +93,8 @@ class DynamicObject(GameObject):
         self.update_animation()
 
         
-        if not self.change_y==0:
-            print(self.change_y)
+        #if not self.change_y==0:
+            #print(self.change_y)
     
     def calc_grav(self):
         # Basic gravity simulation: if not already falling, start falling
@@ -229,6 +229,8 @@ class Player(DynamicObject):
                          damage=self.damage,
                          image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
+    
+    
     def attack(self):
         if self.is_attack():
             now = pygame.time.get_ticks()
@@ -461,6 +463,10 @@ class Fighter(Player):
         self.started_powerup = 0
         self.powered_up_type = ""
         self.powered_up_amount = 0
+
+        self.supershot = False
+        self.supershot_amount = 1
+
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
@@ -476,6 +482,10 @@ class Fighter(Player):
             self.jump_strength -= amount
         elif type == "shield":
             self.shield = True
+        elif type == "supershot":
+            self.supershot = True
+            self.supershot_amount += amount 
+        
         self.powered = True
         self.powered_up_type = type
 
@@ -553,6 +563,29 @@ class Fighter(Player):
         # Call the parent's update to apply gravity and update movement
         super().update()
 
+    def shoot(self):
+        """Creates a projectile moving in the direction the player is facing."""
+        if self.is_shoot():
+            now = pygame.time.get_ticks()
+            if not self.is_shooting or (now - self.last_shoot_time > 500):  # 500ms cooldown
+                self.is_shooting = True
+                self.shoot_start_time = now
+                self.state = "shoot"
+                self.current_animation = "shoot"
+                self.original_change_x = self.change_x  # Save original movement
+                self.change_x = 0  # Stop movement during shoot animation
+            self.last_shoot_time = now  # Update last shoot time
+        velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1) * config.PROJECTILE_SPEED
+        # Adjust projectile starting position to account for smaller fighter size
+        offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
+        return Projectile(self.rect.centerx + offset_x, 
+                         self.rect.centery, 
+                         velocity=(velocity_x *self.supershot_amount , 0),  # Only horizontal movement
+                         damage=self.damage,
+                         image_path="src/assets/images/inused_single_images/bullet.png", 
+                         owner=self)
+    
+
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
@@ -601,7 +634,7 @@ class Eye(NPC):
         super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms, animations=animations,roam=False)
         self.vision_increase = 100000  # Boost value to add to all NPCs' vision distance
         self.facing_right = True  # Can be set as needed
-
+        self.exploded = False
     def update(self):
         # While alive, set the global vision boost.
         NPC.vision_boost = self.vision_increase
@@ -617,28 +650,34 @@ class Eye(NPC):
 class Suicide_Bomb(NPC):
     """A NPC that patrols until it sees the fighter, then chases and explodes when close enough."""
     def __init__(self, x, y, width=40, height=32, color=None, speed=0.3, health=50, 
-                 damage=0, image_path=None, platforms=None, projectiles=None, 
+                 damage=20, image_path=None, platforms=None, projectiles=None, 
                  all_sprites=None, fighter=None, animations=None, roam=True):
         super().__init__(x, y, width, height, color, speed, health, damage, image_path, 
                          platforms=platforms, projectiles=projectiles, all_sprites=all_sprites, 
                          fighter=fighter, animations=animations, roam=roam)
         self.explosion_range = 50  # Distance threshold to trigger explosion
-        self.explosion_damage = 50  # Damage dealt to the fighter upon explosion
-
+        self.explosion_damage = damage  # Damage dealt to the fighter upon explosion
+        self.exploded = False
     def update(self):
         # Update vision first
         self.update_vision()
+        if self.exploded:
+            super().update()
+            return
         if self.single_fighter and self.can_see_the_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
-            if dist <= self.explosion_range:
+            if dist <= self.explosion_range and not self.exploded:
                 # Explode: trigger death animation and damage the fighter
                 self.single_fighter.take_damage(self.explosion_damage)
+                
+                print("fighter is taking damage")
                 self.state = "death"
                 self.current_animation = "death"
                 self.is_dying = True
                 self.change_x = 0
                 self.change_y = 0
+                self.exploded = True
                 # Let update_animation handle death animation and eventual kill
                 super().update()
                 return
@@ -657,6 +696,7 @@ class Suicide_Bomb(NPC):
         # If fighter is not seen, maintain patrol behavior (using NPC's existing logic)
         # ...existing patrol logic...
         super().update()
+
 
 
 
