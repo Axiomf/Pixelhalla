@@ -3,9 +3,7 @@ from .platforms import *
 from .dynamic_objects import *
 from .base import CustomGroup
 from .animation_loader import *
-from .fighter import Fighter
-from .npc import NPC, Melee, Medusa, Ranged, Suicide_Bomb, Eye
-from .powerup import PowerUp
+
 
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Set up the main game window
 # Load a background image located in the assets folder

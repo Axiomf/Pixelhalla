@@ -1,11 +1,6 @@
 import pygame
 import config
 from src.engine.dynamic_objects import *
-from src.engine.projectile import Projectile
-from src.engine.player import Player
-from src.engine.fighter import Fighter
-from src.engine.npc import NPC
-from src.engine.powerup import PowerUp
 from src.engine.states.base_state import BaseState
 
 class PlayingState(BaseState):
@@ -70,7 +65,7 @@ class PlayingState(BaseState):
         
         if event.type == pygame.KEYDOWN:
             for fighter in self.fighters:
-                if event.key == fighter.controls.get("shoot"):
+                if event.key == fighter.controls.get("shoot") and not fighter.freeze:
                     projectile = fighter.shoot()
                     self.all_sprites.add(projectile)
                     self.projectiles.add(projectile)
