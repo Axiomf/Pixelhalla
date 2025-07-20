@@ -15,7 +15,7 @@ class DynamicObject(GameObject):
         self.animations = animations if animations is not None else {}
         self.current_animation = "idle" if "idle" in self.animations else (list(self.animations.keys())[0] if self.animations else "idle")
         self.current_frame = 0
-        self.animation_speeds = {"idle": 75, "death": 200, "walk": 75, "hurt": 200, "shoot": 100}  # ms per frame
+        self.animation_speeds = {"idle": 75, "death": 200, "walk": 75, "hurt": 200, "shoot": 100, "attack" : 100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
         self.is_dying = False  # New flag to track death animation
         self.is_hurting = False  # New flag to track hurt animation
@@ -27,6 +27,10 @@ class DynamicObject(GameObject):
         self.shoot_start_time = 0
         self.shoot_duration = 500  # Duration of shoot animation in ms, adjust based on animation length
         self.last_shoot_time = 0  # Track the last time shoot occurred
+        self.is_attacking = False
+        self.attack_start_time = 0
+        self.attack_duration = 500  # Duration of shoot animation in ms, adjust based on animation length
+        self.last_attack_time = 0  # Track the last time shoot occurred
 
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image
@@ -46,6 +50,7 @@ class DynamicObject(GameObject):
         # Hurt and shoot state handling is checked each update regardless of frame timing
         self._handle_hurt_animation(now)
         self._handle_shoot_animation(now)
+        self._handle_attack_animation(now)
         # Debug: Check if hurt frames are loaded
         if self.current_animation == "hurt" and hasattr(self, "animations"):
             if "hurt" in self.animations:
@@ -68,6 +73,8 @@ class DynamicObject(GameObject):
             self.state = "hurt"
         if self.is_shooting and "shoot" in self.animations:
             self.state = "shoot"
+        if self.is_attacking and "attack" in self.animations:
+            self.state = "attack"
         if self.state in self.animations:
             self.current_animation = self.state
 
@@ -113,6 +120,13 @@ class DynamicObject(GameObject):
             self.change_x = self.original_change_x  # Restore original movement
             self.state = "walk" if self.change_x != 0 else "idle"
             self.current_animation = self.state
+    def _handle_attack_animation(self, now):
+        # If attack duration has passed, reset attack state
+        if self.is_attacking and now - self.attack_start_time >= self.attack_duration:
+            self.is_attacking = False
+            self.change_x = self.original_change_x  # Restore original movement
+            self.state = "walk" if self.change_x != 0 else "idle"
+            self.current_animation = self.state
 
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None):
@@ -152,6 +166,8 @@ class Player(DynamicObject):
         return self.health > 0 and not self.is_dying
 
     def is_shoot(self):
+        return not self.is_dying and not self.is_hurting
+    def is_attack(self):
         return not self.is_dying and not self.is_hurting
 
     def draw_health_bar(self, surface):
@@ -196,7 +212,18 @@ class Player(DynamicObject):
                          damage=self.damage,
                          image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
-    
+    def attack(self):
+        if self.is_attack():
+            now = pygame.time.get_ticks()
+            if not self.is_attacking or (now - self.last_attack_time > 500):  # 500ms cooldown
+                self.is_attacking = True
+                self.attack_start_time = now
+                self.state = "attack"
+                self.current_animation = "attack"
+                self.original_change_x = self.change_x  # Save original movement
+                self.change_x = 0  # Stop movement during shoot animation
+            self.last_attack_time = now  # Update last shoot time
+
     def update_animation(self):
         # Retrieve the current time for animation timing
         now = pygame.time.get_ticks()
@@ -209,6 +236,7 @@ class Player(DynamicObject):
         # Hurt and shoot state handling is checked each update regardless of frame timing
         self._handle_hurt_animation(now)
         self._handle_shoot_animation(now)
+        self._handle_attack_animation(now)
 
     def update(self):
         # Call DynamicObject's update to apply gravity and movement
@@ -322,7 +350,7 @@ class Ranged(NPC):
     """Ranged NPC uses projectile attacks."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attack_range = 100  # Ranged attack distance
+        self.attack_range = 600  # Ranged attack distance
         self.reload_time = 3000  # Milliseconds between shots
         self.last_shot = pygame.time.get_ticks()
 
@@ -346,6 +374,38 @@ class Ranged(NPC):
             elif not self.is_shooting:  # Resume movement if not shooting
                 self.change_x = self.speed if self.facing_right else -self.speed
 
+        super().update()
+
+class Melee(NPC):
+    """Melee NPC uses close combat attacks."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attack_range = 40  # Custom melee range
+        self.attack_power = self.damage  # Melee uses base damage
+        self.attack_cooldown = 3000  # 3 seconds cooldown in milliseconds
+
+    def update(self):
+        # Added melee attack logic: if fighter is within range and cooldown is over, attack
+        if self.single_fighter:
+            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+                              self.rect.centery - self.single_fighter.rect.centery)
+            now = pygame.time.get_ticks()
+            if not self.is_attacking and dist <= self.attack_range and now - self.last_attack_time >= self.attack_cooldown:
+                self.single_fighter.take_damage(self.attack_power)
+                self.last_attack_time = now
+
+
+                self.is_attacking = True
+                self.attack_start_time = now
+                self.state = "attack"
+                self.current_animation = "attack"
+                self.original_change_x = self.speed  # Save original movement speed
+                self.change_x = 0  # Stop movement during shoot animation
+                self.attack()
+                self.single_fighter.take_damage(self.attack_power)
+                self.last_attack_time = now
+            elif not self.is_attacking:  # Resume movement if not shooting
+                self.change_x = self.speed if self.facing_right else -self.speed
         super().update()
 
 class Projectile(DynamicObject):
@@ -490,24 +550,4 @@ class Fighter(Player):
                 self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
         # Call the parent's update to apply gravity and update movement
-        super().update()
-
-class Melee(NPC):
-    """Melee NPC uses close combat attacks."""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.attack_range = 40  # Custom melee range
-        self.attack_power = self.damage  # Melee uses base damage
-        self.last_attack_time = 0  # Time of the last attack
-        self.attack_cooldown = 3000  # 3 seconds cooldown in milliseconds
-
-    def update(self):
-        # Added melee attack logic: if fighter is within range and cooldown is over, attack
-        if self.single_fighter:
-            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
-                              self.rect.centery - self.single_fighter.rect.centery)
-            now = pygame.time.get_ticks()
-            if dist <= self.attack_range and now - self.last_attack_time >= self.attack_cooldown:
-                self.single_fighter.take_damage(self.attack_power)
-                self.last_attack_time = now
         super().update()
