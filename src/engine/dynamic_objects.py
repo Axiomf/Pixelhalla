@@ -17,9 +17,10 @@ class DynamicObject(GameObject):
         self.animation_speeds = {"idle": 75, "death": 200, "walk": 75, "hurt": 200, "shoot":100}  # ms per frame
         self.last_update = pygame.time.get_ticks()
         self.is_dying = False  # New flag to track death animation
-        self.is_hurt = False  # New flag to track hurt animation
+        self.is_hurting = False  # New flag to track hurt animation
         self.hurt_start_time = 0  # Time when hurt animation started
-        self.hurt_duration = 500  # Duration of hurt animation in ms (0.5 seconds)
+        self.hurt_duration = 1000  # Duration of hurt animation in ms (1 second)
+        self.original_change_x = 0  # Store original horizontal velocity
 
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image.
@@ -38,10 +39,16 @@ class DynamicObject(GameObject):
             self._cycle_frame()
         # Hurt state handling is checked each update regardless of frame timing.
         self._handle_hurt_animation(now)
+        # Debug: Check if hurt frames are loaded
+        if self.current_animation == "hurt" and hasattr(self, "animations"):
+            if "hurt" in self.animations:
+                print(f"Hurt animation loaded with {len(self.animations['hurt'])} frames at position {self.rect.x}")
+            else:
+                print(f"No hurt animation frames loaded for object at position {self.rect.x}")
 
     def update_state(self):
-        # Only update the state if not currently in a death or hurt animation.
-        if not hasattr(self, 'is_dying') or not self.is_dying or not self.is_hurt:
+        # Only update the state if not currently in a death or hurt animation, unless hurt is active
+        if not self.is_hurting and (not hasattr(self, 'is_dying') or not self.is_dying):
             # Determine state based on vertical and horizontal velocities
             if self.change_y >= 5:
                 self.state = "falling"  # Falling when vertical speed is high
@@ -50,8 +57,10 @@ class DynamicObject(GameObject):
             else:
                 self.state = "idle"     # Idle otherwise
             # Synchronize the current animation with the determined state if available
-            if self.state in self.animations:
-                self.current_animation = self.state
+        if self.is_hurting and "hurt" in self.animations:
+            self.state = "hurt"
+        if self.state in self.animations:
+            self.current_animation = self.state
 
     def update(self):
         self.calc_grav()  # Adjust vertical velocity due to gravity
@@ -80,6 +89,14 @@ class DynamicObject(GameObject):
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
 
+    def _handle_hurt_animation(self, now):
+        # If hurt duration has passed, reset hurt state.
+        if self.is_hurting and now - self.hurt_start_time >= self.hurt_duration:
+            self.is_hurting = False
+            self.change_x = self.original_change_x  # Restore original movement
+            self.state = "walk" if self.change_x != 0 else "idle"
+            self.current_animation = self.state
+
 class Player(DynamicObject):
     def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None):
         # Pass animations into DynamicObject for centralized animation management
@@ -101,14 +118,19 @@ class Player(DynamicObject):
         if self.health < 0:
             self.health = 0  # Ensure health doesn't go negative
         if self.health > 0 and not self.is_dying:  # If not dead, trigger hurt state
-            self.is_hurt = True
+            self.is_hurting = True
             self.hurt_start_time = pygame.time.get_ticks()
             self.state = "hurt"
             self.current_animation = "hurt"
+            self.original_change_x = self.change_x  # Save original movement
+            self.change_x = 0  # Stop movement during hurt animation
 
     def is_dead(self):
         """Returns True if the player's health has dropped to 0."""
         return self.health <= 0
+
+    def is_hurt(self):
+        return self.health > 0 and not self.is_dying
 
     def draw_health_bar(self, surface):
         """Draws a health bar above the player based on current health."""
@@ -126,38 +148,11 @@ class Player(DynamicObject):
         pygame.draw.rect(surface, config.PLAYER_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height))  # Background
         pygame.draw.rect(surface, config.PLAYER_BAR_HEALTH_COLOR, (bar_x, bar_y, health_width, bar_height))  # Health
     
-    
     def _handle_death_animation(self):
         # If death animation is playing and the current frame cycle resets, remove the sprite.
         if self.is_dying and self.current_frame == 0 and len(self.animations[self.current_animation]) > 1:
             self.kill()
-    def _handle_hurt_animation(self, now):
-        # If hurt duration has passed, reset hurt state.
-        if self.is_hurt and now - self.hurt_start_time >= self.hurt_duration:
-            self.is_hurt = False
-            self.state = "walk" if self.change_x != 0 else "idle"
-            self.current_animation = self.state
 
-    def shoot(self):
-        """Initiates shoot animation; projectile spawns after animation completes."""
-        if not self.is_shooting:
-            self.is_shooting = True
-            self.shoot_triggered = False
-            self.current_animation = "shoot"
-            self.current_frame = 0
-            self.last_update = pygame.time.get_ticks()
-
-    def _spawn_projectile(self):
-        # Helper method to create and return a projectile
-        velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
-        offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
-        return Projectile(self.rect.centerx + offset_x, 
-                          self.rect.centery, 
-                          velocity=(velocity_x, 0),  # Only horizontal movement
-                          damage=self.damage,
-                          image_path="src/assets/images/inused_single_images/bullet.png", 
-                          owner=self)
-    
     def shoot(self):
         """Creates a projectile moving in the direction the player is facing."""
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1)*config.PROJECTILE_SPEED
@@ -214,11 +209,6 @@ class Player(DynamicObject):
             if not self.animations.get("death"):
                 self.kill()
 
-    
-
-
-
-
 class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
@@ -226,6 +216,7 @@ class NPC(Player):
                 projectiles=None, all_sprites=None, fighter=None, animations=None):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.change_x = speed  # Set initial horizontal patrol speed
+        self.speed = speed
         self.facing_right = True  # Track the direction the NPC is facing (True for right, False for left)
         self.platforms = platforms  # Store platforms group
         self.projectiles = projectiles  # Store projectiles group
@@ -312,6 +303,7 @@ class NPC(Player):
         #     self.projectiles.add(projectile)
         #     self.all_sprites.add(projectile)
         super().update()
+
 class Ranged(NPC):
     """Ranged NPC uses projectile attacks."""
     def __init__(self, *args, **kwargs):
@@ -332,6 +324,7 @@ class Ranged(NPC):
                 self.last_shot = now
 
         super().update()
+
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
@@ -354,11 +347,12 @@ class Projectile(DynamicObject):
         if self.use_gravity:
             self.calc_grav()
             self.rect.y += self.change_y
+
 class PowerUp(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
     def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), animations=None):
-        super().__init__(x, y, width, height, color,animations)
+        super().__init__(x, y, width, height, color, animations)
         self.upgrade_type = type
         self.amount = amount
         self.duration = 10
@@ -369,7 +363,7 @@ class PowerUp(DynamicObject):
         if self.use_gravity:
             self.calc_grav()
             self.rect.y += self.change_y
-# 2
+
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
                  damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, animations=None):
@@ -474,7 +468,6 @@ class Fighter(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
-
 # Derived NPC variants
 class Melee(NPC):
     """Melee NPC uses close combat attacks."""

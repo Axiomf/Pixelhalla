@@ -30,6 +30,7 @@ class StateManager:
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
         # Load menu music (only load once)
         pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+        pygame.mixer.music.play(-1)
 
     def handle_event(self, event, current_time, scale):
         """Handle events for the current state."""
