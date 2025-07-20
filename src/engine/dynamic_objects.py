@@ -25,7 +25,7 @@ class DynamicObject(GameObject):
         self.last_hurt_time = 0  # Track the last time hurt occurred
         self.is_shooting = False
         self.shoot_start_time = 0
-        self.shoot_duration = 500  # Duration of shoot animation in ms
+        self.shoot_duration = 500  # Duration of shoot animation in ms, adjust based on animation length
         self.last_shoot_time = 0  # Track the last time shoot occurred
 
     def _cycle_frame(self):
@@ -327,7 +327,6 @@ class Ranged(NPC):
         self.last_shot = pygame.time.get_ticks()
 
     def update(self):
-        print(self.change_x)
         now = pygame.time.get_ticks()
         if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
@@ -344,6 +343,8 @@ class Ranged(NPC):
                 self.all_sprites.add(projectile)
                 self.last_shot = now
                 self.last_shoot_time = now  # Update last shoot time
+            elif not self.is_shooting:  # Resume movement if not shooting
+                self.change_x = self.speed if self.facing_right else -self.speed
 
         super().update()
 
