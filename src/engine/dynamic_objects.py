@@ -2,7 +2,7 @@ import pygame
 import config # Assuming config.py exists and contains necessary constants
 from .base import GameObject # Assuming base.py contains a GameObject class inheriting from pygame.sprite.Sprite
 import math
-
+#
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
     def __init__(self, x, y, width, height, color=None, image_path=None, animations=None, platforms=None, use_gravity=True):
@@ -94,9 +94,9 @@ class DynamicObject(GameObject):
 
     def _update_base_state(self):
         """Determines the basic movement state (idle, walk, falling) without overrides."""
-        if self.change_y > 0 and not self.on_ground: # Falling down
+        if self.change_y > 0 and not self.on_ground:  # Falling down
             self.state = "falling"
-        elif self.change_x != 0:
+        elif self.change_x != 0 or self.original_change_x != 0:
             self.state = "walk"
         else:
             self.state = "idle"
@@ -391,14 +391,14 @@ class Fighter(Player):
             offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
             
             # Create the projectile
-            return Projectile(self.rect.centerx + offset_x, 
+            return Projectile(self.rect.centerx + offset_x,
                              self.rect.centery, 
                              velocity=(velocity_x * self.supershot_amount, 0),
                              damage=self.damage,
                              image_path="src/assets/images/inused_single_images/bullet.png", 
-                             owner=self)
+                             owner=self,platforms=self.platforms)
         return None # Return None if shoot was not allowed (e.g., on cooldown)
- 
+
 class NPC(Player):
     vision_boost = 0 # Class variable for global vision boost
     
@@ -684,7 +684,7 @@ class Projectile(DynamicObject):
         # Projectiles typically don't interact with platforms for collision resolution
         # unless they are complex (e.g., bouncing, arrows).
         # We pass platforms=None here to DynamicObject.
-        super().__init__(x, y, width, height, color, image_path, animations, platforms=None)
+        super().__init__(x, y, width, height, color, image_path, animations, platforms)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
