@@ -28,6 +28,7 @@ class StateManager:
         self.last_click_time = 0
         # Load click sound
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
+        self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
         # Load menu music (only load once)
         pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
         pygame.mixer.music.play(-1)

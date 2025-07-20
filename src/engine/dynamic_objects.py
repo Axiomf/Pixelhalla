@@ -3,6 +3,8 @@ import config
 from .base import GameObject
 import math  # Added for distance calculations
 
+pygame.mixer.init()  # Initialize mixer for audio
+
 # "animations" is a dictionary with keys of states and values of corresponding frames in order
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
@@ -35,6 +37,13 @@ class DynamicObject(GameObject):
         self.freeze = False # it can not move while being freezed
         self.freeze_duration = 1000 # lenght of freeze duration
         self.freezed_time = 0 # the time it got freezed
+        try:
+            self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
+            print("Blood sound loaded successfully!")
+        except FileNotFoundError:
+            print("Error: Blood sound file not found at src/assets/sounds/blood2.wav")
+        except pygame.error as e:
+            print(f"Pygame error loading blood sound: {e}")
 
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image

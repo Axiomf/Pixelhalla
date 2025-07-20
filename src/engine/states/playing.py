@@ -93,7 +93,7 @@ class PlayingState(BaseState):
                     self.audio_playing = False
                 pygame.event.clear()  # Clear event queue
 
-    def handle_collisions(self):
+    def handle_collisions(self, state_manager):
         """Handle collisions between sprites."""
         for sprite in self.all_sprites:
             if isinstance(sprite, DynamicObject):
@@ -104,6 +104,7 @@ class PlayingState(BaseState):
                     if hit_enemies:
                         for enemy in hit_enemies:
                             enemy.take_damage(sprite.damage)
+                            enemy.blood_sound.play()
                             sprite.kill()
 
                     hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
@@ -111,12 +112,14 @@ class PlayingState(BaseState):
                         for fighter in hit_fighters:
                             if fighter != sprite.owner:  # Prevent projectile from damaging its owner
                                 fighter.take_damage(sprite.damage)
+                                fighter.blood_sound.play()
                                 sprite.kill()
                 else:# it is a projectile of an enemy
                     hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
                     if hit_fighters:
                         for fighter in hit_fighters:
                             fighter.take_damage(sprite.damage)
+                            fighter.blood_sound.play()
                             sprite.kill()           
             if isinstance(sprite, PowerUp):
                 hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
@@ -130,7 +133,7 @@ class PlayingState(BaseState):
         if not self.all_sprites:
             self.load_map(state_manager.current_map)
         self.all_sprites.update()  # Call update for all sprites
-        self.handle_collisions()  # Process all collisions
+        self.handle_collisions(state_manager)  # Process all collisions
 
     def draw(self, scene, scale, state_manager):
         """Draw playing screen."""
