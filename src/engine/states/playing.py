@@ -1,6 +1,11 @@
 import pygame
 import config
 from src.engine.dynamic_objects import *
+from src.engine.projectile import Projectile
+from src.engine.player import Player
+from src.engine.fighter import Fighter
+from src.engine.npc import NPC
+from src.engine.powerup import PowerUp
 from src.engine.states.base_state import BaseState
 
 class PlayingState(BaseState):

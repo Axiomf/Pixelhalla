@@ -2,6 +2,11 @@ from .platforms import *
 from .dynamic_objects import *
 from .base import CustomGroup
 from .animation_loader import *
+from .fighter import Fighter
+from .npc import NPC, Melee
+
+
+
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Set up the main game window
 # Load a background image located in the assets folder
 background = pygame.image.load("src/assets/images/background/map-ShorwindFishingPort.png")
@@ -31,9 +36,9 @@ path_list = {"idle" : "src/assets/images/inused_sheets/Goblin/Idle.png",
              "attack" : "src/assets/images/inused_sheets/Goblin/Attack.png"}
 
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
-fighter1 = Fighter(static_platform1.rect.x + 30, static_platform1.rect.y, 32, 32, platforms=platforms,
+fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                   animations=load_animations_Goblin(path_list, 150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+                   animations=load_animations_Arcane_Archer(scale=1))
 fighter2 = Fighter(static_platform1.rect.x + 30, static_platform1.rect.y, 32, 32,platforms=platforms,
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
                    animations=load_animations_Suicide_Bomber(40, 32))
