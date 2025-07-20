@@ -309,6 +309,8 @@ class NPC(Player):
                 collision = True
                 break
         self.can_see_the_fighter = not collision
+        if NPC.vision_boost > 0:
+            self.can_see_the_fighter = True
 
     def draw_vision_line(self, surface):
         # Draw the vision line only if show_vision_line is True
@@ -428,7 +430,7 @@ class Melee(NPC):
                               self.rect.centery - self.single_fighter.rect.centery)
             now = pygame.time.get_ticks()
             # Use effective range = attack_range + NPC.vision_boost
-            if not self.is_attacking and dist <= self.attack_range + NPC.vision_boost and now - self.last_attack_time >= self.attack_cooldown:
+            if not self.is_attacking and dist <= self.attack_range  and now - self.last_attack_time >= self.attack_cooldown:
                 self.single_fighter.take_damage(self.attack_power)
                 self.last_attack_time = now
 
@@ -596,7 +598,7 @@ class Eye(NPC):
     as long as it is alive.
     """
     def __init__(self, x, y, width=20, height=20, color=(255,0,255), speed=0, animations=None, platforms=None):
-        super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms, animations=animations)
+        super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms, animations=animations,roam=False)
         self.vision_increase = 100000  # Boost value to add to all NPCs' vision distance
         self.facing_right = True  # Can be set as needed
 

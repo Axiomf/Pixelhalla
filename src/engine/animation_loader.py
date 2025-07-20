@@ -249,9 +249,10 @@ def load_animations_HellDude(path, frame_width, frame_height, colorkey=None,
 ################################################################
     return animations
 
-def load_animations_Eye(path, frame_width, frame_height, colorkey=None,
+def load_animations_Eye(frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "idle" """
+    path = "src/assets/images/inused_sheets/eye_idle.png"
     animations = {} # output
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()

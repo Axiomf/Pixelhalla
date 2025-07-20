@@ -51,10 +51,14 @@ melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32
                     all_sprites=all_sprites, fighter=fighter1,
                     animations=load_animations_Arcane_Archer(64, 64))
 
+support = Eye(900, config.SCENE_HEIGHT*3/5 - 32
+            ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=platforms)
+
+
 ranged_enemy = Ranged(config.SCENE_WIDTH/4 + 200, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                       speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                       all_sprites=all_sprites, fighter=fighter1,
-                      animations=load_animations_Arcane_Archer(64, 64))
+                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
 
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0))
 powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0))
@@ -63,9 +67,9 @@ powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=1
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2,powerup3, ranged_enemy,melee_enemy)
+all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2,powerup3, ranged_enemy,melee_enemy,support)
 platforms.add(moving_platform, static_platform3)
-enemies.add(ranged_enemy,melee_enemy)
+enemies.add(ranged_enemy,melee_enemy,support)
 fighters.add(fighter1)
 
 def draw_background():
