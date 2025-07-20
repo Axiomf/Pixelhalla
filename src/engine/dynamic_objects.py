@@ -31,6 +31,10 @@ class DynamicObject(GameObject):
         self.attack_start_time = 0
         self.attack_duration = 500  # Duration of shoot animation in ms, adjust based on animation length
         self.last_attack_time = 0  # Track the last time shoot occurred
+        
+        self.freeze = False # it can not move while being freezed
+        self.freeze_duration = 10 # lenght of freeze duration
+        self.freezed_time = 0 # the time it got freezed
 
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image
@@ -80,18 +84,27 @@ class DynamicObject(GameObject):
 
     def update(self):
         self.calc_grav()  # Adjust vertical velocity due to gravity
+        if self.freeze:
+            self.change_x = 0
+            self.change_y = 0
         self.rect.x += self.change_x  # Update horizontal position
         self.rect.y += self.change_y  # Update vertical position
         self.update_state()
         self.update_animation()
+
+        
+        if not self.change_y==0:
+            print(self.change_y)
     
     def calc_grav(self):
         # Basic gravity simulation: if not already falling, start falling
+        
         if self.change_y == 0:
-            self.change_y = 1
+            self.change_y = 0.1
         else:
             self.change_y += config.GLOBAL_GRAVITY  # Acceleration due to gravity
 
+    
     def handle_platform_collision(self, platforms):
         """
         Checks for collision with any platform in the provided group.
@@ -104,6 +117,8 @@ class DynamicObject(GameObject):
             if self.change_y > 0:
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
+                return False
+        return True
 
     def _handle_hurt_animation(self, now):
         # If hurt duration has passed, reset hurt state
@@ -138,6 +153,8 @@ class Player(DynamicObject):
         self.facing_right = True
         self.shield = False
         # Added shooting state attributes
+
+        
 
     def take_damage(self, amount):
         if self.shield:
@@ -239,6 +256,8 @@ class Player(DynamicObject):
         self._handle_attack_animation(now)
 
     def update(self):
+        # Prevent movement if frozen
+        
         # Call DynamicObject's update to apply gravity and movement
         super().update()
         # Additional player-specific logic (collision, etc.)
@@ -400,6 +419,7 @@ class Melee(NPC):
         self.attack_range = 40  # Custom melee range
         self.attack_power = self.damage  # Melee uses base damage
         self.attack_cooldown = 3000  # 3 seconds cooldown in milliseconds
+    
 
     def update(self):
         # Added melee attack logic: if fighter is within range and cooldown is over, attack

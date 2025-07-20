@@ -54,7 +54,7 @@ melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32
 ranged_enemy = Ranged(config.SCENE_WIDTH/4 + 200, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                       speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                       all_sprites=all_sprites, fighter=fighter1,
-                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
+                      animations=load_animations_Arcane_Archer(64, 64))
 
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0))
 powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0))
