@@ -122,6 +122,14 @@ class PlayingState(BaseState):
                     for fighter in hit_fighters:
                         fighter.upgrade(sprite.upgrade_type, sprite.amount)
                         sprite.kill()
+            if isinstance(sprite, Melee):
+                hit_fighters = pygame.sprite.spritecollide(sprite, self.fighters, False)
+                if hit_fighters:
+                    for fighter in hit_fighters:
+                        now = pygame.time.get_ticks()
+                        if now - sprite.last_sound_time >= 2000:  # 3000 ms = 3 seconds
+                            fighter.blood_sound.play()
+                            sprite.last_sound_time = now  # Update the last sound time
 
     def update(self, current_time, scale, state_manager):
         """Update logic for playing state."""

@@ -2,8 +2,7 @@ from .platforms import *
 from .dynamic_objects import *
 from .base import CustomGroup
 from .animation_loader import *
-from .fighter import Fighter
-from .npc import NPC, Melee
+
 
 
 
@@ -18,6 +17,7 @@ platforms = pygame.sprite.Group()          # Contains all platform objects
 enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
+melee = pygame.sprite.Group()
 
 
 static_platform1 = Platform(config.SCENE_WIDTH*2/8 + 73, config.SCENE_HEIGHT*3/5 - 15, 
@@ -56,6 +56,7 @@ enemy = Melee(static_platform1.rect.x + 60,
 all_sprites.add(static_platform1, static_platform2,static_platform3, fighter1, fighter2, enemy)
 platforms.add(static_platform1, static_platform2, static_platform3)
 enemies.add(enemy)
+melee.add(enemy)
 fighters.add(fighter1, fighter2)
 
 def draw_background():

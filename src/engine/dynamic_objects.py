@@ -639,6 +639,7 @@ class Melee(NPC):
         self.attack_range = 40  # Custom melee range
         self.attack_power = self.damage  # Melee uses base damage
         self.attack_cooldown = 3000  # 3 seconds cooldown in milliseconds
+        self.last_sound_time = 0
     
 
     def update(self):
