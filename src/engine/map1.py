@@ -36,7 +36,7 @@ fighter1 = Fighter(static_platform1.rect.x + 30, static_platform1.rect.y, 32, 32
                    animations=load_animations_Goblin(path_list, 150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
 fighter2 = Fighter(static_platform1.rect.x + 30, static_platform1.rect.y, 32, 32,platforms=platforms,
                    controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
-                   animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
+                   animations=load_animations_Suicide_Bomber(40, 32))
 
 # An enemy that patrols horizontally and bounces at screen edges
 enemy = Melee(static_platform1.rect.x + 60,  

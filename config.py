@@ -44,3 +44,7 @@ GAME_STATE_FIGHTER_SELECT = 4
 # config.SCENE_WIDTH/2, config.SCENE_HEIGHT/3 let it be here 
 
 
+
+
+
+

@@ -252,6 +252,7 @@ class Player(DynamicObject):
                 self.kill()
 
 class NPC(Player):
+    vision_boost = 0  # <-- New class variable for global vision boost 
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
                 damage=config.NPC_DAMAGE, image_path=None, platforms=None, 
@@ -339,11 +340,6 @@ class NPC(Player):
         # Update horizontal position
         self.rect.x += self.change_x
 
-        # Optional: Add projectile shooting for NPC (uncomment if needed)
-        # if self.projectiles and self.all_sprites:
-        #     projectile = self.shoot()
-        #     self.projectiles.add(projectile)
-        #     self.all_sprites.add(projectile)
         super().update()
 
 class Ranged(NPC):
@@ -359,7 +355,9 @@ class Ranged(NPC):
         if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
-            if not self.is_shooting and now - self.last_shot >= self.reload_time and self.can_see_the_fighter and dist <= self.attack_range:
+            # Use effective range = attack_range + NPC.vision_boost
+            if (not self.is_shooting and now - self.last_shot >= self.reload_time and 
+                self.can_see_the_fighter and dist <= self.attack_range + NPC.vision_boost):
                 self.is_shooting = True
                 self.shoot_start_time = now
                 self.state = "shoot"
@@ -390,7 +388,8 @@ class Melee(NPC):
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
             now = pygame.time.get_ticks()
-            if not self.is_attacking and dist <= self.attack_range and now - self.last_attack_time >= self.attack_cooldown:
+            # Use effective range = attack_range + NPC.vision_boost
+            if not self.is_attacking and dist <= self.attack_range + NPC.vision_boost and now - self.last_attack_time >= self.attack_cooldown:
                 self.single_fighter.take_damage(self.attack_power)
                 self.last_attack_time = now
 
@@ -407,45 +406,6 @@ class Melee(NPC):
             elif not self.is_attacking:  # Resume movement if not shooting
                 self.change_x = self.speed if self.facing_right else -self.speed
         super().update()
-
-class Projectile(DynamicObject):
-    """A projectile that moves with a fixed velocity.
-       Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
-                 use_gravity=False, image_path=None, owner=None, animations=None):
-        super().__init__(x, y, width, height, color, image_path, animations)
-        self.damage = damage
-        self.velocity_x, self.velocity_y = velocity
-        self.use_gravity = use_gravity
-        self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
-        # For projectiles we typically do not use the standard gravity unless needed
-        if not self.use_gravity:
-            self.change_y = 0  
-
-    def update(self):
-        # Move based on fixed velocity
-        self.rect.x += self.velocity_x
-        self.rect.y += self.velocity_y
-        # Optionally apply gravity
-        if self.use_gravity:
-            self.calc_grav()
-            self.rect.y += self.change_y
-
-class PowerUp(DynamicObject):
-    """A power-up that moves with a fixed velocity.
-       Optionally, it can be affected by gravity."""
-    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), animations=None):
-        super().__init__(x, y, width, height, color, animations)
-        self.upgrade_type = type
-        self.amount = amount
-        self.duration = 10
-        self.use_gravity = False
-        
-    def update(self):
-        # Optionally apply gravity
-        if self.use_gravity:
-            self.calc_grav()
-            self.rect.y += self.change_y
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
@@ -551,3 +511,67 @@ class Fighter(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
+
+class Projectile(DynamicObject):
+    """A projectile that moves with a fixed velocity.
+       Optionally, it can be affected by gravity (e.g., for arrows)."""
+    def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
+                 use_gravity=False, image_path=None, owner=None, animations=None):
+        super().__init__(x, y, width, height, color, image_path, animations)
+        self.damage = damage
+        self.velocity_x, self.velocity_y = velocity
+        self.use_gravity = use_gravity
+        self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
+        # For projectiles we typically do not use the standard gravity unless needed
+        if not self.use_gravity:
+            self.change_y = 0  
+
+    def update(self):
+        # Move based on fixed velocity
+        self.rect.x += self.velocity_x
+        self.rect.y += self.velocity_y
+        # Optionally apply gravity
+        if self.use_gravity:
+            self.calc_grav()
+            self.rect.y += self.change_y
+
+class PowerUp(DynamicObject):
+    """A power-up that moves with a fixed velocity.
+       Optionally, it can be affected by gravity."""
+    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), animations=None):
+        super().__init__(x, y, width, height, color, animations)
+        self.upgrade_type = type
+        self.amount = amount
+        self.duration = 10
+        self.use_gravity = False
+        
+    def update(self):
+        # Optionally apply gravity
+        if self.use_gravity:
+            self.calc_grav()
+            self.rect.y += self.change_y
+
+class Eye(NPC):
+    """
+    A support enemy that increases the vision distance of all NPCs (enemies)
+    as long as it is alive.
+    """
+    def __init__(self, x, y, width=20, height=20, color=(255,0,255), speed=0, animations=None, platforms=None):
+        super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms, animations=animations)
+        self.vision_increase = 100000  # Boost value to add to all NPCs' vision distance
+        self.facing_right = True  # Can be set as needed
+
+    def update(self):
+        # While alive, set the global vision boost.
+        NPC.vision_boost = self.vision_increase
+        # Eye may have its own behavior; here we keep it stationary.
+        # ...existing update logic if needed...
+        super().update()
+
+    def kill(self):
+        # When Eye is killed, remove the vision boost.
+        NPC.vision_boost = 0
+        super().kill()
+
+
+

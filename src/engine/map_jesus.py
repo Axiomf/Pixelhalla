@@ -43,18 +43,18 @@ moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
 # Two fighter objects using custom control keys, now passing animations during construction.
 fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                   animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64,scale=1))
+                   animations=load_animations_Arcane_Archer(64, 64,scale=1))
 #fighter2 = Fighter(650, 450, 32, 32,platforms=platforms,controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP}, animations=load_animations_Suicide_Bomber("src/assets/images/inused_sheets/death_bomb.png", 40, 32))
 
 melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                     speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                     all_sprites=all_sprites, fighter=fighter1,
-                    animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64))
+                    animations=load_animations_Arcane_Archer(64, 64))
 
 ranged_enemy = Ranged(config.SCENE_WIDTH/4 + 200, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                       speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                       all_sprites=all_sprites, fighter=fighter1,
-                      animations=load_animations_Arcane_Archer("src/assets/images/inused_sheets/Arcane_Archer.png", 64, 64))
+                      animations=load_animations_Arcane_Archer(64, 64))
 
 powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0))
 powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0))

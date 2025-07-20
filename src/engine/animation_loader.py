@@ -2,9 +2,10 @@ import pygame
 # trying to make a general template  for loading animations outside of objects, dict : ( "state" : frames )
 # these have shared loader: HellDude, Eye,
 
-def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=None,
+def load_animations_Suicide_Bomber(frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "walk", "death" """
+    path = "src/assets/images/inused_sheets/death_bomb.png"
     animations = {}
     frames = []
     sheet = pygame.image.load(path).convert_alpha()
@@ -43,9 +44,10 @@ def load_animations_Suicide_Bomber(path, frame_width, frame_height, colorkey=Non
 ################################################################
     return animations
 
-def load_animations_Arcane_Archer(path, frame_width, frame_height, colorkey=None,
+def load_animations_Arcane_Archer(frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "walk", "death" , "shoot" , "idle" """
+    path = "src/assets/images/inused_sheets/Arcane_Archer.png"
     animations = {} # output
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
