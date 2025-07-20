@@ -48,10 +48,14 @@ death_bomb = Suicide_Bomb(500, config.SCENE_HEIGHT*3/5 - 300
                  damage=20, platforms=platforms, projectiles=projectiles, 
                  all_sprites=all_sprites, fighter=fighter1, animations=load_animations_Suicide_Bomber(), roam=True)
 
+support = Eye(900, config.SCENE_HEIGHT*3/5 - 32
+            ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=platforms)
+
+
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform, static_right_platform,  fighter1, death_bomb)
+all_sprites.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform, static_right_platform,  fighter1, death_bomb,support)
 platforms.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform,static_right_platform)
-enemies.add(death_bomb)
+enemies.add(death_bomb,support)
 fighters.add(fighter1)
 
 def draw_background():

@@ -33,7 +33,7 @@ class DynamicObject(GameObject):
         self.last_attack_time = 0  # Track the last time shoot occurred
         
         self.freeze = False # it can not move while being freezed
-        self.freeze_duration = 10 # lenght of freeze duration
+        self.freeze_duration = 1000 # lenght of freeze duration
         self.freezed_time = 0 # the time it got freezed
 
     def _cycle_frame(self):
@@ -83,6 +83,11 @@ class DynamicObject(GameObject):
             self.current_animation = self.state
 
     def update(self):
+        now = pygame.time.get_ticks()
+        if self.freeze and now - self.freezed_time > self.freeze_duration:
+            self.freeze = False
+            self.freezed_time = 0 
+
         self.calc_grav()  # Adjust vertical velocity due to gravity
         if self.freeze:
             self.change_x = 0
@@ -663,7 +668,7 @@ class Medusa(Melee):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Set freeze duration in milliseconds (example: 3000ms = 3 seconds)
-        self.freeze_duration = 3000
+        self.freeze_duration = 2000
 
     def update(self):
         # Override update to freeze the fighter instead of dealing repeated damage
@@ -675,6 +680,7 @@ class Medusa(Melee):
                 # Freeze fighter: set freeze flag and record freeze time
                 self.single_fighter.freeze = True
                 self.single_fighter.freezed_time = now
+                self.single_fighter.freeze_duration =  self.freeze_duration
                 self.last_attack_time = now
 
                 self.is_attacking = True
