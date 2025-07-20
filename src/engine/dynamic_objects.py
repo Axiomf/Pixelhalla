@@ -89,9 +89,6 @@ class DynamicObject(GameObject):
             self.freezed_time = 0 
 
         self.calc_grav()  # Adjust vertical velocity due to gravity
-        if self.freeze:
-            self.change_x = 0
-            self.change_y = 0
         self.rect.x += self.change_x  # Update horizontal position
         self.rect.y += self.change_y  # Update vertical position
         self.update_state()
