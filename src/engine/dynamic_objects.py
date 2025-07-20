@@ -614,5 +614,50 @@ class Eye(NPC):
         NPC.vision_boost = 0
         super().kill()
 
+class Suicide_Bomb(NPC):
+    """A NPC that patrols until it sees the fighter, then chases and explodes when close enough."""
+    def __init__(self, x, y, width=40, height=32, color=None, speed=0.3, health=50, 
+                 damage=0, image_path=None, platforms=None, projectiles=None, 
+                 all_sprites=None, fighter=None, animations=None, roam=True):
+        super().__init__(x, y, width, height, color, speed, health, damage, image_path, 
+                         platforms=platforms, projectiles=projectiles, all_sprites=all_sprites, 
+                         fighter=fighter, animations=animations, roam=roam)
+        self.explosion_range = 50  # Distance threshold to trigger explosion
+        self.explosion_damage = 50  # Damage dealt to the fighter upon explosion
+
+    def update(self):
+        # Update vision first
+        self.update_vision()
+        if self.single_fighter and self.can_see_the_fighter:
+            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+                              self.rect.centery - self.single_fighter.rect.centery)
+            if dist <= self.explosion_range:
+                # Explode: trigger death animation and damage the fighter
+                self.single_fighter.take_damage(self.explosion_damage)
+                self.state = "death"
+                self.current_animation = "death"
+                self.is_dying = True
+                self.change_x = 0
+                self.change_y = 0
+                # Let update_animation handle death animation and eventual kill
+                super().update()
+                return
+            else:
+                # Chase the fighter by moving towards its x position
+                self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
+                self.change_x = self.speed if self.facing_right else -self.speed
+                # Prevent moving off the platform edges
+                if self.platforms:
+                    collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
+                    for platform in collided_platforms:
+                        if self.facing_right and self.rect.right >= platform.rect.right:
+                            self.change_x = 0
+                        elif not self.facing_right and self.rect.left <= platform.rect.left:
+                            self.change_x = 0
+        # If fighter is not seen, maintain patrol behavior (using NPC's existing logic)
+        # ...existing patrol logic...
+        super().update()
+
+
 
 

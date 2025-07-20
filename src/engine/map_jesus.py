@@ -54,6 +54,10 @@ melee_enemy = Melee(config.SCENE_WIDTH/4 + 100, config.SCENE_HEIGHT*3/5 - 32, 32
 support = Eye(900, config.SCENE_HEIGHT*3/5 - 32
             ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=platforms)
 
+death_bomb = Suicide_Bomb(1100, config.SCENE_HEIGHT*3/5 - 32
+                          , speed=2, health=50, 
+                 damage=0, platforms=platforms, projectiles=projectiles, 
+                 all_sprites=all_sprites, fighter=fighter1, animations=load_animations_Suicide_Bomber(), roam=True)
 
 ranged_enemy = Ranged(config.SCENE_WIDTH/4 + 200, config.SCENE_HEIGHT*3/5 - 32, 32, 32,
                       speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
@@ -67,9 +71,9 @@ powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=1
 
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2,powerup3, ranged_enemy,melee_enemy,support)
+all_sprites.add(moving_platform, fighter1, static_platform3,powerup,powerup2,powerup3, ranged_enemy,melee_enemy,support,death_bomb)
 platforms.add(moving_platform, static_platform3)
-enemies.add(ranged_enemy,melee_enemy,support)
+enemies.add(ranged_enemy,melee_enemy,support,death_bomb)
 fighters.add(fighter1)
 
 def draw_background():

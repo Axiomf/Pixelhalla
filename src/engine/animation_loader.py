@@ -2,7 +2,7 @@ import pygame
 # trying to make a general template  for loading animations outside of objects, dict : ( "state" : frames )
 # these have shared loader: HellDude, Eye,
 
-def load_animations_Suicide_Bomber(frame_width, frame_height, colorkey=None,
+def load_animations_Suicide_Bomber(frame_width = 40, frame_height = 32, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "walk", "death" """
     path = "src/assets/images/inused_sheets/death_bomb.png"
