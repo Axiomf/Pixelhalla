@@ -485,12 +485,10 @@ class NPC(Player):
                                 self.change_x *= -1  # Reverse direction
                             elif self.rect.left <= platform.rect.right and self.change_x < 0:  # At left edge, moving left
                                 self.change_x *= -1  # Reverse direction
-                else:
-                    # If not on a platform, check scene boundaries
+                else:# If not on a platform, check scene boundaries
                     if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
                         self.change_x *= -1
-            else:
-                # If falling, check scene boundaries
+            else:# If falling, check scene boundaries
                 if self.rect.right > config.SCENE_WIDTH or self.rect.left < 0:
                     self.change_x *= -1
 
@@ -503,7 +501,7 @@ class NPC(Player):
                     self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
             # Update horizontal position
-            self.rect.x += self.change_x
+            self.rect.x += self.change_x 
         else:
             self.change_x = 0
             # NPC remains stationary
@@ -556,8 +554,11 @@ class Suicide_Bomb(NPC):
                 return
             else:
                 # Chase the fighter by moving towards its x position
-                self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
+                self.facing_right = self.single_fighter.rect.centerx> self.rect.centerx
                 self.change_x = self.speed if self.facing_right else -self.speed
+                if abs(self.rect.centerx - self.single_fighter.rect.centerx) <= self.explosion_range/2:
+                    self.change_x = 0
+
                 # Prevent moving off the platform edges
                 if self.platforms:
                     collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
