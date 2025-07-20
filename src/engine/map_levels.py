@@ -1,6 +1,8 @@
 from .platforms import *
 from .dynamic_objects import *
 from .base import CustomGroup
+from .animation_loader import *
+
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Set up the main game window
 # Load a background image located in the assets folder
 background = pygame.image.load("src/assets/images/nature_3/origbig.png")
@@ -35,33 +37,24 @@ static_right_platform = Platform(1050, 225,
 
 
 
-# MovingPlatform moves horizontally within a given range and speed
-moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
-                                 config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
-fighter1 = Fighter(450,  
-                   config.SCENE_HEIGHT*3/5 - 70, 32, 32,
+fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                   platforms=platforms)
-fighter1.add_animation("idle", "src/assets/images/Bloody_Eye.png", 32, 32)
-fighter2 = Fighter(650, 450, 32, 32,
-                   controls={"left": pygame.K_LEFT, "right": pygame.K_RIGHT, "jump": pygame.K_UP},
-                   platforms=platforms)
-fighter2.add_animation("idle", "src/assets/images/Bloody_Eye.png", 32, 32)
-# An enemy that patrols horizontally and bounces at screen edges
-enemy = NPC(config.SCENE_WIDTH/4 + (500 / 2) - (30 / 2),  
-            config.SCENE_HEIGHT*3/5 - 30, 32, 32,
-            speed=config.NPC_SPEED,
-            platforms=platforms, 
-            projectiles=projectiles, 
-            all_sprites=all_sprites)
-enemy.add_animation("idle", "src/assets/images/Bloody_Eye.png", 32, 32)
+                   animations=load_animations_Arcane_Archer(64, 64,scale=1))
+
+support = Eye(900, config.SCENE_HEIGHT*3/5 - 200
+            ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=platforms)
+
+death_bomb = Suicide_Bomb(900, config.SCENE_HEIGHT*3/5 - 300
+                          , speed=1, health=50, 
+                 damage=20, platforms=platforms, projectiles=projectiles, 
+                 all_sprites=all_sprites, fighter=fighter1, animations=load_animations_Suicide_Bomber(), roam=True)
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform, static_right_platform, moving_platform, fighter1, fighter2, enemy)
-platforms.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform,static_right_platform, moving_platform)
-enemies.add(enemy)
-fighters.add(fighter1, fighter2)
+all_sprites.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform, static_right_platform,  fighter1, death_bomb,support)
+platforms.add(static_mid_platform_1,static_mid_platform_2,static_mid_platform_3, static_left_platform,static_right_platform)
+enemies.add(death_bomb,support)
+fighters.add(fighter1)
 
 def draw_background():
     scene.fill((0, 0, 0))

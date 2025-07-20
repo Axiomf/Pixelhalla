@@ -632,7 +632,7 @@ class Eye(NPC):
     """
     def __init__(self, x, y, width=20, height=20, color=(255,0,255), speed=0, animations=None, platforms=None):
         super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms, animations=animations,roam=False)
-        self.vision_increase = 100000  # Boost value to add to all NPCs' vision distance
+        self.vision_increase = 500  # Boost value to add to all NPCs' vision distance
         self.facing_right = True  # Can be set as needed
         self.exploded = False
     def update(self):
@@ -664,6 +664,7 @@ class Suicide_Bomb(NPC):
         if self.exploded:
             super().update()
             return
+        
         if self.single_fighter and self.can_see_the_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
