@@ -3,7 +3,10 @@ import openai
 import pygame
 import threading
 import os # For environment variables
+import random # For random delay
+# Assuming dummyUI can handle an empty input string and a combined thinking state
 from dummyUI import draw_ui, WIDTH, font_input
+
 # --- Pygame Setup ---
 pygame.init()
 
@@ -36,151 +39,204 @@ if METISAI_API_KEY == "YOUR_METISAI_API_KEY_HERE" or not METISAI_API_KEY:
     print("WARNING: METISAI_API_KEY is not set or is default. Please set it as an environment variable or replace 'YOUR_METISAI_API_KEY_HERE'.")
 
 
-client = openai.OpenAI(api_key=METISAI_API_KEY, base_url=METISAI_BASE_URL)# Initialize the OpenAI client. This object is your "waiter" for API calls. It uses the key to authenticate and the base_url to know where to send requests.
-LLM_REPLY_EVENT = pygame.USEREVENT + 1 # Custom event type for LLM replies. Pygame needs a way to know when the LLM thread finishes and sends back a response.
-is_waiting_for_llm = False # Flag to prevent multiple concurrent LLM requests. We don't want to send a new request before the previous one has finished.
+client = openai.OpenAI(api_key=METISAI_API_KEY, base_url=METISAI_BASE_URL)
+
+# --- Custom Events for LLM Replies and Turn Delays ---
+BOSS_LLM_REPLY_EVENT = pygame.USEREVENT + 1
+FIGHTER_LLM_REPLY_EVENT = pygame.USEREVENT + 2
+TRIGGER_NEXT_TURN_EVENT = pygame.USEREVENT + 3 # New event for signaling end of delay
 
 
-# Dialog history: This is crucial! It keeps track of the conversation so the LLM
-# knows the context of what has been said before.
-# Each message is a dictionary with a 'role' and 'content'.
+
+# to export and display
+boss_last_dialog =     ""
+fighter_last_dialog =  ""
+
+
+
+# --- LLM State Flags ---
+is_waiting_for_boss_llm = False
+is_waiting_for_fighter_llm = False
+is_delaying_for_next_turn = False # New flag to indicate we are in a delay period
+
+# --- Turn Management ---
+current_turn = "fighter" # Initial state: Boss has spoken, Fighter's turn to respond
+
+# --- Dialog History ---
 dialog_history = [
-    # The 'system' role is like setting the model's "instructions" or "persona".
-    # This is how you tell GPT-4o-mini to BE Kael'thas.
-    {"role": "system", "content": (
-        "You are the fearsome and ancient Dungeon Boss, Kael'thas. You are arrogant, powerful, and slightly "
-        "bored by intruders. You speak concisely but with a theatrical flair. "
-        "Your goal is to intimidate and perhaps toy with the Fighter. "
-        "Do not break character. Keep your responses relatively brief (max 2-3 sentences), unless the Fighter "
-        "asks for more detail. Do not offer solutions or quest information unless explicitly asked."
-        "You are currently observing the Fighter."
-    )},
-    # The 'assistant' role is for the AI's responses.
-    # We provide an initial response to start the conversation from the Boss's side.
-    {"role": "assistant", "content": "Hmph. Another foolish mortal dares to disturb my slumber? State your purpose, worm."},
+    {"role": "assistant", "content": "Hmph. You look lost. Do you want to make a deal?."},
 ]
 
-# --- Game State (Example) ---
-# This dictionary holds dynamic information about the game that can be
-# injected into the LLM's context. This makes the LLM's responses more
-# relevant to the current game situation.
-game_state = {
-    "boss_health": 100,
-    "fighter_name": "Valiant Hero",
-    "fighter_class": "Paladin",
-    "fighter_level": 7,
-    "dungeon_level": 5,
-    "last_player_action": "stood defiantly", # This will be updated by player input
-    "boss_mood": "annoyed", # Could be 'angry', 'curious', 'bored', 'amused'
+# --- System Prompts for AI Characters ---
+BOSS_SYSTEM_PROMPT = {
+    "role": "system",
+    "content": (
+        "You are the mafia Boss of hell, Lucifer. You are materialistic and powerful,"
+        "you always try to either scam or gamble people to own their souls. You speak like a black gangster. "
+        "Your goal is to look innocent to the fighter and convince them to join."
+        "Do not break character. Keep your responses relatively brief (max 2-3 sentences), unless the Fighter "
+        "asks for more detail. Do not offer solutions or quest information unless explicitly asked."
+        "You are currently observing the Fighter getting close."
+
+    )
 }
 
-# --- LLM Interaction Function (to be run in a separate thread) ---
-# We run this in a separate thread because API calls take time (they go over the internet).
-# If we ran it in the main Pygame loop, the game would freeze until the response came back.
-def get_llm_response_threaded(messages_context, current_game_state_data):
-    global is_waiting_for_llm # Allows us to modify the global flag
-    try:
-        # Create a copy of messages_context to modify for the LLM call.
-        # This prevents issues if the main thread modifies dialog_history while
-        # this thread is preparing the messages.
-        messages_for_llm = list(messages_context)
+FIGHTER_SYSTEM_PROMPT = {
+    "role": "system",
+    "content": (
+        "You are a loanly innocent but clever and pessimistic little kid in an underground and materialistic world full of monsters, demons and corrupted people"
+        "You are trying to find a way out of this world and the Lucifer, the mafia Boss of hell, owns the key so you reach out to him. "
+        "You know that you can't trust anyone. You are getting close to Lucifer. "
+        "Keep your responses concise (1-2 sentences). "
+        "Do not break character. You are the player character in this turn-based dialogue."
+    )
+}
 
-        # Inject dynamic game state into the conversation for the LLM's awareness.
-        # We append this context to the *last user message* so the LLM knows
-        # the current situation when responding to the player's last input.
-        last_user_idx = -1
+# --- Game State (Example) ---
+game_state = {
+    "boss_health": 100,
+    "player_name": "unknown",
+    "player_class": "human",
+    "player_level": 7,
+    "dungeon_level": 6,
+    "last_character_action": "Lucifer just spoke.",
+    "boss_mood": "deceptive and greedy",
+    "fighter_mood": "determined",
+}
+
+# --- LLM Interaction Function for Kael'thas (Boss) ---
+def get_boss_response_threaded(messages_context, current_game_state_data):
+    global is_waiting_for_boss_llm
+    try:
+        messages_for_llm = [BOSS_SYSTEM_PROMPT] + list(messages_context)
+
+        last_opponent_idx = -1
         for i, msg in enumerate(messages_for_llm):
             if msg["role"] == "user":
-                last_user_idx = i
+                last_opponent_idx = i
 
         game_context_string = (
             f"Current game context: The Fighter (a {current_game_state_data['fighter_class']} "
             f"named {current_game_state_data['fighter_name']}, Level {current_game_state_data['fighter_level']}) "
-            f"{current_game_state_data['last_player_action']}. Your health is {current_game_state_data['boss_health']}. "
-            f"Your current mood is {current_game_state_data['boss_mood']}."
+            f"is currently {current_game_state_data['fighter_mood']}. Your health is {current_game_state_data['boss_health']}. "
+            f"Your current mood is {current_game_state_data['boss_mood']}. The last action was: {current_game_state_data['last_character_action']}."
         )
 
-        if last_user_idx != -1:
-            # Append context to the last user message
-            messages_for_llm[last_user_idx]["content"] = (
-                f"{messages_for_llm[last_user_idx]['content']}\n\n"
-                f"({game_context_string})" # Wrap in parentheses to visually separate
+        if last_opponent_idx != -1:
+            messages_for_llm[last_opponent_idx]["content"] = (
+                f"{messages_for_llm[last_opponent_idx]['content']}\n\n"
+                f"(Boss Context: {game_context_string})"
             )
         else:
-            # Fallback: if no user message yet (unlikely after initial setup), add it as a new user message.
-            messages_for_llm.append({"role": "user", "content": game_context_string})
+            messages_for_llm.append({"role": "user", "content": f"Begin the encounter. {game_context_string}"})
 
-        print(f"Sending to LLM (last message with context): {messages_for_llm[-1]['content']}") # Debug print
+        print(f"[BOSS LLM] Sending to LLM (last message with context): {messages_for_llm[-1]['content']}")
 
-        # --- The Core OpenAI API Call ---
-        # This is where your program asks the LLM for a response.
         response = client.chat.completions.create(
-            # Required Parameters:
-            model="gpt-4o-mini",  # The specific model you want to use.
-                                   # 'gpt-4o-mini' is a fast, cost-effective model.
-            messages=messages_for_llm, # The conversation history (including system prompt and game context).
-
-            # Optional Control Parameters (you asked to see these!):
-            temperature=0.7,       # Controls creativity and randomness (0.0-2.0).
-                                   # 0.0 means very deterministic (similar responses for same input).
-                                   # 1.0 means more creative/random. Good for role-playing.
-                                   # 0.7 is a good balance for creative but coherent text.
-            max_tokens=150,        # Maximum number of tokens (words/parts of words) in the response.
-                                   # Helps control response length, preventing the Boss from writing novels.
-                                   # One token is roughly 4 characters for English text.
-            top_p=1,               # Controls diversity by sampling from the most probable tokens.
-                                   # 1 means consider all tokens. 0.1 means only consider top 10% most probable.
-                                   # (Advanced: usually adjust temperature OR top_p, not both significantly).
-            frequency_penalty=0.0, # Penalizes new tokens based on their existing frequency in the text.
-                                   # Higher values (up to 2.0) make the model less likely to repeat itself.
-            presence_penalty=0.0,  # Penalizes new tokens based on whether they appear in the text so far.
-                                   # Higher values (up to 2.0) encourage the model to talk about new topics.
-            stop=None,             # A list of strings where the model should stop generating.
-                                   # E.g., `stop=["\nFighter:", "\nBoss:"]` could prevent it from
-                                   # accidentally starting another turn in the dialog.
-                                   # (Not strictly necessary for simple conversational turns).
+            model="gpt-4o-mini",
+            messages=messages_for_llm,
+            temperature=0.7,
+            max_tokens=150,
+            top_p=1,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            stop=None,
         )
-        llm_response = response.choices[0].message.content # Extract the actual text from the response object.
-        print(f"LLM replied: {llm_response}") # Debug print
+        llm_response = response.choices[0].message.content
+        print(f"[BOSS LLM] Replied: {llm_response}")
 
-        # Post a Pygame event to the main thread so it knows the response is ready.
-        pygame.event.post(pygame.event.Event(LLM_REPLY_EVENT, {"reply": llm_response}))
+        pygame.event.post(pygame.event.Event(BOSS_LLM_REPLY_EVENT, {"reply": llm_response}))
 
     except openai.APIError as e:
-        # Catch specific API errors (e.g., invalid key, rate limit)
-        print(f"OpenAI API Error: {e}")
+        print(f"OpenAI API Error (Boss): {e}")
         llm_response = f"Boss: [My power falters... API Error: {e.code}]"
-        pygame.event.post(pygame.event.Event(LLM_REPLY_EVENT, {"reply": llm_response}))
+        pygame.event.post(pygame.event.Event(BOSS_LLM_REPLY_EVENT, {"reply": llm_response}))
     except openai.APIConnectionError as e:
-        # Catch errors related to network connection
-        print(f"OpenAI API Connection Error: {e}")
+        print(f"OpenAI API Connection Error (Boss): {e}")
         llm_response = f"Boss: [My power falters... Connection error: {e}]"
-        pygame.event.post(pygame.event.Event(LLM_REPLY_EVENT, {"reply": llm_response}))
+        pygame.event.post(pygame.event.Event(BOSS_LLM_REPLY_EVENT, {"reply": llm_response}))
     except Exception as e:
-        # Catch any other unexpected errors
-        print(f"Error calling LLM: {e}")
+        print(f"Error calling Boss LLM: {e}")
         llm_response = f"Boss: [My arcane senses are muddled... Error: {e}]"
-        pygame.event.post(pygame.event.Event(LLM_REPLY_EVENT, {"reply": llm_response}))
+        pygame.event.post(pygame.event.Event(BOSS_LLM_REPLY_EVENT, {"reply": llm_response}))
     finally:
-        is_waiting_for_llm = False # Release the flag, even if an error occurred.
+        is_waiting_for_boss_llm = False
+
+# --- LLM Interaction Function for Fighter (Player AI) ---
+def get_fighter_response_threaded(messages_context, current_game_state_data):
+    global is_waiting_for_fighter_llm
+    try:
+        messages_for_llm = [FIGHTER_SYSTEM_PROMPT] + list(messages_context)
+
+        last_opponent_idx = -1
+        for i, msg in enumerate(messages_for_llm):
+            if msg["role"] == "assistant":
+                last_opponent_idx = i
+
+        game_context_string = (
+            f"Current game context: You are the Fighter (a {current_game_state_data['fighter_class']} "
+            f"named {current_game_state_data['fighter_name']}, Level {current_game_state_data['fighter_level']}). "
+            f"Kael'thas's health is {current_game_state_data['boss_health']}. Your current mood is {current_game_state_data['fighter_mood']}. "
+            f"The last action was: {current_game_state_data['last_character_action']}."
+        )
+
+        if last_opponent_idx != -1:
+            messages_for_llm[last_opponent_idx]["content"] = (
+                f"{messages_for_llm[last_opponent_idx]['content']}\n\n"
+                f"(Fighter Context: {game_context_string})"
+            )
+        else:
+            messages_for_llm.append({"role": "assistant", "content": f"The Boss awaits. {game_context_string}"})
+
+        print(f"[FIGHTER LLM] Sending to LLM (last message with context): {messages_for_llm[-1]['content']}")
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages_for_llm,
+            temperature=0.8,
+            max_tokens=100,
+            top_p=1,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            stop=None,
+        )
+        llm_response = response.choices[0].message.content
+        print(f"[FIGHTER LLM] Replied: {llm_response}")
+
+        pygame.event.post(pygame.event.Event(FIGHTER_LLM_REPLY_EVENT, {"reply": llm_response}))
+
+    except openai.APIError as e:
+        print(f"OpenAI API Error (Fighter): {e}")
+        llm_response = f"Fighter: [My spirit wavers... API Error: {e.code}]"
+        pygame.event.post(pygame.event.Event(FIGHTER_LLM_REPLY_EVENT, {"reply": llm_response}))
+    except openai.APIConnectionError as e:
+        print(f"OpenAI API Connection Error (Fighter): {e}")
+        llm_response = f"Fighter: [My spirit wavers... Connection error: {e}]"
+        pygame.event.post(pygame.event.Event(FIGHTER_LLM_REPLY_EVENT, {"reply": llm_response}))
+    except Exception as e:
+        print(f"Error calling Fighter LLM: {e}")
+        llm_response = f"Fighter: [My mind clouds... Error: {e}]"
+        pygame.event.post(pygame.event.Event(FIGHTER_LLM_REPLY_EVENT, {"reply": llm_response}))
+    finally:
+        is_waiting_for_fighter_llm = False
+
 
 # --- Helper function to draw multiline text ---
-# This is a good utility to display long messages within a specific rectangle.
 def draw_text_multiline(surface, text, font, color, rect, line_height_factor=1.2):
     words = text.split(' ')
     lines = []
     current_line = []
     current_line_width = 0
 
-    space_width = font.size(' ')[0] # Width of a single space
+    space_width = font.size(' ')[0]
 
     for word in words:
         word_surface = font.render(word, True, color)
         word_width = word_surface.get_width()
 
-        if current_line_width + word_width + space_width < rect.width:
+        if current_line_width + word_width + (space_width if current_line else 0) < rect.width:
             current_line.append(word)
-            current_line_width += word_width + space_width
+            current_line_width += word_width + (space_width if current_line else 0)
         else:
             lines.append(" ".join(current_line))
             current_line = [word]
@@ -192,77 +248,112 @@ def draw_text_multiline(surface, text, font, color, rect, line_height_factor=1.2
     y_offset = rect.top
     for line in lines:
         text_surface = font.render(line, True, color)
-        # Check if drawing this line would go beyond the rect.bottom
         if y_offset + text_surface.get_height() * line_height_factor > rect.bottom:
-            break # Stop drawing if we're out of bounds
+            break
         surface.blit(text_surface, (rect.left, y_offset))
         y_offset += font.get_height() * line_height_factor
-    return y_offset # Return the y position after drawing all lines (useful for determining total height)
+    return y_offset
 
 
 # --- Game UI Variables ---
-user_input_text = ""
-dialog_display_scroll_offset = 0 # Currently not used for active scrolling, but keeps display at bottom
+dialog_display_scroll_offset = 0
 
 # --- Main Game Loop ---
 def main():
-    global user_input_text, is_waiting_for_llm, dialog_display_scroll_offset
-
+    global is_waiting_for_boss_llm, is_waiting_for_fighter_llm, is_delaying_for_next_turn, dialog_display_scroll_offset, current_turn
+    global boss_last_dialog, fighter_last_dialog
     running = True
     clock = pygame.time.Clock()
+
+    # Initial state: Boss has already made the first move.
+    current_turn = "fighter"
+    # Immediately trigger the first Fighter response without an initial delay
+    # because the Boss's initial line is already in history.
+    # The delay will apply *after* the Fighter responds.
+
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.K_ESCAPE: # Added to quickly quit for testing
+            elif event.type == pygame.K_ESCAPE:
                 running = False
-            elif event.type == pygame.KEYDOWN:
-                if not is_waiting_for_llm: # Only allow input if not waiting for LLM response
-                    if event.key == pygame.K_RETURN:
-                        if user_input_text.strip(): # If user typed something (not just spaces)
-                            # Update game state based on player action
-                            game_state["last_player_action"] = f"said '{user_input_text}'"
 
-                            # Add user's message to dialog history (for display and for LLM context)
-                            dialog_history.append({"role": "user", "content": user_input_text})
-
-                            print(f"User sent: {user_input_text}") # Debug print
-
-                            # Start the LLM request in a new thread
-                            is_waiting_for_llm = True # Set flag to indicate we're waiting
-                            llm_thread = threading.Thread(
-                                target=get_llm_response_threaded,
-                                args=(list(dialog_history), game_state), # Pass a COPY of history and current game_state
-                                daemon=True # Daemon threads exit when the main program exits
-                            )
-                            llm_thread.start()
-                            user_input_text = "" # Clear input box after sending
-                    elif event.key == pygame.K_BACKSPACE:
-                        user_input_text = user_input_text[:-1] # Remove last character
-                    else:
-                        # Add character if it's printable and fits in the input box
-                        if event.unicode.isprintable() and font_input.size(user_input_text + event.unicode)[0] < (WIDTH - 100 - 20):
-                            user_input_text += event.unicode
-
-            # --- Handle LLM Reply Event ---
-            # This event is posted by the `get_llm_response_threaded` function
-            # when it gets a reply from the LLM.
-            elif event.type == LLM_REPLY_EVENT:
+            # --- Handle Boss LLM Reply Event ---
+            elif event.type == BOSS_LLM_REPLY_EVENT:
                 llm_response_content = event.reply
-                # Add LLM's response to dialog history
+
+                boss_last_dialog = llm_response_content
+
                 dialog_history.append({"role": "assistant", "content": llm_response_content})
-                # Auto-scroll to bottom after new message (simplified for now)
-                # This ensures the newest message is always visible.
-                dialog_display_scroll_offset = 0
+                game_state["last_character_action"] = f"Lucifer just said: '{llm_response_content[:40]}...'"
+                is_waiting_for_boss_llm = False # Boss has finished thinking
+                dialog_display_scroll_offset = 0 # Auto-scroll to bottom
+
+                # Now, start the delay for the Fighter's turn
+                current_turn = "fighter" # Set who should speak next
+                delay_time = random.randint(15, 20) * 1000 # Convert to milliseconds
+                pygame.time.set_timer(TRIGGER_NEXT_TURN_EVENT, delay_time, 1) # Fire once
+                is_delaying_for_next_turn = True
+                print(f"Boss replied. Starting {delay_time / 1000}s delay for Fighter's turn...")
+
+            # --- Handle Fighter LLM Reply Event ---
+            elif event.type == FIGHTER_LLM_REPLY_EVENT:
+                llm_response_content = event.reply
+
+                fighter_last_dialog = llm_response_content
+
+                dialog_history.append({"role": "user", "content": llm_response_content})
+                game_state["last_character_action"] = f"Valiant Hero just said: '{llm_response_content[:40]}...'"
+                is_waiting_for_fighter_llm = False # Fighter has finished thinking
+                dialog_display_scroll_offset = 0 # Auto-scroll to bottom
+
+                # Now, start the delay for the Boss's turn
+                current_turn = "boss" # Set who should speak next
+                delay_time = random.randint(15, 20) * 1000 # Convert to milliseconds
+                pygame.time.set_timer(TRIGGER_NEXT_TURN_EVENT, delay_time, 1) # Fire once
+                is_delaying_for_next_turn = True
+                print(f"Fighter replied. Starting {delay_time / 1000}s delay for Boss's turn...")
+
+            # --- Handle Trigger Next Turn Event ---
+            elif event.type == TRIGGER_NEXT_TURN_EVENT:
+                is_delaying_for_next_turn = False
+                print("Delay ended. Next turn triggered.")
+                # The automatic turn logic below will now pick up the current_turn
+
+        # --- Automatic Turn Logic ---
+        # Trigger an AI only if no AI is currently processing and no delay is active
+        if not is_waiting_for_boss_llm and not is_waiting_for_fighter_llm and not is_delaying_for_next_turn:
+            if current_turn == "fighter":
+                is_waiting_for_fighter_llm = True
+                fighter_llm_thread = threading.Thread(
+                    target=get_fighter_response_threaded,
+                    args=(list(dialog_history), game_state),
+                    daemon=True
+                )
+                fighter_llm_thread.start()
+                print("Fighter AI turn started.")
+            elif current_turn == "boss":
+                is_waiting_for_boss_llm = True
+                boss_llm_thread = threading.Thread(
+                    target=get_boss_response_threaded,
+                    args=(list(dialog_history), game_state),
+                    daemon=True
+                )
+                boss_llm_thread.start()
+                print("Boss AI turn started.")
 
         # --- Drawing ---
-        draw_ui(dialog_history, user_input_text, is_waiting_for_llm, dialog_display_scroll_offset)
+        # Pass an empty string for user_input_text.
+        # The UI should display "AI Thinking..." if either AI is waiting or if we are in a delay.
+        is_overall_thinking_or_delaying = is_waiting_for_boss_llm or is_waiting_for_fighter_llm or is_delaying_for_next_turn
+        draw_ui(dialog_history, "", is_overall_thinking_or_delaying, dialog_display_scroll_offset)
+
 
         # Cap the frame rate
-        clock.tick(60) # Limit to 60 frames per second
+        clock.tick(60)
 
-    pygame.quit() # Uninitialize Pygame modules
+    pygame.quit()
 
 if __name__ == "__main__":
     main()
