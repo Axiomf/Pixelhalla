@@ -647,21 +647,20 @@ class NPC(Player):
 class Boss(NPC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.spawn_cooldown = 5000  # 5 seconds cooldown for spawning enemies
+        self.spawn_cooldown = 10000  # 5 seconds cooldown for spawning enemies
         self.last_spawn_time = 0
 
     def update(self):
         # Move towards the player (simplified logic)
-        if self.single_fighter:
-            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
-                              self.rect.centery - self.single_fighter.rect.centery)
-            now = pygame.time.get_ticks()
-            if dist > 200:  # Move if farther than 200 pixels
-                self.change_x = self.speed if self.single_fighter.rect.centerx > self.rect.centerx else -self.speed
-                self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
-            else:
-                self.change_x = 0
-
+        # if self.single_fighter:
+        #     dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+        #                       self.rect.centery - self.single_fighter.rect.centery)
+        now = pygame.time.get_ticks()
+        #     if dist > 200:  # Move if farther than 200 pixels
+        #         self.change_x = self.speed if self.single_fighter.rect.centerx > self.rect.centerx else -self.speed
+        #         self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
+        #     else:
+        self.change_x = 0
         # Spawn enemies periodically
         if now - self.last_spawn_time >= self.spawn_cooldown:
             self.spawn_enemy()
