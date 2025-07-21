@@ -550,7 +550,7 @@ class NPC(Player):
         self.single_fighter = fighter
         self.can_see_the_fighter = False
         self.show_vision_line = True  # New flag to toggle vision line visibility
-
+        self.enemy_classes = [Medusa, Melee, Ranged, Suicide_Bomb, Eye]
         self.roam = roam # if it is a standing or patroling npc
         
 
@@ -680,7 +680,25 @@ class Boss(NPC):
         spawn_y = max(0, min(config.SCENE_HEIGHT - 50, spawn_y))
 
         # Create a new Melee enemy (can be extended to other types)
-        new_enemy = Melee(spawn_x, spawn_y, 30,35, platforms=self.platforms,fighter=self.single_fighter, animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+        enemy_class = random.choice(self.enemy_classes)
+        if enemy_class == Melee:
+            new_enemy = Melee(spawn_x, spawn_y, 30,35, platforms=self.platforms,fighter=self.single_fighter,
+                               animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+        elif enemy_class == Medusa:
+            new_enemy = Medusa(spawn_x, spawn_y, 128, 128,
+                    speed=config.NPC_SPEED, platforms=self.platforms, fighter=self.single_fighter,
+                    animations=load_animations_Medusa(),roam=False)
+        elif enemy_class == Ranged:
+            new_enemy = Ranged(spawn_x, spawn_y, 32, 32,
+                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles, fighter=self.single_fighter,
+                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
+        elif enemy_class == Eye:
+            new_enemy = Eye(spawn_x, spawn_y
+            ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=self.platforms)
+        elif enemy_class == Suicide_Bomb:
+            new_enemy = Suicide_Bomb(spawn_x, spawn_y
+                          , speed=2, health=50, 
+                 damage=20, platforms=self.platforms, fighter=self.single_fighter, animations=load_animations_Suicide_Bomber(), roam=True)
         self.all_sprites.add(new_enemy)
         self.enemies.add(new_enemy)
 
