@@ -1,11 +1,13 @@
-import openai  # Added import to resolve openai.APIError undefined
+import openai
 from openai import *
+
 #client = OpenAI(api_key = "tpsg-QqIyPsl4xQEVYxZ0oQUiumk3ruklqbh",base_url="https://api.metisai.ir/openai/v1")
 
 #response = client.chat.completions.create(
 #model="gpt-4o-mini",
 #messages=[{"role": "user", "content": "Salam man be to yare ghadimi :)"}],)
 #print(response.choices[0].message.content)
+
 
 import pygame
 import threading
@@ -133,6 +135,11 @@ def get_llm_response_threaded(messages_context, current_game_state_data):
     except openai.APIError as e:
         print(f"OpenAI API Error: {e}")
         llm_response = f"Boss: [My power falters... API Error: {e.code}]"
+        pygame.event.post(pygame.event.Event(LLM_REPLY_EVENT, {"reply": llm_response}))
+    except openai.error.APIConnectionError as e:
+        # Handle connection-specific errors
+        print(f"OpenAI API Connection Error: {e}")
+        llm_response = f"Boss: [My power falters... Connection error: {e}]"
         pygame.event.post(pygame.event.Event(LLM_REPLY_EVENT, {"reply": llm_response}))
     except Exception as e:
         print(f"Error calling LLM: {e}")
