@@ -96,8 +96,9 @@ class DynamicObject(GameObject):
         if self.freeze and now - self.freezed_time > self.freeze_duration:
             self.freeze = False
             self.freezed_time = 0 
-
         self.calc_grav()  # Adjust vertical velocity due to gravity
+        if self.freeze:
+            self.change_x = self.change_x
         self.rect.x += self.change_x  # Update horizontal position
         self.rect.y += self.change_y  # Update vertical position
         self.update_state()
@@ -358,7 +359,11 @@ class Fighter(Player):
     def update(self):
         self.check_power_up()
 
-        if not self.freeze:
+        if self.freeze:
+            self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed
+            
+            
+        else:
             keys = pygame.key.get_pressed()  # Get the state of keyboard keys
             # Track previous direction to detect changes
             previous_facing = self.facing_right
@@ -380,6 +385,10 @@ class Fighter(Player):
             if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
                 if self.original_image:  # Only flip if original_image exists
                     self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+
+
+
+
 
         #@@@@@@@ Check for horizontal collisions with platforms
         if self.platforms:
