@@ -686,11 +686,12 @@ class Boss(NPC):
                                animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
         elif enemy_class == Medusa:
             new_enemy = Medusa(spawn_x, spawn_y, 128, 128,
-                    speed=config.NPC_SPEED, platforms=self.platforms, fighter=self.single_fighter,
+                    speed=config.NPC_SPEED, platforms=self.platforms,projectiles=self.projectiles,all_sprites=self.all_sprites, fighter=self.single_fighter,
                     animations=load_animations_Medusa(),roam=False)
         elif enemy_class == Ranged:
             new_enemy = Ranged(spawn_x, spawn_y, 32, 32,
-                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles, fighter=self.single_fighter,
+                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter,
                       animations=load_animations_Arcane_Archer(64, 64),roam=False)
         elif enemy_class == Eye:
             new_enemy = Eye(spawn_x, spawn_y
@@ -698,7 +699,8 @@ class Boss(NPC):
         elif enemy_class == Suicide_Bomb:
             new_enemy = Suicide_Bomb(spawn_x, spawn_y
                           , speed=2, health=50, 
-                 damage=20, platforms=self.platforms, fighter=self.single_fighter, animations=load_animations_Suicide_Bomber(), roam=True)
+                 damage=20, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter, animations=load_animations_Suicide_Bomber(), roam=True)
         self.all_sprites.add(new_enemy)
         self.enemies.add(new_enemy)
 
