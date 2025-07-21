@@ -45,7 +45,7 @@ path_list = {"idle" : "src/assets/images/inused_sheets/Goblin/Idle.png",
 fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, 
            enemies=enemies, fighters=fighters,
             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
-            animations=load_animations_Knight("src/assets/images/heroes/Knight(high health low damage)/Colour1/NoOutline/120x80_gifs/__Run.gif"))
+            animations=load_animations_Goblin(path_list, 150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
 
 
 # An enemy that patrols horizontally and bounces at screen edges

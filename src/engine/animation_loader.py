@@ -312,9 +312,14 @@ def load_animations_Medusa(frame_width=128, frame_height=128, colorkey=None,
     return animations
 
 
-def load_animations_Goblin(path_list, frame_width, frame_height, colorkey=None,
+def load_animations_Goblin(frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     """ "idle" "hurt" "walk" "death" "attack" """
+    path_list = {"idle" : "src/assets/images/inused_sheets/Goblin/Idle.png",
+             "walk" : "src/assets/images/inused_sheets/Goblin/Run.png",
+             "death" : "src/assets/images/inused_sheets/Goblin/Death.png",
+             "hurt" : "src/assets/images/inused_sheets/Goblin/Take Hit.png",
+             "attack" : "src/assets/images/inused_sheets/Goblin/Attack.png"}
     animations = {} # output
 
     for action in path_list:
@@ -454,24 +459,25 @@ def load_animations_Knight(frame_width, frame_height, colorkey=None,
 def load_animations_Boss(frame_width, frame_height, colorkey=None,
                                    scale=1, crop_x=0, crop_y=0, crop_width=None, crop_height=None):
     path = "src/assets/images/inused_sheets/helldude_idle.png"
-    animations = {}
-    frames = []
+    animations = {} # output
     sheet = pygame.image.load(path).convert_alpha()
     sheet_rect = sheet.get_rect()
+    frames = [] # slut for temporary storing frames
     if crop_width == None:
         crop_width = frame_width
     if crop_height == None:
         crop_height = frame_height
+
 ################################################################
-    for x in range(0, sheet_rect.width, frame_width):
-            # Define the full frame
-            full_frame = pygame.Rect(x, 0, frame_width, frame_height)
-            # Crop to the character section (default is full frame, adjust crop_x, crop_y, crop_width, crop_height)
-            crop_rect = pygame.Rect(x + crop_x, 0 + crop_y, crop_width, crop_height)
-            frame = sheet.subsurface(crop_rect)
-            if scale != 1:
-                frame = pygame.transform.scale(frame, (int(crop_width * scale), int(crop_height * scale)))
-            if colorkey is not None:
-                frame.set_colorkey(colorkey)
-            frames.append(frame)
+    frames.clear()
+    for y in range(0, sheet_rect.height, frame_height):
+            for x in range(0, sheet_rect.width, frame_width):
+                frame = sheet.subsurface(pygame.Rect(x, y, frame_width, frame_height))
+                if scale != 1:
+                    frame = pygame.transform.scale(frame, (int(frame_width*scale), int(frame_height*scale)))
+                if colorkey is not None:
+                    frame.set_colorkey(colorkey)
+                frames.append(frame)
     animations["idle"] = frames
+################################################################
+    return animations

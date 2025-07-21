@@ -2,6 +2,7 @@ import pygame
 import config
 import random
 from .base import GameObject
+from .animation_loader import *
 import math  # Added for distance calculations
 
 pygame.mixer.init()  # Initialize mixer for audio
@@ -537,14 +538,15 @@ class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
                 damage=config.NPC_DAMAGE, image_path=None, platforms=None, 
-                projectiles=None, all_sprites=None, fighter=None, animations=None,roam=True):
-        super().__init__(x, y, width, height, color, health, damage, image_path, animations)
+                projectiles=None, all_sprites=None, fighter=None, enemies=None, animations=None,roam=True):
+        super().__init__(x, y, width, height, color, health, damage, image_path,  animations)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.speed = speed
         self.facing_right = True  # Track the direction the NPC is facing (True for right, False for left)
         self.platforms = platforms  # Store platforms group
         self.projectiles = projectiles  # Store projectiles group
         self.all_sprites = all_sprites  # Store all_sprites group
+        self.enemies = enemies
         self.single_fighter = fighter
         self.can_see_the_fighter = False
         self.show_vision_line = True  # New flag to toggle vision line visibility
@@ -643,23 +645,17 @@ class NPC(Player):
         super().update()
 
 class Boss(NPC):
-    def __init__(self, x, y, width=1280, height=1280, color=None, image_path=None, animations=None, platforms=None, 
-        projectiles=None,  all_sprites=None, enemies=None, fighter=None):
-        super().__init__(x, y, width, height, color, image_path,platforms, projectiles, animations, fighter)
-        self.health = 700  # More health for boss
-        self.speed = config.NPC_SPEED * 0.5  # Slower movement
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.spawn_cooldown = 5000  # 5 seconds cooldown for spawning enemies
         self.last_spawn_time = 0
-        self.all_sprites = all_sprites
-        self.enemies = enemies
 
     def update(self):
-        now = pygame.time.get_ticks()
-
         # Move towards the player (simplified logic)
-        if hasattr(self, 'single_fighter') and self.single_fighter:
+        if self.single_fighter:
             dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
                               self.rect.centery - self.single_fighter.rect.centery)
+            now = pygame.time.get_ticks()
             if dist > 200:  # Move if farther than 200 pixels
                 self.change_x = self.speed if self.single_fighter.rect.centerx > self.rect.centerx else -self.speed
                 self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
@@ -667,15 +663,10 @@ class Boss(NPC):
                 self.change_x = 0
 
         # Spawn enemies periodically
-        if now - self.last_spawn_time >= self.spawn_cooldown and self.all_sprites and self.enemies:
+        if now - self.last_spawn_time >= self.spawn_cooldown:
             self.spawn_enemy()
             self.last_spawn_time = now
-
-        # Update position and animation
-        self.rect.x += self.change_x
-        self.rect.y += self.change_y
-        self.update_state()
-        self.update_animation()
+        super().update()
 
     def spawn_enemy(self):
         # Random position near boss (within 100-300 pixels)
@@ -689,26 +680,9 @@ class Boss(NPC):
         spawn_y = max(0, min(config.SCENE_HEIGHT - 50, spawn_y))
 
         # Create a new Melee enemy (can be extended to other types)
-        new_enemy = Melee(spawn_x, spawn_y, image_path="src/assets/images/enemy.png", animations=None)
+        new_enemy = Melee(spawn_x, spawn_y, 30, 35,animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
         self.all_sprites.add(new_enemy)
         self.enemies.add(new_enemy)
-
-    def take_damage(self, amount):
-        if not self.freeze and not self.shield:
-            self.blood_sound.play()
-            self.health -= amount
-            if self.health < 0:
-                self.health = 0
-            if self.health > 0 and not self.is_dying:
-                now = pygame.time.get_ticks()
-                if not self.is_hurting or (now - self.last_hurt_time > 500):
-                    self.is_hurting = True
-                    self.hurt_start_time = now
-                    self.state = "hurt"
-                    self.current_animation = "hurt"
-                    self.original_change_x = self.change_x
-                    self.change_x = 0
-                self.last_hurt_time = now
 
 class Suicide_Bomb(NPC):
     """A NPC that patrols until it sees the fighter, then chases and explodes when close enough."""
