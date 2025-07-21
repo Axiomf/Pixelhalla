@@ -2,33 +2,8 @@
 import openai
 import pygame
 import threading
-import os # For environment variables 
-from .dummyUI import*
-
-
-
-
-
-# Screen dimensions
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Boss vs. Fighter Dialog")
-
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (50, 50, 50)
-LIGHT_GRAY = (150, 150, 150)
-BLUE = (0, 100, 200)
-GREEN = (0, 200, 0)
-RED = (200, 0, 0)
-
-# Fonts
-font_dialog = pygame.font.Font(None, 24) # For dialog history
-font_input = pygame.font.Font(None, 28) # For user input
-font_status = pygame.font.Font(None, 20) # For status messages
-
-
+import os # For environment variables
+from dummyUI import draw_ui, WIDTH, font_input
 # --- Pygame Setup ---
 pygame.init()
 
@@ -282,70 +257,7 @@ def main():
                 dialog_display_scroll_offset = 0
 
         # --- Drawing ---
-        screen.fill(BLACK) # Clear the screen
-
-        # 1. Dialog History Area
-        dialog_rect = pygame.Rect(50, 20, WIDTH - 100, HEIGHT - 150)
-        pygame.draw.rect(screen, GRAY, dialog_rect, 0, 8) # Background for dialog area
-        pygame.draw.rect(screen, LIGHT_GRAY, dialog_rect, 2, 8) # Border
-
-        # Filter out the system prompt for display purposes (it's for the LLM, not the player)
-        display_messages = [msg for msg in dialog_history if msg["role"] != "system"]
-
-        # Calculate total height of messages if drawn to determine starting Y position
-        # so that the most recent messages are always visible at the bottom.
-        temp_surf = pygame.Surface((dialog_rect.width - 20, 1)) # Dummy surface for height calculation
-        total_dialog_content_height = 0
-        for msg in display_messages:
-            prefix = "Fighter: " if msg["role"] == "user" else "Boss: "
-            # Clean up injected game context for display, so it doesn't clutter the UI
-            display_text_cleaned = msg["content"].split("(Current game context:")[0].strip()
-            display_message = prefix + display_text_cleaned
-
-            # Use draw_text_multiline to calculate how much vertical space this message would take.
-            temp_rect = pygame.Rect(0, 0, dialog_rect.width - 20, 1) # Width for wrapping
-            line_end_y = draw_text_multiline(temp_surf, display_message, font_dialog, WHITE, temp_rect)
-            total_dialog_content_height += line_end_y + 5 # Add a small gap between messages
-
-        # Determine start Y for drawing: always try to show latest messages
-        current_y_for_display = dialog_rect.bottom - total_dialog_content_height - dialog_display_scroll_offset
-        if current_y_for_display < dialog_rect.top + 10: # Ensure text doesn't start above the top border
-            current_y_for_display = dialog_rect.top + 10
-
-        # Draw dialog messages within the dialog_rect area
-        for msg in display_messages:
-            prefix = "Fighter: " if msg["role"] == "user" else "Boss: "
-            display_text_cleaned = msg["content"].split("(Current game context:")[0].strip()
-            display_message = prefix + display_text_cleaned
-
-            message_rect = pygame.Rect(dialog_rect.left + 10, current_y_for_display, dialog_rect.width - 20, 0)
-            line_end_y = draw_text_multiline(screen, display_message, font_dialog, WHITE, message_rect)
-            current_y_for_display = line_end_y + 5 # Move down for the next message
-
-
-        # 2. Input Box Area
-        input_box_rect = pygame.Rect(50, HEIGHT - 100, WIDTH - 100, 50)
-        pygame.draw.rect(screen, LIGHT_GRAY, input_box_rect, 0, 5) # Background for input
-        pygame.draw.rect(screen, WHITE, input_box_rect, 2, 5) # Border
-
-        # Draw current user input
-        input_surface = font_input.render(user_input_text, True, BLACK)
-        screen.blit(input_surface, (input_box_rect.left + 10, input_box_rect.centery - input_surface.get_height() // 2))
-
-        # 3. Status/Prompt Area
-        status_rect = pygame.Rect(50, HEIGHT - 40, WIDTH - 100, 30)
-
-        if is_waiting_for_llm:
-            status_text_surface = font_status.render("Boss is contemplating your fate...", True, BLUE)
-        else:
-            status_text_surface = font_status.render("Type your defiance and press ENTER (or ESC to quit).", True, GREEN)
-            if not user_input_text.strip(): # Hint if input is empty
-                 status_text_surface = font_status.render("Type your message...", True, LIGHT_GRAY)
-
-        screen.blit(status_text_surface, (status_rect.left, status_rect.top))
-
-        # Update the display
-        pygame.display.flip()
+        draw_ui(dialog_history, user_input_text, is_waiting_for_llm, dialog_display_scroll_offset)
 
         # Cap the frame rate
         clock.tick(60) # Limit to 60 frames per second
