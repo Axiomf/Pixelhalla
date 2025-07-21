@@ -670,17 +670,17 @@ class Boss(NPC):
 
     def spawn_enemy(self):
         # Random position near boss (within 100-300 pixels)
-        offset_x = random.randint(100, 300) * (1 if random.choice([True, False]) else -1)
-        offset_y = random.randint(-50, 50)
-        spawn_x = self.rect.centerx + offset_x
-        spawn_y = self.rect.centery + offset_y
+        offset_x = random.randint(373, 709) 
+        offset_y = random.randint(0, 50)
+        spawn_x = offset_x
+        spawn_y = offset_y
 
         # Ensure spawn position is within scene boundaries
         spawn_x = max(0, min(config.SCENE_WIDTH - 50, spawn_x))
         spawn_y = max(0, min(config.SCENE_HEIGHT - 50, spawn_y))
 
         # Create a new Melee enemy (can be extended to other types)
-        new_enemy = Melee(spawn_x, spawn_y, 30, 35,animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+        new_enemy = Melee(spawn_x, spawn_y, 30,35, platforms=self.platforms,fighter=self.single_fighter, animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
         self.all_sprites.add(new_enemy)
         self.enemies.add(new_enemy)
 
