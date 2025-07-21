@@ -257,7 +257,25 @@ class Player(DynamicObject):
         now = pygame.time.get_ticks()
         frame_duration = self.animation_speeds.get(self.current_animation, 100)
         # Cycle frames just as in the parent
-        if self.animations.get(self.current_animation) and now - self.last_update > frame_duration:
+        ##############################################333
+        if self.freeze and not self.is_dying:
+            self.last_update = now
+            #print("sssssssss")
+            #self._cycle_frame()
+            #self._handle_death_animation()
+            return
+        ######################################################3
+        if self.freeze and self.is_dying:
+            self.last_update = now
+            #print("rrrrrrrrrrr")
+            self._cycle_frame()
+            self._handle_death_animation()
+            return
+        ######################################################3
+
+
+
+        elif self.animations.get(self.current_animation) and now - self.last_update > frame_duration:
             self.last_update = now
             self._cycle_frame()
             self._handle_death_animation()
