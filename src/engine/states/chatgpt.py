@@ -1,4 +1,5 @@
-from openai import OpenAI
+import openai  # Added import to resolve openai.APIError undefined
+from openai import *
 #client = OpenAI(api_key = "tpsg-QqIyPsl4xQEVYxZ0oQUiumk3ruklqbh",base_url="https://api.metisai.ir/openai/v1")
 
 #response = client.chat.completions.create(
