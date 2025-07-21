@@ -37,9 +37,10 @@ path_list = {"idle" : "src/assets/images/inused_sheets/Goblin/Idle.png",
              "attack" : "src/assets/images/inused_sheets/Goblin/Attack.png"}
 
 # Two fighter objects using custom control keys for movement, jumping, and shooting.
-fighter1 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,
-                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                   animations=load_animations_Arcane_Archer(scale=1))
+fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, 
+           enemies=enemies, fighters=fighters,
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
+            animations=load_animations_Fantasy_Warrior(162,162,crop_x= 65,crop_y= 70, crop_width=30, crop_height=35,scale=1))
 
 
 # An enemy that patrols horizontally and bounces at screen edges

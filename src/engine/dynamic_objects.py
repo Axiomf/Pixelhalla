@@ -37,13 +37,7 @@ class DynamicObject(GameObject):
         self.freeze = False # it can not move while being freezed
         self.freeze_duration = 1000 # lenght of freeze duration
         self.freezed_time = 0 # the time it got freezed
-        try:
-            self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
-            print("Blood sound loaded successfully!")
-        except FileNotFoundError:
-            print("Error: Blood sound file not found at src/assets/sounds/blood2.wav")
-        except pygame.error as e:
-            print(f"Pygame error loading blood sound: {e}")
+        self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
 
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image
@@ -302,12 +296,14 @@ class Player(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, animations=None):
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, animations=None):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
         self.platforms = platforms  # Store platforms group
+        self.enemies = enemies
+        self.fighters = fighters
         self.powered = False
         self.left_duration_powerup = 0
         self.started_powerup = 0
@@ -440,6 +436,102 @@ class Fighter(Player):
                          damage=self.damage,
                          image_path="src/assets/images/inused_single_images/bullet.png", 
                          owner=self)
+
+class MeleeFighter(Fighter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attack_range = 50  # Melee attack range in pixels
+        self.attack_cooldown = 500  # 1 second cooldown for attack
+        self.last_attack_time = 0  # Track last attack time
+        self.last_sound_time = 0  # Track last sound time
+
+    def update(self):
+        self.check_power_up()
+        keys = pygame.key.get_pressed()
+        previous_facing = self.facing_right
+
+        # Movement like Fighter
+        if self.controls.get("left") and keys[self.controls["left"]]:
+            self.change_x = (-1) * self.speed
+            self.facing_right = False
+        elif self.controls.get("right") and keys[self.controls["right"]]:
+            self.change_x = self.speed
+            self.facing_right = True
+        else:
+            self.change_x = 0
+
+        if self.controls.get("jump") and keys[self.controls["jump"]] and self.change_y == 0:
+            self.change_y = self.jump_strength
+
+        # Platform and boundary collisions like Fighter
+        if self.platforms:
+            self.rect.x += self.change_x
+            collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
+            for platform in collided_platforms:
+                if self.change_x > 0 and self.rect.right > platform.rect.left:
+                    self.rect.right = platform.rect.left
+                    self.change_x = 0
+                elif self.change_x < 0 and self.rect.left < platform.rect.right:
+                    self.rect.left = platform.rect.right
+                    self.change_x = 0
+            self.rect.y += self.change_y
+            collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
+            for platform in collided_platforms:
+                if self.change_y > 0 and self.rect.bottom > platform.rect.top:
+                    self.rect.bottom = platform.rect.top
+                    self.change_y = 0
+                elif self.change_y < 0 and self.rect.top < platform.rect.bottom:
+                    self.rect.top = platform.rect.bottom
+                    self.change_y = 0
+
+        if self.rect.right > config.SCENE_WIDTH:
+            self.rect.right = config.SCENE_WIDTH
+            self.change_x = 0
+        elif self.rect.left < 0:
+            self.rect.left = 0
+            self.change_x = 0
+
+        # Melee attack with space key
+        if self.controls.get("attack") and keys[self.controls["attack"]]:
+            now = pygame.time.get_ticks()
+            if not self.is_attacking and now - self.last_attack_time >= self.attack_cooldown:
+                self.is_attacking = True
+                self.attack_start_time = now
+                self.state = "attack"
+                self.current_animation = "attack"
+                self.original_change_x = self.change_x
+                self.change_x = 0
+                self.last_attack_time = now
+
+                # Check for targets in attack range
+                attack_x = self.rect.centerx + (self.attack_range * (1 if self.facing_right else -1))
+                attack_y = self.rect.centery
+                for sprite in self.enemies:  # Assuming all_sprites contains fighters and NPCs
+                    if hasattr(sprite, 'health') and sprite != self:
+                        dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
+                        if dist <= self.attack_range:
+                            print("yes")
+                            sprite.take_damage(self.damage)
+                            if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
+                                sprite.blood_sound.play()
+                                self.last_sound_time = now
+                for sprite in self.fighters:  # Assuming all_sprites contains fighters and NPCs
+                    if hasattr(sprite, 'health') and sprite != self:
+                        dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
+                        if dist <= self.attack_range:
+                            print("yes")
+                            sprite.take_damage(self.damage)
+                            if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
+                                sprite.blood_sound.play()
+                                self.last_sound_time = now
+
+        # Update image based on direction
+        if self.facing_right != previous_facing and not self.animations.get(self.current_animation):
+            if self.original_image:
+                self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+
+        self.calc_grav()
+        super().update()
  
 class NPC(Player):
     vision_boost = 0  # <-- New class variable for global vision boost 
