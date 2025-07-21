@@ -24,6 +24,11 @@ static_platform1 = Platform(config.SCENE_WIDTH*2/8 + 73, config.SCENE_HEIGHT*3/5
                            config.SCENE_WIDTH*3/8,config.SCENE_HEIGHT*1/200, 
                            color=None)#this is the main platform
 
+
+static_platform4 = Platform(config.SCENE_WIDTH*2/8 + 160, config.SCENE_HEIGHT*3/5 - 50, 
+                           50,50, 
+                           color=(0,0,0))#this is the main platform
+
 static_platform2 = Platform(config.SCENE_WIDTH*2/8 + 88, config.SCENE_HEIGHT*2/5 + 13, 
                            130,config.SCENE_HEIGHT*1/200, 
                            color=None)
@@ -40,7 +45,7 @@ path_list = {"idle" : "src/assets/images/inused_sheets/Goblin/Idle.png",
 fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, 
            enemies=enemies, fighters=fighters,
             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
-            animations=load_animations_Fantasy_Warrior(162,162,crop_x= 65,crop_y= 70, crop_width=30, crop_height=35,scale=1))
+            animations=load_animations_Knight("src/assets/images/heroes/Knight(high health low damage)/Colour1/NoOutline/120x80_gifs/__Run.gif"))
 
 
 # An enemy that patrols horizontally and bounces at screen edges
@@ -53,8 +58,8 @@ enemy = Melee(static_platform1.rect.x + 60,
             animations=load_animations_Goblin(path_list, 150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
 
 # Add each object to the appropriate sprite groups for updating and drawing
-all_sprites.add(static_platform1, static_platform2,static_platform3, fighter1, enemy)
-platforms.add(static_platform1, static_platform2, static_platform3)
+all_sprites.add(static_platform1, static_platform2,static_platform3, static_platform4, fighter1, enemy)
+platforms.add(static_platform1, static_platform2, static_platform3, static_platform4)
 enemies.add(enemy)
 melee.add(enemy)
 fighters.add(fighter1)

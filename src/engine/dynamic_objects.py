@@ -1,5 +1,6 @@
 import pygame
 import config
+import random
 from .base import GameObject
 import math  # Added for distance calculations
 
@@ -510,7 +511,6 @@ class MeleeFighter(Fighter):
                     if hasattr(sprite, 'health') and sprite != self:
                         dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
                         if dist <= self.attack_range:
-                            print("yes")
                             sprite.take_damage(self.damage)
                             if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
                                 sprite.blood_sound.play()
@@ -519,7 +519,6 @@ class MeleeFighter(Fighter):
                     if hasattr(sprite, 'health') and sprite != self:
                         dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
                         if dist <= self.attack_range:
-                            print("yes")
                             sprite.take_damage(self.damage)
                             if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
                                 sprite.blood_sound.play()
@@ -642,6 +641,74 @@ class NPC(Player):
                 self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
         super().update()
+
+class Boss(NPC):
+    def __init__(self, x, y, width=1280, height=1280, color=None, image_path=None, animations=None, platforms=None, 
+        projectiles=None,  all_sprites=None, enemies=None, fighter=None):
+        super().__init__(x, y, width, height, color, image_path,platforms, projectiles, animations, fighter)
+        self.health = 700  # More health for boss
+        self.speed = config.NPC_SPEED * 0.5  # Slower movement
+        self.spawn_cooldown = 5000  # 5 seconds cooldown for spawning enemies
+        self.last_spawn_time = 0
+        self.all_sprites = all_sprites
+        self.enemies = enemies
+
+    def update(self):
+        now = pygame.time.get_ticks()
+
+        # Move towards the player (simplified logic)
+        if hasattr(self, 'single_fighter') and self.single_fighter:
+            dist = math.hypot(self.rect.centerx - self.single_fighter.rect.centerx,
+                              self.rect.centery - self.single_fighter.rect.centery)
+            if dist > 200:  # Move if farther than 200 pixels
+                self.change_x = self.speed if self.single_fighter.rect.centerx > self.rect.centerx else -self.speed
+                self.facing_right = self.single_fighter.rect.centerx > self.rect.centerx
+            else:
+                self.change_x = 0
+
+        # Spawn enemies periodically
+        if now - self.last_spawn_time >= self.spawn_cooldown and self.all_sprites and self.enemies:
+            self.spawn_enemy()
+            self.last_spawn_time = now
+
+        # Update position and animation
+        self.rect.x += self.change_x
+        self.rect.y += self.change_y
+        self.update_state()
+        self.update_animation()
+
+    def spawn_enemy(self):
+        # Random position near boss (within 100-300 pixels)
+        offset_x = random.randint(100, 300) * (1 if random.choice([True, False]) else -1)
+        offset_y = random.randint(-50, 50)
+        spawn_x = self.rect.centerx + offset_x
+        spawn_y = self.rect.centery + offset_y
+
+        # Ensure spawn position is within scene boundaries
+        spawn_x = max(0, min(config.SCENE_WIDTH - 50, spawn_x))
+        spawn_y = max(0, min(config.SCENE_HEIGHT - 50, spawn_y))
+
+        # Create a new Melee enemy (can be extended to other types)
+        new_enemy = Melee(spawn_x, spawn_y, image_path="src/assets/images/enemy.png", animations=None)
+        self.all_sprites.add(new_enemy)
+        self.enemies.add(new_enemy)
+
+    def take_damage(self, amount):
+        if not self.freeze and not self.shield:
+            self.blood_sound.play()
+            self.health -= amount
+            if self.health < 0:
+                self.health = 0
+            if self.health > 0 and not self.is_dying:
+                now = pygame.time.get_ticks()
+                if not self.is_hurting or (now - self.last_hurt_time > 500):
+                    self.is_hurting = True
+                    self.hurt_start_time = now
+                    self.state = "hurt"
+                    self.current_animation = "hurt"
+                    self.original_change_x = self.change_x
+                    self.change_x = 0
+                self.last_hurt_time = now
 
 class Suicide_Bomb(NPC):
     """A NPC that patrols until it sees the fighter, then chases and explodes when close enough."""
