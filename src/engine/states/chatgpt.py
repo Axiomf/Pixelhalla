@@ -95,12 +95,12 @@ FIGHTER_SYSTEM_PROMPT = {
 # --- Game State (Example) ---
 game_state = {
     "boss_health": 100,
-    "player_name": "unknown",
-    "player_class": "human",
-    "player_level": 7,
-    "dungeon_level": 6,
-    "last_character_action": "Lucifer just spoke.",
-    "boss_mood": "deceptive and greedy",
+    "fighter_name": "Valiant Hero",
+    "fighter_class": "Paladin",
+    "fighter_level": 7,
+    "dungeon_level": 5,
+    "last_character_action": "Kael'thas just spoke.",
+    "boss_mood": "deceptive",
     "fighter_mood": "determined",
 }
 
@@ -286,13 +286,13 @@ def main():
                 boss_last_dialog = llm_response_content
 
                 dialog_history.append({"role": "assistant", "content": llm_response_content})
-                game_state["last_character_action"] = f"Lucifer just said: '{llm_response_content[:40]}...'"
+                game_state["last_character_action"] = f"Kael'thas just said: '{llm_response_content[:40]}...'"
                 is_waiting_for_boss_llm = False # Boss has finished thinking
                 dialog_display_scroll_offset = 0 # Auto-scroll to bottom
 
                 # Now, start the delay for the Fighter's turn
                 current_turn = "fighter" # Set who should speak next
-                delay_time = random.randint(15, 20) * 1000 # Convert to milliseconds
+                delay_time = random.randint(10, 15) * 1000 # Convert to milliseconds
                 pygame.time.set_timer(TRIGGER_NEXT_TURN_EVENT, delay_time, 1) # Fire once
                 is_delaying_for_next_turn = True
                 print(f"Boss replied. Starting {delay_time / 1000}s delay for Fighter's turn...")
@@ -310,7 +310,7 @@ def main():
 
                 # Now, start the delay for the Boss's turn
                 current_turn = "boss" # Set who should speak next
-                delay_time = random.randint(15, 20) * 1000 # Convert to milliseconds
+                delay_time = random.randint(10, 15) * 1000 # Convert to milliseconds
                 pygame.time.set_timer(TRIGGER_NEXT_TURN_EVENT, delay_time, 1) # Fire once
                 is_delaying_for_next_turn = True
                 print(f"Fighter replied. Starting {delay_time / 1000}s delay for Boss's turn...")
