@@ -26,6 +26,8 @@ class PlayingState(BaseState):
         self.map4_level = 0
         self.change_level = 0
         self.boss_state = False
+        self.game_over_fighter1 = False
+        self.game_over_fighter2 = False
 
     def load_map(self, map_name, fighter1_id, fighter2_id, fighter_select_phase, level_state=None):
         """Load map components using a module mapping."""
@@ -237,9 +239,13 @@ class PlayingState(BaseState):
         # Check if all enemies are defeated
         if len(self.enemies) == 0 and not self.level_complete:
             self.level_complete = True
+        if state_manager.fighter_select_phase == "single" and len(self.fighters) == 0 and not self.level_complete:
+            self.game_over_fighter1 = True
 
     def start_level(self, state_manager):
         """Restart the current level and start the next level"""
+        self.game_over_fighter1 = False
+        self.game_over_fighter2 = False
         self.all_sprites.empty()
         self.platforms.empty()
         self.enemies.empty()
@@ -263,7 +269,7 @@ class PlayingState(BaseState):
                 sprite.draw_vision_line(scene)  # I wish this was handled somewhere else
             if isinstance(sprite, Player):  # I wish this was handled somewhere else
                 sprite.draw_health_bar(scene)
-        if self.boss_state:
+        if self.boss_state and self.game_over_fighter1:
             # Draw end level screen
             scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay
             title_font = pygame.font.Font(None, 72)
@@ -284,7 +290,6 @@ class PlayingState(BaseState):
             # Draw button text
             restart_text = button_font.render("Restart", True, (255, 255, 255))
             back_text = button_font.render("Back to Map", True, (255, 255, 255))
-
             scene.blit(restart_text, restart_text.get_rect(center=self.restart_button.center))
             scene.blit(back_text, back_text.get_rect(center=self.back_button.center))
         if self.level_complete:
@@ -317,7 +322,7 @@ class PlayingState(BaseState):
             scene.blit(back_text, back_text.get_rect(center=self.back_button.center))
         else:
             # Draw Back button
-            self.back_button = pygame.Rect(20, 20, 100, 50)  # Top-left corner
+            self.back_button = pygame.Rect(1080, 20, 100, 50)  # Top-left corner
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
                                               self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_back_button.collidepoint(mouse_pos):

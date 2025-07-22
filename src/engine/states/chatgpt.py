@@ -5,7 +5,7 @@ import threading
 import os # For environment variables
 import random # For random delay
 # Assuming dummyUI can handle an empty input string and a combined thinking state
-from dummyUI import draw_ui, WIDTH, font_input
+from src.engine.gpt_api.dummyUI import draw_ui, WIDTH, font_input
 
 # --- Pygame Setup ---
 pygame.init()
