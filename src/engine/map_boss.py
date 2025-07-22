@@ -3,9 +3,6 @@ from .dynamic_objects import *
 from .base import CustomGroup
 from .animation_loader import *
 
-
-
-
 scene = pygame.display.set_mode((config.SCENE_WIDTH, config.SCENE_HEIGHT))  # Set up the main game window
 # Load a background image located in the assets folder
 background = pygame.image.load("src/assets/images/background/hell_throne.png")
