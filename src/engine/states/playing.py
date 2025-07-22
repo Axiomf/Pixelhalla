@@ -24,7 +24,7 @@ class PlayingState(BaseState):
         self.change_level = 0
         self.boss_state = False
 
-    def load_map(self, map_name, level_state=None):
+    def load_map(self, map_name, fighter1_id, fighter2_id, fighter_select_phase, level_state=None):
         """Load map components using a module mapping."""
         map_modules = {
             "map1": "src.engine.map1",
@@ -37,7 +37,7 @@ class PlayingState(BaseState):
         if module_path:
             try:
                 if map_name == "map1" and not self.audio_playing:
-                    map1.load_map(level_state)
+                    map1.load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase)
                     pygame.mixer.music.load("src/assets/sounds/Level03.mp3.mpeg")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
@@ -75,8 +75,31 @@ class PlayingState(BaseState):
             return
 
         if not self.all_sprites:
-            self.load_map(state_manager.current_map)
+            self.load_map(state_manager.current_map, state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase)
         
+        if self.boss_state:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_pos = event.pos
+                if self.restart_button.collidepoint(mouse_pos):
+                    state_manager.click_sound.play()
+                    self.start_level(state_manager)
+                elif self.back_button.collidepoint(mouse_pos):
+                    state_manager.click_sound.play()  # Play click sound
+                    state_manager.change_state(config.GAME_STATE_MAP_SELECT)
+                    state_manager.last_click_time = current_time
+                    # Reset the state by clearing sprite groups
+                    self.all_sprites.empty()
+                    self.platforms.empty()
+                    self.enemies.empty()
+                    self.fighters.empty()
+                    self.projectiles.empty()
+                    # Stop audio when leaving playing state
+                    if self.audio_playing:
+                        pygame.mixer.music.stop()
+                        self.audio_playing = False
+                        pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+                        pygame.mixer.music.play(-1)
+                    pygame.event.clear()  # Clear event queue
         if self.level_complete:
             # Handle clicks on end level buttons
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -89,16 +112,20 @@ class PlayingState(BaseState):
                     self.change_level = self.map_jesus_level
                 if map_name == "map4":
                    self.change_level = self.map4_level
+
                 if self.next_button.collidepoint(mouse_pos)  and self.change_level == 3:
+                    state_manager.click_sound.play()
                     # state_manager.change_state(config.GAME_STATE_NEXT_LEVEL)  # Assuming this state exists
                     state_manager.current_map = "map_boss"
                     self.boss_state = True
                     self.start_level(state_manager)
                 elif self.next_button.collidepoint(mouse_pos):
+                    state_manager.click_sound.play()
                     # state_manager.change_state(config.GAME_STATE_NEXT_LEVEL)  # Assuming this state exists
                     self.change_level += 1
                     self.start_level(state_manager)
                 elif self.restart_button.collidepoint(mouse_pos):
+                    state_manager.click_sound.play()
                     self.start_level(state_manager)
                 elif self.back_button.collidepoint(mouse_pos):
                     state_manager.click_sound.play()  # Play click sound
@@ -200,7 +227,7 @@ class PlayingState(BaseState):
     def update(self, current_time, scale, state_manager):
         """Update logic for playing state."""
         if not self.all_sprites:
-            self.load_map(state_manager.current_map, self.change_level)
+            self.load_map(state_manager.current_map, state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase, self.change_level)
         self.all_sprites.update()  # Call update for all sprites
         self.handle_collisions(state_manager)  # Process all collisions
 
@@ -216,7 +243,7 @@ class PlayingState(BaseState):
         self.fighters.empty()
         self.projectiles.empty()
         self.level_complete = False
-        self.load_map(state_manager.current_map, self.change_level)
+        self.load_map(state_manager.current_map, self.change_level,state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase)
         if self.audio_playing:
             pygame.mixer.music.stop()
             self.audio_playing = False
@@ -233,7 +260,30 @@ class PlayingState(BaseState):
                 sprite.draw_vision_line(scene)  # I wish this was handled somewhere else
             if isinstance(sprite, Player):  # I wish this was handled somewhere else
                 sprite.draw_health_bar(scene)
+        if self.boss_state:
+            # Draw end level screen
+            scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay
+            title_font = pygame.font.Font(None, 72)
+            button_font = pygame.font.Font(None, 48)
 
+            title_text = title_font.render("Level Complete!", True, (255, 255, 255))
+            title_rect = title_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 4))
+            scene.blit(title_text, title_rect)
+
+            # Define button rectangles
+            self.restart_button = pygame.Rect(config.SCENE_WIDTH // 2 - 100, config.SCENE_HEIGHT // 2 + 30, 200, 70)
+            self.back_button = pygame.Rect(config.SCENE_WIDTH // 2 - 100, config.SCENE_HEIGHT // 2 + 110, 200, 70)
+
+            # Draw buttons
+            pygame.draw.rect(scene, self.button_color, self.restart_button)
+            pygame.draw.rect(scene, self.button_color, self.back_button)
+
+            # Draw button text
+            restart_text = button_font.render("Restart", True, (255, 255, 255))
+            back_text = button_font.render("Back to Map", True, (255, 255, 255))
+
+            scene.blit(restart_text, restart_text.get_rect(center=self.restart_button.center))
+            scene.blit(back_text, back_text.get_rect(center=self.back_button.center))
         if self.level_complete:
             # Draw end level screen
             scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay
@@ -264,6 +314,7 @@ class PlayingState(BaseState):
             scene.blit(back_text, back_text.get_rect(center=self.back_button.center))
         else:
             # Draw Back button
+            self.back_button = pygame.Rect(20, 20, 100, 50)  # Top-left corner
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
                                               self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_back_button.collidepoint(mouse_pos):
