@@ -2,7 +2,7 @@ import pygame
 import config
 from src.engine.dynamic_objects import *
 from src.engine.states.base_state import BaseState
-from src.engine import map1
+from src.engine import map1, map4, map_boss, map_jesus, map_levels
 class PlayingState(BaseState):
     def __init__(self, scene):
         super().__init__(scene)
@@ -22,14 +22,16 @@ class PlayingState(BaseState):
         self.map_levels_level = 0
         self.map4_level = 0
         self.change_level = 0
+        self.boss_state = False
 
-    def load_map(self, map_name, level_state):
+    def load_map(self, map_name, level_state=None):
         """Load map components using a module mapping."""
         map_modules = {
             "map1": "src.engine.map1",
             "map_levels": "src.engine.map_levels",
             "map_jesus": "src.engine.map_jesus",
-            "map4": "src.engine.map4"
+            "map4": "src.engine.map4",
+            "map_boss" : "src.engine.map_boss"
         }
         module_path = map_modules.get(map_name)
         if module_path:
@@ -49,6 +51,11 @@ class PlayingState(BaseState):
                     self.audio_playing = True
                 if map_name == "map4" and not self.audio_playing:
                     pygame.mixer.music.load("src/assets/sounds/LevelCTF.mp3.mpeg")  # Load audio file
+                    pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
+                    self.audio_playing = True
+                if map_name == "map_boss" and not self.audio_playing:
+                    map_boss.load_map()
+                    pygame.mixer.music.load("src/assets/sounds/jesus_theme.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'enemies', 'fighters', 'projectiles', 'draw_background'])
@@ -82,7 +89,12 @@ class PlayingState(BaseState):
                     self.change_level = self.map_jesus_level
                 if map_name == "map4":
                    self.change_level = self.map4_level
-                if self.next_button.collidepoint(mouse_pos):
+                if self.next_button.collidepoint(mouse_pos)  and self.change_level == 3:
+                    # state_manager.change_state(config.GAME_STATE_NEXT_LEVEL)  # Assuming this state exists
+                    state_manager.current_map = "map_boss"
+                    self.boss_state = True
+                    self.start_level(state_manager)
+                elif self.next_button.collidepoint(mouse_pos):
                     # state_manager.change_state(config.GAME_STATE_NEXT_LEVEL)  # Assuming this state exists
                     self.change_level += 1
                     self.start_level(state_manager)
@@ -102,7 +114,17 @@ class PlayingState(BaseState):
                     if self.audio_playing:
                         pygame.mixer.music.stop()
                         self.audio_playing = False
+                        pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+                        pygame.mixer.music.play(-1)
                     pygame.event.clear()  # Clear event queue
+                if map_name == "map1":
+                    self.map1_level = self.change_level
+                if map_name == "map_levels":
+                    self.map_levels_level = self.change_level
+                if map_name == "map_jesus":
+                    self.map_jesus_level = self.change_level
+                if map_name == "map4":
+                   self.map4_level = self.change_level
             return
 
         if event.type == pygame.KEYDOWN:
@@ -128,6 +150,8 @@ class PlayingState(BaseState):
                 if self.audio_playing:
                     pygame.mixer.music.stop()
                     self.audio_playing = False
+                    pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+                    pygame.mixer.music.play(-1)
                 pygame.event.clear()  # Clear event queue
 
     def handle_collisions(self, state_manager):
@@ -185,7 +209,7 @@ class PlayingState(BaseState):
             self.level_complete = True
 
     def start_level(self, state_manager):
-        """Restart the current level."""
+        """Restart the current level and start the next level"""
         self.all_sprites.empty()
         self.platforms.empty()
         self.enemies.empty()
