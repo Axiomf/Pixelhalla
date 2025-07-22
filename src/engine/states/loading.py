@@ -11,7 +11,7 @@ class LoadingState:
         self.loading_background = pygame.image.load("src/assets/images/background/blue-preview.png").convert_alpha()
         self.loading_background = pygame.transform.scale(self.loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
 
-    def handle_event(self, event, current_time, scale, state_manager):
+    def handle_event(self, event, current_time, scale, current_map, state_manager):
         """Handle events in loading screen."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - state_manager.last_click_time > config.CLICK_COOLDOWN:
             pulsed_start_button = pygame.Rect(start_button.x - scale / 2, start_button.y - scale / 2, 

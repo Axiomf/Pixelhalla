@@ -19,7 +19,7 @@ class FighterSelectState:
         self.fighter4_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
         self.fighter4_preview = pygame.transform.scale(self.fighter4_preview, (150, 150))
 
-    def handle_event(self, event, current_time, scale, state_manager):
+    def handle_event(self, event, current_time, scale, current_map, state_manager):
         """Handle events in fighter select screen."""
         if not hasattr(state_manager, 'game_mode') or state_manager.game_mode is None:
             state_manager.change_state(config.GAME_STATE_MODE_SELECT)

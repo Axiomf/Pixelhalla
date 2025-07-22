@@ -35,7 +35,7 @@ class StateManager:
 
     def handle_event(self, event, current_time, scale):
         """Handle events for the current state."""
-        self.states[self.game_state].handle_event(event, current_time, scale, self)
+        self.states[self.game_state].handle_event(event, current_time, scale, self.current_map, self)
 
     def update(self, current_time, scale):
         """Update the current state."""

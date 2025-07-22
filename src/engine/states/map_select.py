@@ -19,7 +19,7 @@ class MapSelectState:
         self.map4_preview = pygame.image.load("src/assets/images/nature_1/orig.png").convert_alpha()
         self.map4_preview = pygame.transform.scale(self.map4_preview, (300, 150))
 
-    def handle_event(self, event, current_time, scale, state_manager):
+    def handle_event(self, event, current_time, scale, current_map, state_manager):
         """Handle events in map select screen."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - state_manager.last_click_time > config.CLICK_COOLDOWN:
             pulsed_map1_button = pygame.Rect(map1_button.x - scale / 2, map1_button.y - scale / 2, 
