@@ -46,6 +46,7 @@ class PlayingState(BaseState):
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 if map_name == "map_jesus" and not self.audio_playing:
+                    map_jesus.load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase)
                     pygame.mixer.music.load("src/assets/sounds/jesus_theme.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
