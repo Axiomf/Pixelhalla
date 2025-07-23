@@ -25,19 +25,19 @@ def load_map(fighter1_id):
                             color=None)#this is the main platform
     # Two fighter objects using custom control keys for movement, jumping, and shooting.
     if fighter1_id == "fighter1":
-            fighter1 = Fighter(150, 150, 32, 32, platforms=platforms,
+            fighter1 = Fighter(150, 150, 32, 32, platforms=platforms, health=1000,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    animations=load_animations_Elf_Archer())
     elif fighter1_id == "fighter2":
-        fighter1 = MeleeFighter(150, 150, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters,
+        fighter1 = MeleeFighter(150, 150, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters, health=1000,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
                    animations=load_animations_Samurai(scale=1))
     elif fighter1_id == "fighter3":
-        fighter1 = MeleeFighter(150, 150, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters,
+        fighter1 = MeleeFighter(150, 150, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters, health=1000,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
                    animations=load_animations_Knight(scale=1))
     elif fighter1_id == "fighter4":
-        fighter1 = Fighter(150, 150, 32, 32, platforms=platforms,
+        fighter1 = Fighter(150, 150, 32, 32, platforms=platforms, health=1000,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    animations=load_animations_Arcane_Archer(scale=1))
 

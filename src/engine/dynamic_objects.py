@@ -651,7 +651,7 @@ class Boss(NPC):
         self.phase = 0
         self.last_spawn_time = 0
         self.phase_effect_start = 0  
-        self.phase_effect_duration = random.randint(2000, 3000)  
+        self.phase_effect_duration = 5000  
         self.phase_effect_active = False  
         self.blackout_start = 0  
         self.blackout_duration = 10 
