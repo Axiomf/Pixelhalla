@@ -668,40 +668,101 @@ class Boss(NPC):
         super().update()
 
     def spawn_enemy(self):
-        # Random position near boss (within 100-300 pixels)
-        offset_x = random.randint(373, 709) 
-        offset_y = random.randint(0, 50)
-        spawn_x = offset_x
-        spawn_y = offset_y
 
-        # Ensure spawn position is within scene boundaries
-        spawn_x = max(0, min(config.SCENE_WIDTH - 50, spawn_x))
-        spawn_y = max(0, min(config.SCENE_HEIGHT - 50, spawn_y))
-
-        # Create a new Melee enemy (can be extended to other types)
-        enemy_class = random.choice(self.enemy_classes)
-        if enemy_class == Melee:
-            new_enemy = Melee(spawn_x, spawn_y, 30,35, platforms=self.platforms,fighter=self.single_fighter,
+        if self.phase == 0:
+            new_enemy1 = Melee(500, 50, 30,35, platforms=self.platforms,fighter=self.single_fighter,
                                animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
-        elif enemy_class == Medusa:
-            new_enemy = Medusa(spawn_x, spawn_y, 128, 128,
+            new_enemy2 = Medusa(550,50, 128, 128,
                     speed=config.NPC_SPEED, platforms=self.platforms,projectiles=self.projectiles,all_sprites=self.all_sprites, fighter=self.single_fighter,
                     animations=load_animations_Medusa(),roam=False)
-        elif enemy_class == Ranged:
-            new_enemy = Ranged(spawn_x, spawn_y, 32, 32,
+            new_enemy3 =  Melee(650,50, 30,35, platforms=self.platforms,fighter=self.single_fighter,
+                               animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+            self.all_sprites.add(new_enemy1, new_enemy2, new_enemy3)
+            self.enemies.add(new_enemy1, new_enemy2, new_enemy3)
+            self.phase = 1
+        elif self.phase == 1 and len(self.enemies) == 1:
+            new_enemy1 = Ranged(500,50, 32, 32,
                       speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
                     all_sprites=self.all_sprites, fighter=self.single_fighter,
                       animations=load_animations_Arcane_Archer(64, 64),roam=False)
-        elif enemy_class == Eye:
-            new_enemy = Eye(spawn_x, spawn_y
-            ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=self.platforms)
-        elif enemy_class == Suicide_Bomb:
-            new_enemy = Suicide_Bomb(spawn_x, spawn_y
+            new_enemy2 = Ranged(550,50, 32, 32,
+                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter,
+                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
+            new_enemy3 = Ranged(650,50, 32, 32,
+                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter,
+                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
+            new_enemy4 = Suicide_Bomb(750,50
                           , speed=2, health=50, 
                  damage=20, platforms=self.platforms, projectiles=self.projectiles,
                     all_sprites=self.all_sprites, fighter=self.single_fighter, animations=load_animations_Suicide_Bomber(), roam=True)
-        self.all_sprites.add(new_enemy)
-        self.enemies.add(new_enemy)
+            self.all_sprites.add(new_enemy1, new_enemy2, new_enemy3, new_enemy4)
+            self.enemies.add(new_enemy1, new_enemy2, new_enemy3, new_enemy4)
+            self.phase = 2
+        elif self.phase == 2  and len(self.enemies) == 1:
+            new_enemy1 = Medusa(500,50, 128, 128,
+                    speed=config.NPC_SPEED, platforms=self.platforms,projectiles=self.projectiles,all_sprites=self.all_sprites, fighter=self.single_fighter,
+                    animations=load_animations_Medusa(),roam=False)
+            new_enemy2 = Ranged(550, 50, 32, 32,
+                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter,
+                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
+            new_enemy3 = Ranged(650,50, 32, 32,
+                      speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter,
+                      animations=load_animations_Arcane_Archer(64, 64),roam=False)
+            new_enemy4 = Eye(750,50
+                ,width=20, height=30, speed=0, animations=load_animations_Eye(32,32), platforms=self.platforms)
+            self.all_sprites.add(new_enemy1, new_enemy2, new_enemy3, new_enemy4)
+            self.enemies.add(new_enemy1, new_enemy2, new_enemy3, new_enemy4)
+            self.phase = 3
+        elif self.phase == 3 and len(self.enemies) == 1:
+            new_enemy1 = Melee(500, 50, 30,35, platforms=self.platforms,fighter=self.single_fighter,
+                               animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+            new_enemy2 = Melee(550, 50, 30,35, platforms=self.platforms,fighter=self.single_fighter,
+                               animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+            new_enemy3 = Suicide_Bomb(650, 50
+                          , speed=2, health=50, 
+                 damage=20, platforms=self.platforms, projectiles=self.projectiles,
+                    all_sprites=self.all_sprites, fighter=self.single_fighter, animations=load_animations_Suicide_Bomber(), roam=True)
+            self.all_sprites.add(new_enemy1, new_enemy2, new_enemy3)
+            self.enemies.add(new_enemy1, new_enemy2, new_enemy3)
+            self.phase = 4
+        elif self.phase == 4 and len(self.enemies) == 1:
+            self.phase = 5
+        elif self.phase == 5:
+            # Random position near boss (within 100-300 pixels)
+            offset_x = random.randint(373, 709) 
+            offset_y = random.randint(0, 50)
+            spawn_x = offset_x
+            spawn_y = offset_y
+
+
+            # Create a new Melee enemy (can be extended to other types)
+            enemy_class = random.choice(self.enemy_classes)
+            if enemy_class == Melee:
+                new_enemy = Melee(spawn_x, spawn_y, 30,35, platforms=self.platforms,fighter=self.single_fighter,
+                                animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+            elif enemy_class == Medusa:
+                new_enemy = Medusa(spawn_x, spawn_y, 128, 128,
+                        speed=config.NPC_SPEED, platforms=self.platforms,projectiles=self.projectiles,all_sprites=self.all_sprites, fighter=self.single_fighter,
+                        animations=load_animations_Medusa(),roam=False)
+            elif enemy_class == Ranged:
+                new_enemy = Ranged(spawn_x, spawn_y, 32, 32,
+                        speed=config.NPC_SPEED, platforms=self.platforms, projectiles=self.projectiles,
+                        all_sprites=self.all_sprites, fighter=self.single_fighter,
+                        animations=load_animations_Arcane_Archer(64, 64),roam=False)
+            elif enemy_class == Eye:
+                new_enemy = Eye(spawn_x, spawn_y
+                ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=self.platforms)
+            elif enemy_class == Suicide_Bomb:
+                new_enemy = Suicide_Bomb(spawn_x, spawn_y
+                            , speed=2, health=50, 
+                    damage=20, platforms=self.platforms, projectiles=self.projectiles,
+                        all_sprites=self.all_sprites, fighter=self.single_fighter, animations=load_animations_Suicide_Bomber(), roam=True)
+            self.all_sprites.add(new_enemy)
+            self.enemies.add(new_enemy)
 
 class Suicide_Bomb(NPC):
     """A NPC that patrols until it sees the fighter, then chases and explodes when close enough."""
