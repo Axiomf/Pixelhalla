@@ -60,7 +60,7 @@ class PlayingState(BaseState):
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 if map_name == "map_boss" and not self.audio_playing:
-                    map_boss.load_map()
+                    map_boss.load_map(fighter1_id)
                     pygame.mixer.music.load("src/assets/sounds/jesus_theme.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
@@ -270,6 +270,22 @@ class PlayingState(BaseState):
                 sprite.draw_vision_line(scene)  # I wish this was handled somewhere else
             if isinstance(sprite, Player):  # I wish this was handled somewhere else
                 sprite.draw_health_bar(scene)
+        boss = next((e for e in self.enemies if isinstance(e, Boss)), None)
+        fighter = next(iter(self.fighters), None)
+
+        if boss and fighter:
+            now = pygame.time.get_ticks()
+            if boss.phase_effect_active:
+                boss.fade_radius += 5
+                mask_surface = pygame.Surface(scene.get_size(), pygame.SRCALPHA)
+                mask_surface.fill((0, 0, 0, 255))  
+
+                pygame.draw.circle(mask_surface, (0, 0, 0, 0), fighter.rect.center,boss.fade_radius)
+
+                scene.blit(mask_surface, (0, 0))  
+
+            elif boss.blackout_start > 0 and now - boss.blackout_start < boss.blackout_duration:
+                scene.fill((0, 0, 0))  
         if self.boss_state and self.game_over_fighter1:
             # Draw end level screen
             scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay

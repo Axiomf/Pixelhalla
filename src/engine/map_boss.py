@@ -18,16 +18,28 @@ fighters = pygame.sprite.Group()        # Contains all fighter objects
 melee = pygame.sprite.Group()
 enemies_without_boss = pygame.sprite.Group()
 
-def load_map():
+def load_map(fighter1_id):
 
     static_platform1 = Platform(0, 550, 
                             1200,config.SCENE_HEIGHT*1/200, 
                             color=None)#this is the main platform
     # Two fighter objects using custom control keys for movement, jumping, and shooting.
-    fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, health=1000, platforms=platforms, 
-            enemies=enemies, fighters=fighters,
-                controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
-                animations=load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35))
+    if fighter1_id == "fighter1":
+            fighter1 = Fighter(150, 150, 32, 32, platforms=platforms,
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+                   animations=load_animations_Elf_Archer())
+    elif fighter1_id == "fighter2":
+        fighter1 = MeleeFighter(150, 150, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters,
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
+                   animations=load_animations_Samurai(scale=1))
+    elif fighter1_id == "fighter3":
+        fighter1 = MeleeFighter(150, 150, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters,
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
+                   animations=load_animations_Knight(scale=1))
+    elif fighter1_id == "fighter4":
+        fighter1 = Fighter(150, 150, 32, 32, platforms=platforms,
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+                   animations=load_animations_Arcane_Archer(scale=1))
 
 
     # An enemy that patrols horizontally and bounces at screen edges
