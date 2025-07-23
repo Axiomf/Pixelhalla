@@ -10,12 +10,12 @@ class FighterSelectState:
         self.button_color = (0, 128, 255)  # Blue button
         self.loading_background = pygame.image.load("src/assets/images/background/blue-preview.png").convert_alpha()
         self.loading_background = pygame.transform.scale(self.loading_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
-        self.fighter1_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
+        self.fighter1_preview = pygame.image.load("src/assets/images/inused_single_images/Elf_image.png").convert_alpha()
         self.fighter1_preview = pygame.transform.scale(self.fighter1_preview, (150, 150))
-        self.fighter2_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
-        self.fighter2_preview = pygame.transform.scale(self.fighter2_preview, (150, 150))
-        self.fighter3_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
-        self.fighter3_preview = pygame.transform.scale(self.fighter3_preview, (150, 150))
+        self.fighter2_preview = pygame.image.load("src/assets/images/inused_single_images/Samurai_image.png").convert_alpha()
+        self.fighter2_preview = pygame.transform.scale(self.fighter2_preview, (145, 145))
+        self.fighter3_preview = pygame.image.load("src/assets/images/inused_single_images/Knight.png").convert_alpha()
+        self.fighter3_preview = pygame.transform.scale(self.fighter3_preview, (150, 100))
         self.fighter4_preview = pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
         self.fighter4_preview = pygame.transform.scale(self.fighter4_preview, (150, 150))
 
