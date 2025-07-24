@@ -57,6 +57,7 @@ class PlayingState(BaseState):
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 if map_name == "map4" and not self.audio_playing:
+                    map4.load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase)
                     pygame.mixer.music.load("src/assets/sounds/LevelCTF.mp3.mpeg")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
@@ -353,7 +354,7 @@ class PlayingState(BaseState):
             title_font = pygame.font.Font(None, 72)
             button_font = pygame.font.Font(None, 48)
 
-            title_text = title_font.render("Level Complete!", True, (255, 255, 255))
+            title_text = title_font.render("Game Over!", True, (255, 255, 255))
             title_rect = title_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 4))
             scene.blit(title_text, title_rect)
 
