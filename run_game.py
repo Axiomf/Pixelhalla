@@ -61,6 +61,7 @@ while running:
                 print("Delay ended. Next turn triggered.")
                 # The automatic turn logic below will now pick up the current_turn
                 change_game_state()
+            state_manager.handle_event(event, current_time, scale)
         else:
             state_manager.handle_event(event, current_time, scale)
 
