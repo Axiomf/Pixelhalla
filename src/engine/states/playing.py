@@ -28,6 +28,7 @@ class PlayingState(BaseState):
         self.boss_state = False
         self.game_over_fighter1 = False
         self.game_over_fighter2 = False
+        self.win = False
 
     def load_map(self, map_name, fighter1_id, fighter2_id, fighter_select_phase, level_state=None):
         """Load map components using a module mapping."""
@@ -61,7 +62,7 @@ class PlayingState(BaseState):
                     self.audio_playing = True
                 if map_name == "map_boss" and not self.audio_playing:
                     map_boss.load_map(fighter1_id)
-                    pygame.mixer.music.load("src/assets/sounds/jesus_theme.mp3")  # Load audio file
+                    pygame.mixer.music.load("src/assets/sounds/horror-background-atmosphere-156462.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'enemies', 'fighters', 'projectiles', 'draw_background'])
@@ -106,7 +107,63 @@ class PlayingState(BaseState):
                         pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
                         pygame.mixer.music.play(-1)
                     pygame.event.clear()  # Clear event queue
+        if self.game_over_fighter1:
+            # if self.audio_playing:
+            #         pygame.mixer.music.stop()
+            #         self.audio_playing = False
+            # if self.boss_state:
+            #     state_manager.game_over_boss.play()
+            # else:
+            #     state_manager.game_over.play()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_pos = event.pos
+                if map_name == "map1":
+                    self.change_level = self.map1_level
+                if map_name == "map_levels":
+                    self.change_level = self.map_levels_level
+                if map_name == "map_jesus":
+                    self.change_level = self.map_jesus_level
+                if map_name == "map4":
+                   self.change_level = self.map4_level
+
+                elif self.restart_button.collidepoint(mouse_pos):
+                    state_manager.click_sound.play()
+                    self.start_level(state_manager)
+                elif self.back_button.collidepoint(mouse_pos):
+                    state_manager.click_sound.play()  # Play click sound
+                    state_manager.change_state(config.GAME_STATE_MAP_SELECT)
+                    state_manager.last_click_time = current_time
+                    # Reset the state by clearing sprite groups
+                    self.all_sprites.empty()
+                    self.platforms.empty()
+                    self.enemies.empty()
+                    self.fighters.empty()
+                    self.projectiles.empty()
+                    # Stop audio when leaving playing state
+                    if self.audio_playing:
+                        pygame.mixer.music.stop()
+                        self.audio_playing = False
+                        pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+                        pygame.mixer.music.play(-1)
+                    pygame.event.clear()  # Clear event queue
+                if map_name == "map1":
+                    self.map1_level = self.change_level
+                if map_name == "map_levels":
+                    self.map_levels_level = self.change_level
+                if map_name == "map_jesus":
+                    self.map_jesus_level = self.change_level
+                if map_name == "map4":
+                   self.map4_level = self.change_level
+            return
+
         if self.level_complete:
+            # if self.audio_playing:
+            #         pygame.mixer.music.stop()
+            #         self.audio_playing = False
+            # if self.boss_state:
+            #     state_manager.win_sound.play()
+            # else:
+            #     state_manager.level_complete_sound.play()
             # Handle clicks on end level buttons
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mouse_pos = event.pos
@@ -240,8 +297,11 @@ class PlayingState(BaseState):
         # Check if all enemies are defeated
         if len(self.enemies) == 0 and not self.level_complete:
             self.level_complete = True
-        if state_manager.fighter_select_phase == "single" and len(self.fighters) == 0 and not self.level_complete:
+        if state_manager.fighter_select_phase == 1 and len(self.fighters) == 0 and not self.level_complete:
             self.game_over_fighter1 = True
+        boss = next((e for e in self.enemies if isinstance(e, Boss)), None)
+        if not boss and self.boss_state:
+            self.win = True
 
     def start_level(self, state_manager):
         """Restart the current level and start the next level"""
@@ -273,20 +333,21 @@ class PlayingState(BaseState):
         boss = next((e for e in self.enemies if isinstance(e, Boss)), None)
         fighter = next(iter(self.fighters), None)
 
+        hover_color = (0, 200, 255)  # Light blue for hover
+        default_color = self.button_color  # Default button color
+
         if boss and fighter:
             now = pygame.time.get_ticks()
             if boss.phase_effect_active:
                 boss.fade_radius += 5
                 mask_surface = pygame.Surface(scene.get_size(), pygame.SRCALPHA)
                 mask_surface.fill((0, 0, 0, 255))  
-
-                pygame.draw.circle(mask_surface, (0, 0, 0, 0), fighter.rect.center,boss.fade_radius)
-
+                pygame.draw.circle(mask_surface, (0, 0, 0, 0), fighter.rect.center, boss.fade_radius)
                 scene.blit(mask_surface, (0, 0))  
-
             elif boss.blackout_start > 0 and now - boss.blackout_start < boss.blackout_duration:
                 scene.fill((0, 0, 0))  
-        if self.boss_state and self.game_over_fighter1:
+
+        if self.game_over_fighter1:
             # Draw end level screen
             scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay
             title_font = pygame.font.Font(None, 72)
@@ -300,16 +361,17 @@ class PlayingState(BaseState):
             self.restart_button = pygame.Rect(config.SCENE_WIDTH // 2 - 100, config.SCENE_HEIGHT // 2 + 30, 200, 70)
             self.back_button = pygame.Rect(config.SCENE_WIDTH // 2 - 100, config.SCENE_HEIGHT // 2 + 110, 200, 70)
 
-            # Draw buttons
-            pygame.draw.rect(scene, self.button_color, self.restart_button)
-            pygame.draw.rect(scene, self.button_color, self.back_button)
+            # Draw buttons with hover effect
+            pygame.draw.rect(scene, hover_color if self.restart_button.collidepoint(mouse_pos) else default_color, self.restart_button)
+            pygame.draw.rect(scene, hover_color if self.back_button.collidepoint(mouse_pos) else default_color, self.back_button)
 
             # Draw button text
             restart_text = button_font.render("Restart", True, (255, 255, 255))
             back_text = button_font.render("Back to Map", True, (255, 255, 255))
             scene.blit(restart_text, restart_text.get_rect(center=self.restart_button.center))
             scene.blit(back_text, back_text.get_rect(center=self.back_button.center))
-        if self.level_complete:
+
+        elif self.level_complete:
             # Draw end level screen
             scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay
             title_font = pygame.font.Font(None, 72)
@@ -324,10 +386,10 @@ class PlayingState(BaseState):
             self.restart_button = pygame.Rect(config.SCENE_WIDTH // 2 - 100, config.SCENE_HEIGHT // 2 + 30, 200, 70)
             self.back_button = pygame.Rect(config.SCENE_WIDTH // 2 - 100, config.SCENE_HEIGHT // 2 + 110, 200, 70)
 
-            # Draw buttons
-            pygame.draw.rect(scene, self.button_color, self.next_button)
-            pygame.draw.rect(scene, self.button_color, self.restart_button)
-            pygame.draw.rect(scene, self.button_color, self.back_button)
+            # Draw buttons with hover effect
+            pygame.draw.rect(scene, hover_color if self.next_button.collidepoint(mouse_pos) else default_color, self.next_button)
+            pygame.draw.rect(scene, hover_color if self.restart_button.collidepoint(mouse_pos) else default_color, self.restart_button)
+            pygame.draw.rect(scene, hover_color if self.back_button.collidepoint(mouse_pos) else default_color, self.back_button)
 
             # Draw button text
             next_text = button_font.render("Next Level", True, (255, 255, 255))
@@ -337,27 +399,13 @@ class PlayingState(BaseState):
             scene.blit(next_text, next_text.get_rect(center=self.next_button.center))
             scene.blit(restart_text, restart_text.get_rect(center=self.restart_button.center))
             scene.blit(back_text, back_text.get_rect(center=self.back_button.center))
+
         else:
-            # Draw Back button
-            self.back_button = pygame.Rect(1080, 20, 100, 50)  # Top-left corner
+            # Draw Back button with hover effect
+            self.back_button = pygame.Rect(1080, 20, 100, 50)  # Top-right corner
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
-                                              self.back_button.width + scale, self.back_button.height + scale)
-            if pulsed_back_button.collidepoint(mouse_pos):
-                pygame.draw.rect(scene, (0, 200, 255), pulsed_back_button)  # Brighter blue for hover
-            else:
-                pygame.draw.rect(scene, self.button_color, pulsed_back_button)  # Normal blue
-            back_button_text = self.font.render("Back", True, (255, 255, 255))  # Render text here
+                                            self.back_button.width + scale, self.back_button.height + scale)
+            pygame.draw.rect(scene, hover_color if pulsed_back_button.collidepoint(mouse_pos) else default_color, pulsed_back_button)
+            back_button_text = self.font.render("Back", True, (255, 255, 255))
             pulsed_back_button_text_rect = back_button_text.get_rect(center=pulsed_back_button.center)
             scene.blit(back_button_text, pulsed_back_button_text_rect)  # Draw Back button text
-
-
-
-
-
-
-
-
-
-
-
-

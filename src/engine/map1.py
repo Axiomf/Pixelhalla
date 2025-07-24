@@ -42,7 +42,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    animations=load_animations_Elf_Archer())
     elif fighter1_id == "fighter2":
-        fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters,
+        fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, health=20, platforms=platforms, enemies=enemies, fighters=fighters,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
                    animations=load_animations_Samurai(scale=1))
     elif fighter1_id == "fighter3":
@@ -55,7 +55,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
                    animations=load_animations_Arcane_Archer(scale=1))
         
     ##############
-    if fighter_select_phase == "multi":
+    if fighter_select_phase == 2:
         if fighter2_id == "fighter1":
            fighter2 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
@@ -78,8 +78,8 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
     else:    
 
         if(level_state == 0):
-            enemy_animation = load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35)
-            enemy_type = Melee
+            enemy_animation = load_animations_Arcane_Archer(scale=1)
+            enemy_type = Ranged
         elif(level_state == 1):
             enemy_animation = load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35)
             enemy_type = Melee
@@ -91,12 +91,12 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
             enemy_type = Melee
 
         # An enemy that patrols horizontally and bounces at screen edges
-        enemy = enemy_type(static_platform1.rect.x + 60,  
+        enemy = enemy_type(static_platform1.rect.x + 250,  
                     static_platform1.rect.y, 30, 35,
                     speed=config.NPC_SPEED, 
                     platforms=platforms, 
                     projectiles=projectiles, 
-                    all_sprites=all_sprites,fighter=fighter1,
+                    all_sprites=all_sprites,fighter=fighter1, fighters=fighters,
                     animations=enemy_animation)
 
         # Add each object to the appropriate sprite groups for updating and drawing

@@ -538,7 +538,7 @@ class NPC(Player):
     """A simple enemy that moves horizontally and bounces at the screen edges."""
     def __init__(self, x, y, width=32, height=48, color=None, speed=2, health=config.NPC_HEALTH, 
                 damage=config.NPC_DAMAGE, image_path=None, platforms=None, 
-                projectiles=None, all_sprites=None, fighter=None, enemies=None, animations=None,roam=True):
+                projectiles=None, all_sprites=None, fighter=None, enemies=None, fighters=None, animations=None,roam=True):
         super().__init__(x, y, width, height, color, health, damage, image_path,  animations)
         self.change_x = speed  # Set initial horizontal patrol speed
         self.speed = speed
@@ -547,6 +547,7 @@ class NPC(Player):
         self.projectiles = projectiles  # Store projectiles group
         self.all_sprites = all_sprites  # Store all_sprites group
         self.enemies = enemies
+        self.fighters = fighters,
         self.single_fighter = fighter
         self.can_see_the_fighter = False
         self.show_vision_line = True  # New flag to toggle vision line visibility
@@ -914,10 +915,6 @@ class Melee(NPC):
             now = pygame.time.get_ticks()
             # Use effective range = attack_range + NPC.vision_boost
             if not self.is_attacking and dist <= self.attack_range  and now - self.last_attack_time >= self.attack_cooldown:
-                self.single_fighter.take_damage(self.attack_power)
-                self.last_attack_time = now
-
-
                 self.is_attacking = True
                 self.attack_start_time = now
                 self.state = "attack"
