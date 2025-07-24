@@ -61,7 +61,7 @@ class PlayingState(BaseState):
                     self.audio_playing = True
                 if map_name == "map_boss" and not self.audio_playing:
                     map_boss.load_map(fighter1_id)
-                    pygame.mixer.music.load("src/assets/sounds/jesus_theme.mp3")  # Load audio file
+                    pygame.mixer.music.load("src/assets/sounds/boss_theme.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'enemies', 'fighters', 'projectiles', 'draw_background'])

@@ -159,7 +159,18 @@ class Player(DynamicObject):
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
         self.facing_right = True
+        self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
+####################################################
+        self.powered = False
+        self.left_duration_powerup = 0
+        self.started_powerup = 0
+        self.powered_up_type = ""
+        self.powered_up_amount = 0
+        self.supershot = False
+        self.supershot_amount = 1
         self.shield = False
+        self.base_jump = self.jump_strength
+        self.base_damage = self.damage
         # Added shooting state attributes
 
     def take_damage(self, amount):
@@ -281,7 +292,47 @@ class Player(DynamicObject):
         self._handle_shoot_animation(now)
         self._handle_attack_animation(now)
 
+    def check_power_up(self):
+        now = pygame.time.get_ticks()
+        if now - self.started_powerup >= self.left_duration_powerup:
+            self.remove_all_powers()
+    def remove_all_powers(self):
+
+        self.powered = False
+        self.left_duration_powerup = 0
+        self.started_powerup = 0
+        self.powered_up_type = ""
+        self.powered_up_amount = 0
+
+        self.damage = self.base_damage
+        self.jump_strength = self.base_jump
+        self.shield = False
+        self.supershot = False
+        self.supershot_amount = 1
+    def upgrade(self, type, amount):
+        self.remove_all_powers()
+
+        self.powered_up_amount = amount
+        self.started_powerup = pygame.time.get_ticks() 
+        self.left_duration_powerup = 5000  # 5 seconds in milliseconds
+        if type == "damage":
+            self.damage += amount
+        elif type == "double_jump":
+            self.jump_strength -= amount
+        elif type == "shield":
+            self.shield = True
+        elif type == "supershot":
+            self.supershot = True
+            self.supershot_amount += amount 
+        
+        self.powered = True
+        self.powered_up_type = type
+
+
+
     def update(self):
+        self.check_power_up()
+
         # Prevent movement if frozen
         
         # Call DynamicObject's update to apply gravity and movement
@@ -302,60 +353,20 @@ class Fighter(Player):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
-        self.jump_strength = config.PLAYER_JUMP  # Vertical speed for jumping (negative to move up)
         self.platforms = platforms  # Store platforms group
         self.enemies = enemies
         self.fighters = fighters
-        self.powered = False
-        self.left_duration_powerup = 0
-        self.started_powerup = 0
-        self.powered_up_type = ""
-        self.powered_up_amount = 0
 
-        self.supershot = False
-        self.supershot_amount = 1
+        
 
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
             self.original_image.fill(color)
 
-    def upgrade(self, type, amount):
-        self.powered_up_amount = amount
-        self.started_powerup = pygame.time.get_ticks() 
-        self.left_duration_powerup = 5000  # 5 seconds in milliseconds
-        if type == "damage":
-            self.damage += amount
-        elif type == "double_jump":
-            self.jump_strength -= amount
-        elif type == "shield":
-            self.shield = True
-        elif type == "supershot":
-            self.supershot = True
-            self.supershot_amount += amount 
-        
-        self.powered = True
-        self.powered_up_type = type
-
-    def check_power_up(self):
-        if not self.powered:
-            return
-        now = pygame.time.get_ticks()
-        if now - self.started_powerup >= self.left_duration_powerup:
-            if self.powered_up_type == "damage":
-                self.damage -= self.powered_up_amount
-            elif self.powered_up_type == "double_jump":
-                self.jump_strength += self.powered_up_amount
-            elif self.powered_up_type == "shield":
-                self.shield = False
-            self.powered = False
-            self.left_duration_powerup = 0
-            self.started_powerup = 0
-            self.powered_up_type = ""
-            self.powered_up_amount = 0
-
+    
+    
     def update(self):
-        self.check_power_up()
 
         if self.freeze:
             self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed
