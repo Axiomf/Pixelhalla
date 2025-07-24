@@ -110,7 +110,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
         #     enemy_animation = load_animations_Goblin(150,150,crop_x= 60,crop_y= 65, crop_width=30, crop_height=35)
         #     enemy_type = Melee
 
-        melee_enemy = Medusa(config.SCENE_WIDTH/4 + 500, config.SCENE_HEIGHT*3/5 - 170, 128, 128,
+        melee_enemy = Medusa(config.SCENE_WIDTH/4 + 350, config.SCENE_HEIGHT*3/5 - 170, 128, 128,
                     speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                     all_sprites=all_sprites, fighter=fighter1,
                     animations=load_animations_Medusa(),roam=False)
