@@ -127,7 +127,7 @@ class PlayingState(BaseState):
                 if map_name == "map4":
                    self.change_level = self.map4_level
 
-                elif self.restart_button.collidepoint(mouse_pos):
+                if self.restart_button.collidepoint(mouse_pos):
                     state_manager.click_sound.play()
                     self.start_level(state_manager)
                 elif self.back_button.collidepoint(mouse_pos):

@@ -936,6 +936,7 @@ class Ranged(NPC):
             # Use effective range = attack_range + NPC.vision_boost
             if (not self.is_shooting and now - self.last_shot >= self.reload_time and 
                 self.can_see_the_fighter and dist <= self.attack_range + NPC.vision_boost):
+                self.facing_right = self.single_fighter.rect.centerx> self.rect.centerx
                 self.is_shooting = True
                 self.shoot_start_time = now
                 self.state = "shoot"
