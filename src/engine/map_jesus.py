@@ -113,7 +113,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
         melee_enemy = Medusa(config.SCENE_WIDTH/4 + 350, config.SCENE_HEIGHT*3/5 - 170, 128, 128,
                     speed=config.NPC_SPEED, platforms=platforms, projectiles=projectiles,
                     all_sprites=all_sprites, fighter=fighter1,
-                    animations=load_animations_Medusa(),roam=False)
+                    animations=load_animations_Medusa(),roam=False,damage = 10)
 
         support = Eye(900, config.SCENE_HEIGHT*3/5 - 32
                     ,width=20, height=20, speed=0, animations=load_animations_Eye(32,32), platforms=platforms)

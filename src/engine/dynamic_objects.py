@@ -988,6 +988,9 @@ class Medusa(Melee):
         super().__init__(*args, **kwargs)
         # Set freeze duration in milliseconds (example: 3000ms = 3 seconds)
         self.freeze_duration = 10000
+        self.attack_cooldown = 3000 + self.freeze_duration
+        self.attack_range = 100
+        self.last_attack_time = -self.attack_cooldown
 
     def update(self):
         # Override update to freeze the fighter instead of dealing repeated damage
@@ -1000,6 +1003,7 @@ class Medusa(Melee):
                 self.single_fighter.freeze = True
                 self.single_fighter.freezed_time = now
                 self.single_fighter.freeze_duration =  self.freeze_duration
+                self.single_fighter.take_damage(self.damage)
                 self.last_attack_time = now
 
                 self.is_attacking = True
