@@ -2,9 +2,11 @@ import pygame
 # Updated GameObject that uses an image if provided.
 class GameObject(pygame.sprite.Sprite):
     """Base class for objects that can move or be affected by forces."""
-    def __init__(self, x, y, width, height, color=None, image_path=None):
+    def __init__(self, x, y, width, height, color=None, image_path=None,image=None):
         super().__init__()
-        if image_path:
+        if image:
+            self.image = pygame.transform.scale(image, (int(width), int(height)))
+        elif image_path:
             # Load image and scale to desired size.
             self.image = pygame.image.load(image_path).convert_alpha()
             self.image = pygame.transform.scale(self.image, (int(width), int(height)))

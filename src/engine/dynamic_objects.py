@@ -10,8 +10,8 @@ pygame.mixer.init()  # Initialize mixer for audio
 # "animations" is a dictionary with keys of states and values of corresponding frames in order
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
-    def __init__(self, x, y, width, height, color=None, image_path=None, animations=None):
-        super().__init__(x, y, width, height, color, image_path)
+    def __init__(self, x, y, width, height, color=None, image_path=None, animations=None,image=None):
+        super().__init__(x, y, width, height, color, image_path, image)
         self.change_x = 0  # Horizontal velocity
         self.change_y = 0  # Vertical velocity
         self.state = "idle"
@@ -226,7 +226,7 @@ class Player(DynamicObject):
         if self.is_dying and self.current_frame == 0 and len(self.animations[self.current_animation]) > 1:
             self.kill()
 
-    def shoot(self):
+    def shoot(self,arrow = "arcane"):
         """Creates a projectile moving in the direction the player is facing."""
         if self.is_shoot():
             now = pygame.time.get_ticks()
@@ -241,13 +241,29 @@ class Player(DynamicObject):
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1) * config.PROJECTILE_SPEED
         # Adjust projectile starting position to account for smaller fighter size
         offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
-        return Projectile(self.rect.centerx + offset_x, 
-                         self.rect.centery, 
-                         velocity=(velocity_x, 0),  # Only horizontal movement
-                         damage=self.damage,
-                         image_path="src/assets/images/inused_single_images/bullet.png", 
-                         owner=self)
-    
+        if arrow == "default":          
+            return Projectile(self.rect.centerx + offset_x, 
+                             self.rect.centery, 
+                             velocity=(velocity_x, 0),  # Only horizontal movement
+                             damage=self.damage,
+                             image_path="src/assets/images/inused_single_images/bullet.png", 
+                             owner=self)
+        elif arrow =="arcane":
+            return Projectile(self.rect.centerx + offset_x, 
+                             self.rect.centery, 
+                             velocity=(velocity_x, 0),  # Only horizontal movement
+                             damage=self.damage,
+                             image_path="src/assets/images/inused_single_images/projectile_Arcane.png", 
+                             owner=self)
+        elif arrow =="elf":
+            return Projectile(self.rect.centerx + offset_x, 
+                             self.rect.centery, 
+                             velocity=(velocity_x, 0),  # Only horizontal movement
+                             damage=self.damage,
+                             image_path="src/assets/images/inused_single_images/projectile_Elf.png", 
+                             owner=self)
+
+
     def attack(self):
         if self.is_attack():
             now = pygame.time.get_ticks()
@@ -428,7 +444,7 @@ class Fighter(Player):
         # Call the parent's update to apply gravity and update movement
         super().update()
 
-    def shoot(self):
+    def shoot(self,arrow = "arcane"):
         """Creates a projectile moving in the direction the player is facing."""
         if self.is_shoot():
             now = pygame.time.get_ticks()
@@ -443,12 +459,40 @@ class Fighter(Player):
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1) * config.PROJECTILE_SPEED
         # Adjust projectile starting position to account for smaller fighter size
         offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
-        return Projectile(self.rect.centerx + offset_x, 
-                         self.rect.centery, 
-                         velocity=(velocity_x *self.supershot_amount , 0),  # Only horizontal movement
-                         damage=self.damage,
-                         image_path="src/assets/images/inused_single_images/bullet.png", 
-                         owner=self)
+        
+        if arrow == "default":          
+            return Projectile(self.rect.centerx + offset_x, 
+                             self.rect.centery, 
+                             velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
+                             damage=self.damage,
+                             image_path="src/assets/images/inused_single_images/bullet.png", 
+                             owner=self)
+        elif arrow =="arcane":
+            path = "src/assets/images/inused_single_images/projectile_Arcane.png"
+
+            frame = pygame.image.load(path).convert_alpha()
+            frame = pygame.transform.flip(frame, not self.facing_right, False)
+            return Projectile(self.rect.centerx + offset_x, 
+                             self.rect.centery,width=40,height=5,
+                             velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
+                             damage=self.damage,
+                             image_path="src/assets/images/inused_single_images/projectile_Arcane.png", 
+                             owner=self,image=frame)
+                             
+        elif arrow =="elf":
+
+            path = "src/assets/images/inused_single_images/projectile_Elf.png"
+
+            sheet = pygame.image.load(path).convert_alpha()
+            crop_rect = pygame.Rect(109, 56, 36, 14)
+            frame = sheet.subsurface(crop_rect)
+            frame = pygame.transform.flip(frame, not self.facing_right, False)
+            return Projectile(self.rect.centerx + offset_x, 
+                             self.rect.centery, width=36,height=14,
+                             velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
+                             damage=self.damage,image_path=path,
+                             image=frame, 
+                             owner=self)
 
 class MeleeFighter(Fighter):
     def __init__(self, *args, **kwargs):
@@ -974,9 +1018,9 @@ class Medusa(Melee):
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
-                 use_gravity=False, image_path=None, owner=None, animations=None):
-        super().__init__(x, y, width, height, color, image_path, animations)
+    def __init__(self, x, y, image_path, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
+                 use_gravity=False, owner=None, animations=None, image=None):
+        super().__init__(x, y, width, height, color, image_path, animations,image=image)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
