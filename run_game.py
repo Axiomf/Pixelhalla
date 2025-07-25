@@ -1,9 +1,9 @@
 import pygame  # Import pygame for game functionality
 import config  # Import configuration settings like scene dimensions and FPS
 import math    # Import math for sin function in pulse effect
-from src.engine.state_manager import StateManager
-from src.engine.gpt_api.state_changer import*
+#from src.engine.gpt_api.state_changer import*
 from src.engine.gpt_api.API import*
+from src.engine.state_manager import StateManager
 from src.engine.gpt_api.dummyUI import*
 
 # Initialize pygame
@@ -60,7 +60,7 @@ while running:
                 is_delaying_for_next_turn = False
                 print("Delay ended. Next turn triggered.")
                 # The automatic turn logic below will now pick up the current_turn
-                change_game_state()
+                
             state_manager.handle_event(event, current_time, scale)
         else:
             state_manager.handle_event(event, current_time, scale)

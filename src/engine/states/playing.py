@@ -3,8 +3,18 @@ import config
 from src.engine.dynamic_objects import *
 from src.engine.states.base_state import BaseState
 from src.engine import map1, map4, map_boss, map_jesus, map_levels
-
-
+from src.engine.gpt_api.state_changer import *
+new_state_game = {  # external change
+        "boss_health": 100,
+        "fighter_health": 100,
+        "boss_mood": "angry",
+        "fighter_mood": "funny",
+        "fighter_name": "the stranger",
+        "fighter_class": "human",
+        "fighter_level": 9,
+        "dungeon_level": 10,
+        "last_character_action": "Lucifer just spoke.",  
+    }
 
 class PlayingState(BaseState):
     def __init__(self, scene):
@@ -289,11 +299,28 @@ class PlayingState(BaseState):
                             sprite.last_sound_time = now  # Update the last sound time
 
     def update(self, current_time, scale, state_manager):
+        global new_state_game 
         """Update logic for playing state."""
         if not self.all_sprites:
             self.load_map(state_manager.current_map, state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase, self.change_level)
         self.all_sprites.update()  # Call update for all sprites
         self.handle_collisions(state_manager)  # Process all collisions
+        for enemy in self.enemies:
+            if isinstance(enemy, Boss):  
+                new_state_game["boss_health"] = enemy.health
+                new_state_game["boss_mood"] = "extremely angry" if enemy.health <= enemy.max_health else "funny"
+        for fighter in self.fighters:
+            new_state_game["fighter_health"] = fighter.health
+            new_state_game["fighter_mood"] = "under extreme pressure" if fighter.health <= fighter.max_health else ""
+        
+
+
+                
+                
+
+
+
+        change_game_state(new_state_game)
 
         # Check if all enemies are defeated
         if len(self.enemies) == 0 and not self.level_complete:
