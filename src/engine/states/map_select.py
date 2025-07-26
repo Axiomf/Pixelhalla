@@ -16,7 +16,7 @@ class MapSelectState:
         self.map2_preview = pygame.transform.scale(self.map2_preview, (300, 150))
         self.map3_preview = pygame.image.load("src/assets/images/background/jesus/j1.jpg").convert_alpha()
         self.map3_preview = pygame.transform.scale(self.map3_preview, (300, 150))
-        self.map4_preview = pygame.image.load("src/assets/images/nature_1/orig.png").convert_alpha()
+        self.map4_preview = pygame.image.load("src/assets/images/background/twilightgrove.png").convert_alpha()
         self.map4_preview = pygame.transform.scale(self.map4_preview, (300, 150))
 
     def handle_event(self, event, current_time, scale, current_map, state_manager):

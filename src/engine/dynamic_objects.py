@@ -848,10 +848,10 @@ class Suicide_Bomb(NPC):
     """A NPC that patrols until it sees the fighter, then chases and explodes when close enough."""
     def __init__(self, x, y, width=40, height=32, color=None, speed=0.3, health=50, 
                  damage=20, image_path=None, platforms=None, projectiles=None, 
-                 all_sprites=None, fighter=None, animations=None, roam=True):
+                 all_sprites=None, fighter=None, fighters=None, animations=None, roam=True):
         super().__init__(x, y, width, height, color, speed, health, damage, image_path, 
                          platforms=platforms, projectiles=projectiles, all_sprites=all_sprites, 
-                         fighter=fighter, animations=animations, roam=roam)
+                         fighter=fighter, fighters=fighters, animations=animations, roam=roam)
         self.explosion_range = 50  # Distance threshold to trigger explosion
         self.explosion_damage = damage  # Damage dealt to the fighter upon explosion
         self.exploded = False
@@ -903,8 +903,11 @@ class Eye(NPC):
     A support enemy that increases the vision distance of all NPCs (enemies)
     as long as it is alive.
     """
-    def __init__(self, x, y, width=20, height=20, color=(255,0,255), speed=0, animations=None, platforms=None):
-        super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms, animations=animations,roam=False)
+    def __init__(self, x, y, width=20, height=20, color=(255,0,255), speed=0, animations=None, platforms=None, projectiles=None, 
+                 all_sprites=None, fighter=None, fighters=None):
+        super().__init__(x, y, width, height, color, speed, health=100, damage=0, platforms=platforms,
+                         projectiles=projectiles, 
+                 all_sprites=all_sprites, fighter=fighter, fighters=fighters, animations=animations,roam=False)
         self.vision_increase = 500  # Boost value to add to all NPCs' vision distance
         self.facing_right = True  # Can be set as needed
         self.exploded = False

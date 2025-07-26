@@ -59,6 +59,7 @@ class PlayingState(BaseState):
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
                 if map_name == "map_levels" and not self.audio_playing:
+                    map_levels.load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase)
                     pygame.mixer.music.load("src/assets/sounds/Level02.mp3.mpeg")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
@@ -329,7 +330,8 @@ class PlayingState(BaseState):
             state_manager.level_complete_sound.play()
         if state_manager.fighter_select_phase == 1 and len(self.fighters) == 0 and not self.level_complete:
             self.game_over_fighter1 = True
-            state_manager.win_boss = True
+            if self.boss_state:
+                state_manager.win_boss = True
         boss = next((e for e in self.enemies if isinstance(e, Boss)), None)
         if not boss and self.boss_state:
             self.win = True
