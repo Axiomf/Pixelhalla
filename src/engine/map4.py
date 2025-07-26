@@ -108,11 +108,12 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
                     animations=enemy_animation)
 
         # Add each object to the appropriate sprite groups for updating and drawing
-        all_sprites.add(static_platform1, static_platform2,static_platform3, static_platform4, fighter1, enemy, static_platform5)
+        all_sprites.add(static_platform1, static_platform2,static_platform3, static_platform4, fighter1, enemy, static_platform5,powerup,powerup2,powerup3,powerup4)
         platforms.add(static_platform1, static_platform2, static_platform3, static_platform4, static_platform5)
         enemies.add(enemy)
         melee.add(enemy)
         fighters.add(fighter1)
+        power_ups.add(powerup,powerup2,powerup3,powerup4)
 
 def draw_background():
     scene.fill((0, 0, 0))

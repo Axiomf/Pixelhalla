@@ -1045,18 +1045,19 @@ class Projectile(DynamicObject):
 
 class PowerUp(DynamicObject):
     """A power-up that moves with a fixed velocity and respawns periodically."""
-    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None, all_sprites=None, power_ups=None):
+    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None, all_sprites=None, power_ups=None, platforms=None):
         super().__init__(x, y, width, height, color, image_path, animations)
         self.color = color
         self.image_path = image_path
         self.upgrade_type = type
         self.amount = amount
         self.use_gravity = False
-        self.lifetime = 5000  # 5 seconds lifetime before disappearing
+        self.lifetime = 10000  # 5 seconds lifetime before disappearing
         self.spawn_interval = 10000  # 10 seconds before respawning
         self.creation_time = pygame.time.get_ticks()
         self.all_sprites = all_sprites  # Store all_sprites group for respawning
         self.power_ups = power_ups  # Store power_ups group for respawning
+        self.platforms=platforms
 
     def update(self):
         now = pygame.time.get_ticks()
@@ -1074,8 +1075,9 @@ class PowerUp(DynamicObject):
         # Remove the current power-up
         self.kill()
         # Create a new power-up at a random position
-        new_x = random.randint(0, config.SCENE_WIDTH - self.rect.width)
-        new_y = random.randint(50, config.SCENE_HEIGHT - self.rect.height - 50)  # Avoid spawning too close to edges
+        selected_platform = random.choice(list(self.platforms))
+        new_x = random.randint(selected_platform.rect.x, selected_platform.rect.x + selected_platform.rect.width)
+        new_y = 0
         new_power_up = PowerUp(
             x=new_x,
             y=new_y,
@@ -1087,16 +1089,11 @@ class PowerUp(DynamicObject):
             image_path=self.image_path,
             animations=self.animations,
             all_sprites=self.all_sprites,
-            power_ups=self.power_ups
+            power_ups=self.power_ups,
+            platforms=self.platforms
         )
         # Add the new power-up to the sprite groups
         if self.all_sprites:
             self.all_sprites.add(new_power_up)
         if self.power_ups:
             self.power_ups.add(new_power_up)
-
-
-
-
-
-

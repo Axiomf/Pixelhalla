@@ -47,10 +47,17 @@ moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
 
 
 def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
-    powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0), all_sprites=all_sprites, power_ups=power_ups)
-    powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0), all_sprites=all_sprites, power_ups=power_ups)
-    powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,0,0), all_sprites=all_sprites, power_ups=power_ups)
-    powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=10, height=10, color=(75,75,75), all_sprites=all_sprites, power_ups=power_ups)
+    
+    static_platform3 = Platform(0, config.SCENE_HEIGHT - 20, 
+                            1200, 20, 
+                            color=(139, 140, 78))
+
+    moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
+                                    config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
+    powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=50, height=50, color=(255,255,0), image_path="src/assets/images/inused_single_images/double_jump.png", all_sprites=all_sprites, power_ups=power_ups, platforms=platforms)
+    powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=50, height=50, color=(150,0,0), image_path="src/assets/images/inused_single_images/damage.png", all_sprites=all_sprites, power_ups=power_ups, platforms=platforms)
+    powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=50, height=50, color=(150,0,0), image_path="src/assets/images/inused_single_images/shield.png", all_sprites=all_sprites, power_ups=power_ups, platforms=platforms)
+    powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=50, height=50, color=(75,75,75), image_path="src/assets/images/inused_single_images/supershot.png",all_sprites=all_sprites, power_ups=power_ups, platforms=platforms)
     static_platform3 = Platform(0, config.SCENE_HEIGHT - 20, 
                             1200, 20, 
                             color=(139, 140, 78))
