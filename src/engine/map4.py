@@ -19,6 +19,7 @@ enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
 melee = pygame.sprite.Group()
+power_ups = pygame.sprite.Group()
 
 def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
     powerup = PowerUp(500, config.SCENE_HEIGHT - 50,"double_jump",5, width=50, height=50, color=(255,255,0), image_path="src/assets/images/inused_single_images/damage.png")

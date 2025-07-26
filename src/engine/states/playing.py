@@ -27,6 +27,7 @@ class PlayingState(BaseState):
         self.enemies = pygame.sprite.Group()
         self.fighters = pygame.sprite.Group()
         self.projectiles = pygame.sprite.Group()
+        self.power_ups = pygame.sprite.Group()
         self.draw_background = None
         self.audio_playing = False  # Flag to track audio state
         self.level_complete = False  # Flag to track if level is complete
@@ -76,12 +77,13 @@ class PlayingState(BaseState):
                     pygame.mixer.music.load("src/assets/sounds/boss_theme.mp3")  # Load audio file
                     pygame.mixer.music.play(-1)  # Play in loop (-1 means loop indefinitely)
                     self.audio_playing = True
-                mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'enemies', 'fighters', 'projectiles', 'draw_background'])
+                mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'enemies', 'fighters', 'projectiles', 'power_ups', 'draw_background'])
                 self.all_sprites = mod.all_sprites
                 self.platforms = mod.platforms
                 self.enemies = mod.enemies
                 self.fighters = mod.fighters
                 self.projectiles = mod.projectiles
+                self.power_ups = mod.power_ups
                 self.draw_background = mod.draw_background
             except ImportError as e:
                 return
@@ -111,6 +113,7 @@ class PlayingState(BaseState):
                     self.enemies.empty()
                     self.fighters.empty()
                     self.projectiles.empty()
+                    self.power_ups.empty()
                     # Stop audio when leaving playing state
                     if self.audio_playing:
                         pygame.mixer.music.stop()
@@ -150,6 +153,7 @@ class PlayingState(BaseState):
                     self.enemies.empty()
                     self.fighters.empty()
                     self.projectiles.empty()
+                    self.power_ups.empty()
                     # Stop audio when leaving playing state
                     if self.audio_playing:
                         pygame.mixer.music.stop()
@@ -211,6 +215,7 @@ class PlayingState(BaseState):
                     self.enemies.empty()
                     self.fighters.empty()
                     self.projectiles.empty()
+                    self.power_ups.empty()
                     # Stop audio when leaving playing state
                     if self.audio_playing:
                         pygame.mixer.music.stop()
@@ -247,6 +252,7 @@ class PlayingState(BaseState):
                 self.enemies.empty()
                 self.fighters.empty()
                 self.projectiles.empty()
+                self.power_ups.empty()
                 # Stop audio when leaving playing state
                 if self.audio_playing:
                     pygame.mixer.music.stop()
@@ -340,6 +346,7 @@ class PlayingState(BaseState):
         self.enemies.empty()
         self.fighters.empty()
         self.projectiles.empty()
+        self.power_ups.empty()
         self.level_complete = False
         self.load_map(state_manager.current_map, self.change_level,state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase)
         if self.audio_playing:

@@ -30,6 +30,7 @@ platforms = pygame.sprite.Group()          # Contains all platform objects
 enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
+power_ups = pygame.sprite.Group()
 
 #static_platform = Platform(config.SCENE_WIDTH/4, config.SCENE_HEIGHT*3/5, 500, 100, color=(139, 69, 19))
 #static_platform2 = Platform(config.SCENE_WIDTH/4 + 450, config.SCENE_HEIGHT*3/5 - 50, 50, 50, color=(139, 78, 45))
@@ -46,10 +47,10 @@ moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
 
 
 def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
-    powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0))
-    powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0))
-    powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,0,0))
-    powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=10, height=10, color=(75,75,75))
+    powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=10, height=10, color=(255,255,0), all_sprites=all_sprites, power_ups=power_ups)
+    powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0), all_sprites=all_sprites, power_ups=power_ups)
+    powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,0,0), all_sprites=all_sprites, power_ups=power_ups)
+    powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=10, height=10, color=(75,75,75), all_sprites=all_sprites, power_ups=power_ups)
     static_platform3 = Platform(0, config.SCENE_HEIGHT - 20, 
                             1200, 20, 
                             color=(139, 140, 78))
@@ -63,7 +64,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
                    animations=load_animations_Elf_Archer())
     elif fighter1_id == "fighter2":
         fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,  enemies=enemies, fighters=fighters,
-                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attck": pygame.K_SPACE},
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
                    animations=load_animations_Samurai(scale=1))
     elif fighter1_id == "fighter3":
         fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms,  enemies=enemies, fighters=fighters,
@@ -132,6 +133,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
         platforms.add(moving_platform, static_platform3)
         enemies.add(ranged_enemy,melee_enemy,support,death_bomb)
         fighters.add(fighter1)
+        power_ups.add(powerup,powerup2,powerup3,powerup4)
 
 def draw_background():
     scene.fill((0, 0, 0))    

@@ -19,6 +19,7 @@ enemies = pygame.sprite.Group()            # Contains all enemy objects
 projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
 melee = pygame.sprite.Group()
+power_ups = pygame.sprite.Group()
 
 def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
     static_platform1 = Platform(config.SCENE_WIDTH*2/8 + 73, config.SCENE_HEIGHT*3/5 - 11, 
