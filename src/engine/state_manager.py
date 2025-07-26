@@ -31,10 +31,10 @@ class StateManager:
         # Load click sound
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
         self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
-        self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
+        self.win_sound = pygame.mixer.music.load("src/assets/sounds/win.mp3")
         self.level_complete_sound = pygame.mixer.Sound("src/assets/sounds/level complete.mp3")
-        self.game_over = pygame.mixer.Sound("src/assets/sounds/game-over-classic-206486.mp3")
-        self.game_over_boss = pygame.mixer.Sound("src/assets/sounds/possessed-laugh-94851.mp3")
+        self.game_over = pygame.mixer.music.load("src/assets/sounds/game-over-classic-206486.mp3")
+        self.game_over_boss = pygame.mixer.music.load("src/assets/sounds/possessed-laugh-94851.mp3")
         # Load menu music (only load once)
         pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
         pygame.mixer.music.play(-1)

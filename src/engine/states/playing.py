@@ -318,19 +318,15 @@ class PlayingState(BaseState):
         for fighter in self.fighters:
             new_state_game["fighter_health"] = fighter.health
             new_state_game["fighter_mood"] = "under extreme pressure" if fighter.health <= fighter.max_health else ""
-        
-
-
-                
-                
-
-
-
         change_game_state(new_state_game)
 
         # Check if all enemies are defeated
         if len(self.enemies) == 0 and not self.level_complete:
             self.level_complete = True
+            if self.audio_playing:
+                pygame.mixer.music.stop()
+                self.audio_playing = False
+            state_manager.level_complete_sound.play()
         if state_manager.fighter_select_phase == 1 and len(self.fighters) == 0 and not self.level_complete:
             self.game_over_fighter1 = True
             state_manager.win_boss = True
@@ -350,10 +346,11 @@ class PlayingState(BaseState):
         self.projectiles.empty()
         self.power_ups.empty()
         self.level_complete = False
-        self.load_map(state_manager.current_map, self.change_level,state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase)
+
         if self.audio_playing:
             pygame.mixer.music.stop()
             self.audio_playing = False
+        self.load_map(state_manager.current_map,state_manager.fighter1_id, state_manager.fighter2_id, state_manager.fighter_select_phase, self.change_level)
 
     def draw(self, scene, scale, state_manager):
         """Draw playing screen."""
