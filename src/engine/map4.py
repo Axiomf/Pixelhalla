@@ -21,6 +21,10 @@ fighters = pygame.sprite.Group()        # Contains all fighter objects
 melee = pygame.sprite.Group()
 
 def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
+    powerup = PowerUp(500, config.SCENE_HEIGHT - 50,"double_jump",5, width=50, height=50, color=(255,255,0), image_path="src/assets/images/inused_single_images/damage.png")
+    powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=10, height=10, color=(150,0,0))
+    powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=10, height=10, color=(150,0,0))
+    powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=10, height=10, color=(75,75,75))
     static_platform1 = Platform(config.SCENE_WIDTH*2/8 + 140, config.SCENE_HEIGHT*3/5 + 63, 
                             355,config.SCENE_HEIGHT*1/200, 
                             color=(0,0,0))#this is the main platform

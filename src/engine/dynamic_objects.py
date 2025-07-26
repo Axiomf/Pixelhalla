@@ -1046,8 +1046,8 @@ class Projectile(DynamicObject):
 class PowerUp(DynamicObject):
     """A power-up that moves with a fixed velocity.
        Optionally, it can be affected by gravity."""
-    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), animations=None):
-        super().__init__(x, y, width, height, color, animations)
+    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None):
+        super().__init__(x, y, width, height, color, image_path, animations)
         self.upgrade_type = type
         self.amount = amount
         self.duration = 10
