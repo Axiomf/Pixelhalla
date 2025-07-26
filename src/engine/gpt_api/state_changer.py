@@ -11,7 +11,7 @@ game_state = {
     "last_character_action": "Lucifer just spoke.",
 }
 
-def change_game_state():
+def change_game_state(latest_state):
     global game_state
     new_state = {  # external change
         "boss_health": 0,
@@ -25,4 +25,4 @@ def change_game_state():
         "last_character_action": "Lucifer just spoke.",  
     }
     game_state.clear()
-    game_state.update(new_state)
+    game_state.update(latest_state)

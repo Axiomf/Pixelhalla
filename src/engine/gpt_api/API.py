@@ -62,7 +62,7 @@ def get_boss_response_threaded(messages_context, current_game_state_data):
         game_context_string = (
             f"Current game context: The Fighter (a {current_game_state_data['fighter_class']} "
             f"named {current_game_state_data['fighter_name']}, Level {current_game_state_data['fighter_level']}) "
-            f"is currently {current_game_state_data['fighter_mood']}. Your health is {current_game_state_data['boss_health']}. "
+            f"is currently {current_game_state_data['fighter_mood']}. fighters health is {current_game_state_data['fighter_health']}. Your health is {current_game_state_data['boss_health']}. "
             f"Your current mood is {current_game_state_data['boss_mood']}. The last action was: {current_game_state_data['last_character_action']}."
         )
 
@@ -121,7 +121,7 @@ def get_fighter_response_threaded(messages_context, current_game_state_data):
         game_context_string = (
             f"Current game context: You are the Fighter (a {current_game_state_data['fighter_class']} "
             f"named {current_game_state_data['fighter_name']}, Level {current_game_state_data['fighter_level']}). "
-            f"Kael'thas's health is {current_game_state_data['boss_health']}. Your current mood is {current_game_state_data['fighter_mood']}. "
+            f"Lucifer's health is {current_game_state_data['boss_health']}. Lucifer's health is {current_game_state_data['boss_health']}. Lucifer's mood is {current_game_state_data['boss_mood']} Your current mood is {current_game_state_data['fighter_mood']} "
             f"The last action was: {current_game_state_data['last_character_action']}."
         )
 
