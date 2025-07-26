@@ -333,9 +333,11 @@ class PlayingState(BaseState):
             self.level_complete = True
         if state_manager.fighter_select_phase == 1 and len(self.fighters) == 0 and not self.level_complete:
             self.game_over_fighter1 = True
+            state_manager.win_boss = True
         boss = next((e for e in self.enemies if isinstance(e, Boss)), None)
         if not boss and self.boss_state:
             self.win = True
+            state_manager.win_fighter = True
 
     def start_level(self, state_manager):
         """Restart the current level and start the next level"""
@@ -437,6 +439,12 @@ class PlayingState(BaseState):
 
         else:
             # Draw Back button with hover effect
+            if self.win:
+                scene.fill((0, 0, 0, 128))  # Semi-transparent black overlay
+                title_font = pygame.font.Font(None, 72)
+                title_text = title_font.render("You win!", True, (255, 255, 255))
+                title_rect = title_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 4))
+                scene.blit(title_text, title_rect)
             self.back_button = pygame.Rect(1080, 20, 100, 50)  # Top-right corner
             pulsed_back_button = pygame.Rect(self.back_button.x - scale / 2, self.back_button.y - scale / 2, 
                                             self.back_button.width + scale, self.back_button.height + scale)

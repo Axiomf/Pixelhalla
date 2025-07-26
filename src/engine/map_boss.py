@@ -17,6 +17,7 @@ projectiles = pygame.sprite.Group()        # Contains all projectile objects
 fighters = pygame.sprite.Group()        # Contains all fighter objects
 melee = pygame.sprite.Group()
 enemies_without_boss = pygame.sprite.Group()
+power_ups = pygame.sprite.Group()
 
 def load_map(fighter1_id):
 

@@ -43,7 +43,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase):
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                    animations=load_animations_Elf_Archer())
     elif fighter1_id == "fighter2":
-        fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, health=20, platforms=platforms, enemies=enemies, fighters=fighters,
+        fighter1 = MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, enemies=enemies, fighters=fighters,
                    controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
                    animations=load_animations_Samurai(scale=1))
     elif fighter1_id == "fighter3":

@@ -16,6 +16,8 @@ class StateManager:
         self.fighter2_id = None  # Track selected fighter2
         self.fighter_select_phase = 1  # Track which fighter is being selected (1 for fighter1, 2 for fighter2 in multi mode)
         self.last_click_time = 0
+        self.win_boss = False
+        self.win_fighter = False
         # Initialize states
         self.states = {
             config.GAME_STATE_LOADING: LoadingState(scene),

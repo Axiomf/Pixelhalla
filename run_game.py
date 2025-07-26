@@ -5,7 +5,6 @@ import math    # Import math for sin function in pulse effect
 from src.engine.gpt_api.API import*
 from src.engine.state_manager import StateManager
 from src.engine.gpt_api.dummyUI import*
-from src.engine.states.playing import PlayingState
 
 # Initialize pygame
 pygame.init()  # Initialize all imported pygame modules
@@ -24,8 +23,7 @@ while running:
     current_time = pygame.time.get_ticks()  # Get current time for debounce
     config.PULSE_TIME += config.PULSE_SPEED  # Update pulse animation
     scale = config.PULSE_SCALE * abs(math.sin(config.PULSE_TIME))  # Calculate scale for pulse
-
-    dialog_enabled = (state_manager.current_map == "map_boss" and not PlayingState.game_over_fighter1 and not PlayingState.win)
+    dialog_enabled = (state_manager.current_map == "map_boss" and not state_manager.win_boss and not state_manager.win_fighter)
 
     # Handle events
     for event in pygame.event.get():
