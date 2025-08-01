@@ -1,6 +1,7 @@
 import pygame
 import config
 from src.engine.fighter_select import fighter1_button, fighter2_button, fighter3_button, fighter4_button
+from src.engine.animation_loader import *
 
 class FighterSelectState:
     def __init__(self, scene):
@@ -38,58 +39,50 @@ class FighterSelectState:
                                             self.back_button.width + scale, self.back_button.height + scale)
             if pulsed_fighter1_button.collidepoint(event.pos):
                 state_manager.click_sound.play()  # Play click sound
-                if state_manager.game_mode == "single" or state_manager.fighter_select_phase == 1:
-                    state_manager.fighter1_id = "fighter1"
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.fighter2_id = "fighter1"
                 if state_manager.game_mode == "single":
+                    state_manager.fighter1_id = "fighter1"
                     state_manager.change_state(config.GAME_STATE_PLAYING)
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 1:
-                    state_manager.fighter_select_phase = 2
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.change_state(config.GAME_STATE_PLAYING)
+                elif state_manager.game_mode == "multi":
+                    state_manager.fighter1_id = "fighter1"
+                    state_manager.fighter_type = "normal"
+                    state_manager.animation = load_animations_Elf_Archer()
+                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_fighter2_button.collidepoint(event.pos):
                 state_manager.click_sound.play()  # Play click sound
-                if state_manager.game_mode == "single" or state_manager.fighter_select_phase == 1:
-                    state_manager.fighter1_id = "fighter2"
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.fighter2_id = "fighter2"
                 if state_manager.game_mode == "single":
+                    state_manager.fighter1_id = "fighter2"
                     state_manager.change_state(config.GAME_STATE_PLAYING)
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 1:
-                    state_manager.fighter_select_phase = 2
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.change_state(config.GAME_STATE_PLAYING)
+                elif state_manager.game_mode == "multi":
+                    state_manager.fighter1_id = "fighter2"
+                    state_manager.fighter_type = "melee"
+                    state_manager.animation = load_animations_Samurai(scale=1)
+                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_fighter3_button.collidepoint(event.pos):
                 state_manager.click_sound.play()  # Play click sound
-                if state_manager.game_mode == "single" or state_manager.fighter_select_phase == 1:
-                    state_manager.fighter1_id = "fighter3"
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.fighter2_id = "fighter3"
                 if state_manager.game_mode == "single":
+                    state_manager.fighter1_id = "fighter3"
                     state_manager.change_state(config.GAME_STATE_PLAYING)
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 1:
-                    state_manager.fighter_select_phase = 2
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.change_state(config.GAME_STATE_PLAYING)
+                elif state_manager.game_mode == "multi":
+                    state_manager.fighter1_id = "fighter3"
+                    state_manager.fighter_type = "melee"
+                    state_manager.animation = load_animations_Knight(scale=1)
+                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_fighter4_button.collidepoint(event.pos):
                 state_manager.click_sound.play()  # Play click sound
-                if state_manager.game_mode == "single" or state_manager.fighter_select_phase == 1:
-                    state_manager.fighter1_id = "fighter4"
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.fighter2_id = "fighter4"
                 if state_manager.game_mode == "single":
+                    state_manager.fighter1_id = "fighter4"
                     state_manager.change_state(config.GAME_STATE_PLAYING)
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 1:
-                    state_manager.fighter_select_phase = 2
-                elif state_manager.game_mode == "multi" and state_manager.fighter_select_phase == 2:
-                    state_manager.change_state(config.GAME_STATE_PLAYING)
+                elif state_manager.game_mode == "multi":
+                    state_manager.fighter1_id = "fighter4"
+                    state_manager.fighter_type = "normal"
+                    state_manager.animation = load_animations_Arcane_Archer(scale=1)
+                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_back_button.collidepoint(event.pos):  # Back to map select

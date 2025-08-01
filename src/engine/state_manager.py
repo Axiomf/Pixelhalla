@@ -5,6 +5,7 @@ from src.engine.states.mode_select import ModeSelectState
 from src.engine.states.map_select import MapSelectState
 from src.engine.states.fighter_select import FighterSelectState
 from src.engine.states.playing import PlayingState
+from src.engine.states.multiplayer import MultiplayerState
 
 class StateManager:
     def __init__(self, scene):
@@ -18,13 +19,15 @@ class StateManager:
         self.last_click_time = 0
         self.win_boss = False
         self.win_fighter = False
+        self.multi_mode = None
         # Initialize states
         self.states = {
             config.GAME_STATE_LOADING: LoadingState(scene),
             config.GAME_STATE_MODE_SELECT: ModeSelectState(scene),
             config.GAME_STATE_MAP_SELECT: MapSelectState(scene),
             config.GAME_STATE_FIGHTER_SELECT: FighterSelectState(scene),
-            config.GAME_STATE_PLAYING: PlayingState(scene)
+            config.GAME_STATE_PLAYING: PlayingState(scene),
+            config.GAME_STATE_MULTIPLATER: MultiplayerState(scene)
         }
         self.current_map = None
         self.last_click_time = 0
