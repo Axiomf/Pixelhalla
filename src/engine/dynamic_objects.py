@@ -372,6 +372,8 @@ class Fighter(Player):
         self.platforms = platforms  # Store platforms group
         self.enemies = enemies
         self.fighters = fighters
+        self.server_update = False
+        self.client_input  = []
 
         
 
@@ -385,31 +387,48 @@ class Fighter(Player):
     def update(self):
 
         if self.freeze:
-            self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed
-            
-            
+            self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed     
         else:
-            keys = pygame.key.get_pressed()  # Get the state of keyboard keys
-            # Track previous direction to detect changes
-            previous_facing = self.facing_right
-            # Move left if the assigned 'left' key is pressed
-            if self.controls.get("left") and keys[self.controls["left"]]:
-                self.change_x = (-1) * self.speed
-                self.facing_right = False  # Face left
-            # Move right if the assigned 'right' key is pressed
-            elif self.controls.get("right") and keys[self.controls["right"]]:
-                self.change_x = self.speed
-                self.facing_right = True  # Face right
+            if self.client_input:
+                previous_facing = self.facing_right
+                if self.controls.get("left") and self.controls["left"] in self.client_input:
+                    self.change_x = (-1) * self.speed
+                    self.facing_right = False
+                elif self.controls.get("right") and self.controls["right"] in self.client_input:
+                    self.change_x = self.speed
+                    self.facing_right = True
+                else:
+                    self.change_x = 0
+                if self.controls.get("jump") and self.controls["jump"] in self.client_input:
+                    if self.change_y == 0:
+                        self.change_y = self.jump_strength
+                # Update the image based on direction
+                if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
+                    if self.original_image:  # Only flip if original_image exists
+                        self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+                self.client_input = []  # Clear the input list after processing
             else:
-                self.change_x = 0  # Stop horizontal movement if no keys are pressed
-            # Initiate jump if the 'jump' key is pressed (only if on the ground)
-            if self.controls.get("jump") and keys[self.controls["jump"]]:
-                if self.change_y == 0:  # Simplistic ground check
-                    self.change_y = self.jump_strength
-            # Update the image based on direction
-            if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
-                if self.original_image:  # Only flip if original_image exists
-                    self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
+                keys = pygame.key.get_pressed()  # Get the state of keyboard keys
+                # Track previous direction to detect changes
+                previous_facing = self.facing_right
+                # Move left if the assigned 'left' key is pressed
+                if self.controls.get("left") and keys[self.controls["left"]]:
+                    self.change_x = (-1) * self.speed
+                    self.facing_right = False  # Face left
+                # Move right if the assigned 'right' key is pressed
+                elif self.controls.get("right") and keys[self.controls["right"]]:
+                    self.change_x = self.speed
+                    self.facing_right = True  # Face right
+                else:
+                    self.change_x = 0  # Stop horizontal movement if no keys are pressed
+                # Initiate jump if the 'jump' key is pressed (only if on the ground)
+                if self.controls.get("jump") and keys[self.controls["jump"]]:
+                    if self.change_y == 0:  # Simplistic ground check
+                        self.change_y = self.jump_strength
+                # Update the image based on direction
+                if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
+                    if self.original_image:  # Only flip if original_image exists
+                        self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
 
 
 
