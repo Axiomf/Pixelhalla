@@ -7,7 +7,23 @@ from src.engine import map1, map4, map_boss, map_jesus, map_levels
 import socket
 import pickle
 import threading
-# package_to_server = {"request": "lobby" , "inputs" : []}
+
+""" general template of packages:
+
+client_package =  { "state": "lobby",
+                    "request" : "find",    
+                    "fighter_id": n-1,  
+                    "inputs" : [] }
+
+package = {
+    "platforms": platforms,
+    "fighters": fighters,
+    "projectiles": projectiles, 
+    "power_ups": power_ups, 
+    "sounds": []
+}                   
+"""
+
 #blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
 
 blood_sound = []
@@ -37,10 +53,10 @@ class PlayingState_Multiplayer(BaseState):
         self.game_over_fighter1 = False
         self.game_over_fighter2 = False
         self.win = False
-
+        
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect(("127.0.0.1", 5555))
-        self.package_to_server = {"inputs": []}
+        self.client_package = {"inputs": []}
         self.network_thread = threading.Thread(target=self.receive_updates, daemon=True)
         self.network_thread.start()
 
@@ -116,7 +132,7 @@ class PlayingState_Multiplayer(BaseState):
                 break
 
     def handle_event(self, event, current_time, scale, map_name, state_manager):
-        global package_to_server
+        global client_package
         """Handle events in playing state."""
         if not state_manager.current_map:
             state_manager.change_state(config.GAME_STATE_MAP_SELECT)
@@ -226,20 +242,20 @@ class PlayingState_Multiplayer(BaseState):
         if event.type == pygame.KEYDOWN: # Get the state of keyboard keys
             keys = pygame.key.get_pressed()  
             if keys[pygame.K_a]:
-                self.package_to_server["inputs"].append(pygame.K_a)# Get the state of keyboard keys
+                self.client_package["inputs"].append(pygame.K_a)# Get the state of keyboard keys
             elif keys[pygame.K_d]:
-                self.package_to_server["inputs"].append(pygame.K_d)
+                self.client_package["inputs"].append(pygame.K_d)
             if keys[pygame.K_w]:
-                self.package_to_server["inputs"].append(pygame.K_w)
+                self.client_package["inputs"].append(pygame.K_w)
             if keys[pygame.K_SPACE]:
-                  self.package_to_server["inputs"].append(pygame.K_SPACE)
+                  self.client_package["inputs"].append(pygame.K_SPACE)
 
             # send package to server     
             try:
-                self.client_socket.send(pickle.dumps(self.package_to_server))
+                self.client_socket.send(pickle.dumps(self.client_package))
             except Exception as e:
                 print("Send error:", e)
-            self.package_to_server["inputs"].clear()
+            self.client_package["inputs"].clear()
 
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - state_manager.last_click_time > config.CLICK_COOLDOWN:

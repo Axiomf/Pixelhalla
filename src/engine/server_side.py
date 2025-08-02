@@ -1,7 +1,4 @@
 # it handles server requsts, clients add requests and server updates the game opbjects and sends them to all clients
-
-
-
 import socket
 from _thread import * # For threading, to handle multiple clients at once
 from src.engine.dynamic_objects import *
@@ -23,16 +20,17 @@ s.listen(2)# Start listening for incoming connections. The number (2) is the max
 print("Waiting for a connection, Server Started")
 ###################################################################################################################
 
-all_sprites = pygame.sprite.Group()
 platforms = pygame.sprite.Group()
 fighters = pygame.sprite.Group()
 projectiles = pygame.sprite.Group()
 power_ups = pygame.sprite.Group()
 
-online_people= []
 
-
-# package_to_server = {"state": "lobby", "request" : "find",    "fighter_id": n-1,  "inputs" : []}
+""" client_package = {"state": "lobby",
+                      "request" : "find",    
+                      "fighter_id": n-1,  
+                      "inputs" : [] }
+"""
 
 package = {
     "platforms": platforms,
@@ -46,11 +44,18 @@ package = {
 clients = []
 incoming_requests = []  # new global list for client inputs and requests
 
-def broadcast(updated_package):
+def broadcast(package):
+    """Sends the updated game state package to all connected clients."""
+    disconnected_clients = []
     for client in clients:
         try:
-            client.sendall(pickle.dumps(updated_package))
+            client.sendall(pickle.dumps(package))
         except:
+            clients.remove(client)
+            disconnected_clients.append(client)
+    # remove them sepratly to prevent error
+    for client in disconnected_clients:
+        if client in clients:
             clients.remove(client)
 
 def handle_collisions():
@@ -77,11 +82,6 @@ def handle_collisions():
         sprite.handle_platform_collision(package["platforms"])
     for sprite in package["power_ups"]:
         sprite.handle_platform_collision(package["platforms"])
-
-
-    
-            
-
 
 def update_game_world():
     global incoming_requests, package
@@ -131,14 +131,9 @@ start_new_thread(update_game_world, ())
 
 current_player = 0
 while True:
-    # The accept() method blocks until a client connects.
-    # It returns a new connection object (conn) and the client's address (addr).
-    conn, addr = s.accept()
+    conn, addr = s.accept()# The accept() method blocks until a client connects. It returns a new connection object (conn) and the client's address (addr).
     print("Connected to:", addr)
-
-    # When a client connects, we start a new thread for them.
-    # This allows the server to handle multiple clients simultaneously without blocking.
-    start_new_thread(threaded_client, (conn, current_player))
+    start_new_thread(threaded_client, (conn, current_player)) # When a client connects, we start a new thread for them. This allows the server to handle multiple clients simultaneously without blocking.
     current_player += 1 # Increment for the next player
 
 
