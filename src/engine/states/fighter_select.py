@@ -46,7 +46,7 @@ class FighterSelectState:
                     state_manager.fighter1_id = "fighter1"
                     state_manager.fighter_type = "normal"
                     state_manager.animation = load_animations_Elf_Archer()
-                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
+                    state_manager.change_state(config.GAME_STATE_WAITING)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_fighter2_button.collidepoint(event.pos):
@@ -58,7 +58,7 @@ class FighterSelectState:
                     state_manager.fighter1_id = "fighter2"
                     state_manager.fighter_type = "melee"
                     state_manager.animation = load_animations_Samurai(scale=1)
-                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
+                    state_manager.change_state(config.GAME_STATE_WAITING)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_fighter3_button.collidepoint(event.pos):
@@ -70,7 +70,7 @@ class FighterSelectState:
                     state_manager.fighter1_id = "fighter3"
                     state_manager.fighter_type = "melee"
                     state_manager.animation = load_animations_Knight(scale=1)
-                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
+                    state_manager.change_state(config.GAME_STATE_WAITING)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_fighter4_button.collidepoint(event.pos):
@@ -82,7 +82,7 @@ class FighterSelectState:
                     state_manager.fighter1_id = "fighter4"
                     state_manager.fighter_type = "normal"
                     state_manager.animation = load_animations_Arcane_Archer(scale=1)
-                    state_manager.change_state(config.GAME_STATE_MULTIPLATER)
+                    state_manager.change_state(config.GAME_STATE_WAITING)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()  # Clear event queue
             elif pulsed_back_button.collidepoint(event.pos):  # Back to map select

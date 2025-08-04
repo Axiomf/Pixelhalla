@@ -6,6 +6,8 @@ from src.engine.states.map_select import MapSelectState
 from src.engine.states.fighter_select import FighterSelectState
 from src.engine.states.playing import PlayingState
 from src.engine.states.multiplayer import MultiplayerState
+from src.engine.states.client_side import PlayingState_Multiplayer
+from src.engine.states.waiting import WaitingState
 
 class StateManager:
     def __init__(self, scene):
@@ -20,6 +22,12 @@ class StateManager:
         self.win_boss = False
         self.win_fighter = False
         self.multi_mode = None
+        self.is_initialized = False
+        self.username = None
+        self.client_socket = None
+        self.client_id = None
+        self.fighter_type = None
+        self.error_message = ""  # Track error messages
         # Initialize states
         self.states = {
             config.GAME_STATE_LOADING: LoadingState(scene),
@@ -27,39 +35,58 @@ class StateManager:
             config.GAME_STATE_MAP_SELECT: MapSelectState(scene),
             config.GAME_STATE_FIGHTER_SELECT: FighterSelectState(scene),
             config.GAME_STATE_PLAYING: PlayingState(scene),
-            config.GAME_STATE_MULTIPLATER: MultiplayerState(scene)
+            # config.GAME_STATE_MULTIPLATER: PlayingState_Multiplayer(scene, self),  # Will be initialized in WaitingState
+            config.GAME_STATE_WAITING : WaitingState(scene, self)
         }
-        self.current_map = None
-        self.last_click_time = 0
         # Load click sound
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
         self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
-        self.win_sound = pygame.mixer.music.load("src/assets/sounds/win.mp3")
+        self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
         self.level_complete_sound = pygame.mixer.Sound("src/assets/sounds/level complete.mp3")
-        self.game_over = pygame.mixer.music.load("src/assets/sounds/game-over-classic-206486.mp3")
-        self.game_over_boss = pygame.mixer.music.load("src/assets/sounds/possessed-laugh-94851.mp3")
+        self.game_over = pygame.mixer.Sound("src/assets/sounds/game-over-classic-206486.mp3")
+        self.game_over_boss = pygame.mixer.Sound("src/assets/sounds/possessed-laugh-94851.mp3")
         # Load menu music (only load once)
-        pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
-        pygame.mixer.music.play(-1)
+        try:
+            pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+            pygame.mixer.music.play(-1)
+        except pygame.error as e:
+            print(f"Error loading menu music: {e}")
+            self.error_message = "Failed to load menu music"
 
     def handle_event(self, event, current_time, scale):
         """Handle events for the current state."""
-        self.states[self.game_state].handle_event(event, current_time, scale, self.current_map, self)
+        if self.game_state in self.states and self.states[self.game_state]:
+            self.states[self.game_state].handle_event(event, current_time, scale, self.current_map, self)
 
     def update(self, current_time, scale):
         """Update the current state."""
-        self.states[self.game_state].update(current_time, scale, self)
+        if self.game_state in self.states and self.states[self.game_state]:
+            self.states[self.game_state].update(current_time, scale, self)
 
     def draw(self, scale):
         """Draw the current state."""
-        self.states[self.game_state].draw(self.scene, scale, self)
+        if self.game_state in self.states and self.states[self.game_state]:
+            self.states[self.game_state].draw(self.scene, scale, self)
+        if self.error_message:
+            font = pygame.font.Font(None, 60)
+            error_text = font.render(self.error_message, True, (255, 0, 0))
+            error_rect = error_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 2 - 150))
+            self.scene.blit(error_text, error_rect)
 
-    def change_state(self, new_state):
+    def change_state(self, new_state, state_instance=None):
         """Change the current game state."""
         previous_state = self.game_state
         self.game_state = new_state
+        if state_instance:
+            self.states[new_state] = state_instance
         # Manage music based on state
-        if new_state != config.GAME_STATE_PLAYING and (previous_state == config.GAME_STATE_PLAYING or not pygame.mixer.music.get_busy()):
-            pygame.mixer.music.play(-1)  # Play menu music in loop when leaving PlayingState or if not playing
-        elif new_state == config.GAME_STATE_PLAYING and pygame.mixer.music.get_busy():
-            pygame.mixer.music.stop()  # Stop menu music when entering PlayingState
+        if new_state not in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER]:
+            try:
+                if not pygame.mixer.music.get_busy():
+                    pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+                    pygame.mixer.music.play(-1)
+            except pygame.error as e:
+                print(f"Error loading menu music: {e}")
+                self.error_message = "Failed to load menu music"
+        elif new_state in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER] and pygame.mixer.music.get_busy():
+            pygame.mixer.music.stop()
