@@ -1,40 +1,103 @@
 # it handles server requsts, clients add requests and server updates the game opbjects and sends them to all clients
-import socket
 from _thread import * # For threading, to handle multiple clients at once
 from src.engine.dynamic_objects import *
 import pickle  # To serialize Python objects to send over the network
 import pygame  # (if not already imported for sprite groups)
 import time  # added for game world update timing
 import uuid  # added for generating unique random client IDs
+from src.config.server_config import create_server_socket  # New import for server configuration
 
-server = "127.0.0.1"  # The IP address the server will run on (localhost)
-port = 5555          # The port the server will listen on
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# AF_INET specifies we are using IPv4 # SOCK_STREAM specifies we are using TCP (a reliable connection-based protocol)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)# This line allows us to reuse the address when you restart the server quickly. It prevents the "address already in use" error
-try:# Bind the socket to the IP and port
-    s.bind((server, port))
-except socket.error as e:
-    # We also improve the error message here to be more helpful.
-    print(f"Server could not bind to {server}:{port}, error: {e}")
-    exit() # Exit the program if we can't bind.
-s.listen(2)# Start listening for incoming connections. The number (2) is the max number of queued connections.
-print("Waiting for a connection, Server Started")
-###################################################################################################################
+# New Client class to encapsulate connection and attributes
+class Client:
+    def __init__(self, client_id, conn, state="menu"):
+        self.client_id = client_id
+        self.conn = conn
+        self.state = state
 
-platforms = pygame.sprite.Group()
-fighters = pygame.sprite.Group()
-projectiles = pygame.sprite.Group()
-power_ups = pygame.sprite.Group()
+        self.connected_lobby_id = ""
+        self.connected_game_id = ""
 
 
-""" client_package = {"fighter_id": n-1,
-                      "request_type" : "find",    
-                      "state": "lobby",
-                      "shoots" " [] ,
-                      "inputs" : [] }
-"""
+        self.is_host = False
+        self.hero = None # add later
+        self.game_mode = None # add later
+
+class Game: # need a broadcaster for 
+    def __init__(self,id, mode, ID1, ID2, ID3 = None, ID4 = None):# we assume player_3 and player_4 are on the same team
+        """  """
+        self.ID = id
+        self.game_clients = [ID1, ID2, ID3, ID4] # IDs of connected clients
+        self.platforms = pygame.sprite.Group()
+        self.fighters = pygame.sprite.Group() # handle 2 vs 2 later
+        self.projectiles = pygame.sprite.Group()
+        self.power_ups = pygame.sprite.Group()
+
+        self.game_updates = [] # input packages
+        self.mode = mode
+        
+        # Moved server_package inside Game
+        
+        # ...existing code...
+
+    def handle_collisions(self):
+        # Handle collisions for projectiles with fighters
+        for projectile in self.projectiles:
+            hit_fighters = pygame.sprite.spritecollide(projectile, self.fighters, False)
+            for fighter in hit_fighters:
+                if hasattr(projectile, "owner") and fighter != projectile.owner:
+                    fighter.take_damage(projectile.damage)
+                    projectile.kill()
+        # Handle collisions for power-ups with fighters
+        for power in self.power_ups:
+            hit_fighters = pygame.sprite.spritecollide(power, self.fighters, False)
+            for fighter in hit_fighters:
+                fighter.upgrade(power.upgrade_type, power.amount)
+                power.kill()
+        # Handle platform collisions
+        for sprite in self.fighters:
+            sprite.handle_platform_collision(self.platforms)
+        for sprite in self.projectiles:
+            sprite.handle_platform_collision(self.platforms)
+        for sprite in self.power_ups:
+            sprite.handle_platform_collision(self.platforms)
+
+    def update(self):
+        """ it handles input queues, then collision and updates the world of the game  """
+        while True:
+            if self.game_updates:
+                for client_package in self.game_updates:
+                    for fighter in self.fighters:
+                        if client_package["fighter_id"] == fighter:
+                            fighter.client_input.extend(client_package["inputs"])
+                            if client_package["shoots"]:
+                                for shot in client_package["shoots"]:
+                                    projectile = fighter.shoot()
+                                    self.projectiles.add(projectile)
+                self.game_updates.clear()
+            # Update game objects in the current server_package and handle collisions
+            self.fighters.update()
+            self.projectiles.update()
+            self.power_ups.update()
+            self.platforms.update()
+
+            self.handle_collisions()
+            
+            #broadcast(self.server_package) moved to thread
+            #time.sleep(0.05) moved to thread
+
+s = create_server_socket()
 
 
+
+""" types of client requests:  find_random_game, join_lobby, make_lobby, start_the_game_as_host 
+
+client_package = {
+    "room_id" : "1313132",
+    "client_id": "12345678",
+    "request_type" : "find",    
+    "state": "lobby",
+    "shoots" " [] ,
+    "inputs" : [] }
 
 server_package = {
     "request_type": "game_update",
@@ -44,65 +107,50 @@ server_package = {
     "power_ups": power_ups, 
     "sounds": []
 }
+"""
 
-clients = {}  
+all_clients = []  # list of Client objects
+all_lobbies = []  # connected clients and created lobbies 
+
+
 pending_requests = []  # new global list for client requests that are not input or shoot (client_package)
-game_updates = [] # Append the input and shoot request to this 
-
-def broadcast(server_package):
-    """Sends the updated game state server_package to all connected clients."""
-    disconnected_ids = []
-    for client_id, client in list(clients.items()):
+games = [] # to track all the current playing games
+waiting_clients = {} 
+def broadcast(server_package, ):
+    """Sends a package to all connected clients."""
+    disconnected_clients = []
+    for client in all_clients:
         try:
-            client.sendall(pickle.dumps(server_package))
+            client.conn.sendall(pickle.dumps(server_package))
         except:
-            disconnected_ids.append(client_id)
+            disconnected_clients.append(client)
     # Remove disconnected clients
-    for client_id in disconnected_ids:
-        if client_id in clients:
-            del clients[client_id]
+    for client in disconnected_clients:
+        all_clients.remove(client)
 
 def send_to_client(server_package, client_id):
     """Sends a package to a specific client identified by client_id."""
-    client = clients.get(client_id)
-    if client is None:
+    target = None
+    for client in all_clients:
+        if client.client_id == client_id:
+            target = client
+            break
+    if target is None:
         print(f"Client {client_id} not found.")
         return
     try:
-        client.sendall(pickle.dumps(server_package))
+        target.conn.sendall(pickle.dumps(server_package))
     except Exception as e:
         print(f"Error sending to client {client_id}: {e}")
+        
+def threaded_client(conn):
+    global pending_requests, games, waiting_clients
+    # Create new Client instance and add to the clients list
+    client_id = generate_unique_client_id()  # use the new function for unique ID generation
 
-def handle_collisions():
-    global server_package
-    
-    # Handle collisions for projectiles with fighters
-    for projectile in server_package["projectiles"]:
-        hit_fighters = pygame.sprite.spritecollide(projectile, server_package["fighters"], False)
-        for fighter in hit_fighters:
-            # Ensure that projectiles do not hit their owners
-            if hasattr(projectile, "owner") and fighter != projectile.owner:
-                fighter.take_damage(projectile.damage)
-                projectile.kill()
-    # Handle collisions for power-ups with fighters
-    for power in server_package["power_ups"]:
-        hit_fighters = pygame.sprite.spritecollide(power, server_package["fighters"], False)
-        for fighter in hit_fighters:
-            fighter.upgrade(power.upgrade_type, power.amount)
-            power.kill()
-    # handle_platform_collision
-    for sprite in server_package["fighters"]:
-        sprite.handle_platform_collision(server_package["platforms"])
-    for sprite in server_package["projectiles"]:
-        sprite.handle_platform_collision(server_package["platforms"])
-    for sprite in server_package["power_ups"]:
-        sprite.handle_platform_collision(server_package["platforms"])
-
-def threaded_client(conn, player_id):
-    global server_package, pending_requests, game_updates
-    # Add connection to dictionary with its ID
-    clients[player_id] = conn
-    conn.send(pickle.dumps(server_package)) # we need to send a custom first-time package, change this later.
+    client = Client(client_id, conn)
+    all_clients.append(client)
+    conn.send(pickle.dumps(client_id)) # sends clients ID as a first time massage
     
     while True:
         try:
@@ -110,46 +158,54 @@ def threaded_client(conn, player_id):
             if not data:
                 break
             client_package = pickle.loads(data)
+            request_type = client_package["request_type"] # always have a type of request in client packages
 
-            if client_package["request_type"] == "input":  # Append the client's package to game_updates if it is input.  
-                game_updates.append(client_package)
+            if request_type == "input":  # Append the client's package to game_updates if it is input.  
+                for game in games:
+                    if game.ID == client.connected_game_id:
+                        game.game_updates.append(client_package)
+            
+            elif request_type == "find_random_game": # incomplete
+                waiting_clients[client_package["client_id"]] = client_package["room_id"]
+                
+            
+            elif request_type == "join_lobby":# incomplete
+                if client.connected_lobby_id == "":
+                    all_lobbies.append(client_package["client_id"])
+
+
+            elif request_type == "make_lobby":
+                pass
+
+            elif request_type == "start_the_game_as_host":
+                pass
+
+
+
+
+
+
             else:
-                pending_requests.append((player_id, client_package)) # Append to the global request list.
+                pending_requests.append((client_id, client_package)) # Append to the global request list.
 
         except:
             break
 
     print("Lost connection")
-    if player_id in clients:
-        del clients[player_id]
+    # Remove client from the clients list
+    for client in all_clients:
+        if client.client_id == client_id:
+            all_clients.remove(client)
+            break
     conn.close()
 
-
-def threaded_update_game_world():# it sees only the game_updates then Processes the pending game changes then sends it to all clients, input and shooting
-    global game_updates, server_package
+def threaded_game(game):# it sees only the game_updates then Processes the pending game changes then sends it to all clients, input and shooting
     while True:
-        if game_updates:
-            for client_package in game_updates: # select a patch
-                for fighter in server_package["fighters"]: 
-                    if client_package["fighter_id"] == fighter: # find the fighter corresponding to the given package
-                        fighter.client_input.extend(client_package["inputs"])
-                        if client_package["shoots"]: # if it shoots then handle it
-                            for shots in client_package["shoots"]:
-                                projectile = fighter.shoot()
-                                server_package["projectiles"].add(projectile)
-
-            game_updates.clear()
-        # Update game objects in the current server_package and handle collision
-        server_package["fighters"].update()
-        server_package["projectiles"].update()
-        server_package["power_ups"].update()
-        server_package["platforms"].update()  # In case platforms are dynamic
-        handle_collisions()
-
+        game.update()
         broadcast(server_package)
         time.sleep(0.05)  # small delay to reduce CPU usage
 
-def threaded_handle_general_request(): 
+def threaded_handle_general_request(): # what are requests other than input?
     global pending_requests, server_package
     while True:
         if pending_requests:
@@ -168,27 +224,30 @@ def threaded_handle_general_request():
         server_package["power_ups"].update()
         server_package["platforms"].update()  # In case platforms are dynamic
         # Process collisions similar to playing.py
-        handle_collisions()        
         broadcast(server_package)
         time.sleep(0.05)  # small delay to reduce CPU usage
 
 def generate_unique_client_id():
     # Generate a random 8-character ID and ensure it is unique among connected clients.
     client_id = str(uuid.uuid4())[:8]
-    while client_id in clients:
+    existing_ids = [client.client_id for client in all_clients]
+    while client_id in existing_ids:
         client_id = str(uuid.uuid4())[:8]
     return client_id
 
-# Start the game world updater in its own thread.
-start_new_thread(threaded_update_game_world, ())
+def threaded_handle_waiting_clients():
+    global waiting_clients
+
+
+
+start_new_thread(threaded_game, ())# 
 
 
 while True:
     conn, addr = s.accept()# The accept() method blocks until a client connects. It returns a new connection object (conn) and the client's address (addr).
     print("Connected to:", addr)
     
-    client_id = generate_unique_client_id()  # use the new function for unique ID generation
-    start_new_thread(threaded_client, (conn, client_id )) # When a client connects, we start a new thread for them with a new generated ID. This allows the server to handle multiple clients simultaneously without blocking
+    start_new_thread(threaded_client, (conn)) # When a client connects, we start a new thread for them with a new generated ID. This allows the server to handle multiple clients simultaneously without blocking
 
 
 
