@@ -365,7 +365,7 @@ class Player(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, animations=None, id=None):
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, animations=None, id=None, team = 1):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
@@ -375,7 +375,8 @@ class Fighter(Player):
 
         self.server_update = False
         self.client_input  = []
-        self.fighterID = id or "id not given"
+        self.fighter_id = id or "id not given"
+        self.team = team
 
         
 
@@ -487,7 +488,7 @@ class Fighter(Player):
                              velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
                              damage=self.damage,
                              image_path="src/assets/images/inused_single_images/bullet.png", 
-                             owner=self)
+                             owner=self,team=self.team)
         elif arrow =="arcane":
             path = "src/assets/images/inused_single_images/projectile_Arcane.png"
 
@@ -498,7 +499,7 @@ class Fighter(Player):
                              velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
                              damage=self.damage,
                              image_path="src/assets/images/inused_single_images/projectile_Arcane.png", 
-                             owner=self,image=frame)
+                             owner=self,image=frame,team=self.team)
                              
         elif arrow =="elf":
 
@@ -1047,13 +1048,14 @@ class Medusa(Melee):
 class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
-    def __init__(self, x, y, image_path, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE, 
+    def __init__(self, x, y, image_path, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE,team = 1, 
                  use_gravity=False, owner=None, animations=None, image=None):
         super().__init__(x, y, width, height, color, image_path, animations,image=image)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
         self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
+        self.team = team
         # For projectiles we typically do not use the standard gravity unless needed
         if not self.use_gravity:
             self.change_y = 0  

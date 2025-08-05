@@ -14,3 +14,4 @@ def create_server_socket():# the comments on how it works are in previous commit
     s.listen(2)
     print("Waiting for a connection, Server Started")
     return s
+

@@ -1,7 +1,7 @@
 import uuid
 import pickle
 
-active_client_ids = set()
+generated_ids = set()
 
 def generate_unique_client_id():
     """
@@ -10,15 +10,14 @@ def generate_unique_client_id():
     """
     while True:
         client_id = str(uuid.uuid4())[:8]
-        if client_id not in active_client_ids:
-            active_client_ids.add(client_id)
+        if client_id not in generated_ids:
+            generated_ids.add(client_id)
             return client_id
 
 def broadcast(server_package, list_of_IDs, all_clients):
     """
     Sends a package to all connected clients inside a group.
     """
-    disconnected_clients = []
     for client_ids in list_of_IDs:
         target = None
         for client in all_clients:
@@ -27,19 +26,11 @@ def broadcast(server_package, list_of_IDs, all_clients):
                 break
         if target is None:
             print(f"Client {client_ids} not found.")
+            continue
         try:
             target.conn.sendall(pickle.dumps(server_package))
         except Exception as e:
             print(f"Error sending to client in the broadcast function {client_ids}: {e}")
-
-    for client in all_clients:
-        try:
-            client.conn.sendall(pickle.dumps(server_package))
-        except:
-            disconnected_clients.append(client)
-    # Remove disconnected clients
-    for client in disconnected_clients:
-        all_clients.remove(client)
 
 def send_to_client(server_package, client_id, all_clients):
     """

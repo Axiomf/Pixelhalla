@@ -1,0 +1,13 @@
+give-me-free: do you see any problems?
+
+GitHub Copilot: Here’s a step-by-step review of potential problems in your code:
+
+
+-------------------------------------------------------------------------------------
+
+9. **Lobby State Update:**
+   - When members are added/removed, you call `update_state()`, but you don’t notify clients of lobby state changes.
+
+
+5. **Thread Cleanup:**
+   - When a client disconnects, you remove them from `all_clients`, but you don’t clean up their games or lobbies. This can leave stale objects.
