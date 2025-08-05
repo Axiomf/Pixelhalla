@@ -7,9 +7,7 @@ import threading
 from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client  # <-- updated import
 import traceback
 
-# There is no mechanism to clean up threads or games when clients disconnect.
-# The code is not handling exceptions robustly (bare except:).
-# Possible race conditions if shared data is accessed without locks.
+# There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
 def threaded_client(conn):
     global pending_requests, all_games, all_lobbies
     client_id = generate_unique_client_id()
@@ -59,7 +57,6 @@ def threaded_client(conn):
     except Exception as e:
         print(f"Error closing connection for {client_id}: {e}")
         traceback.print_exc()
-
 def threaded_game(game):# it sees only the game_updates then Processes the pending game changes then sends it to all clients, input and shooting
     while True:
         try:
@@ -91,7 +88,6 @@ def threaded_game(game):# it sees only the game_updates then Processes the pendi
             print(f"Exception in threaded_game {game.game_id}: {e}")
             traceback.print_exc()
             break
-
 def threaded_handle_waiting_clients(): # actively reads waiting_clients if a game is possible creates it and adds it to all_games
     global waiting_clients, all_games , all_clients
     while True:
@@ -145,7 +141,6 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
             print(f"Exception in threaded_handle_waiting_clients: {e}")
             traceback.print_exc()
             time.sleep(0.1)
-
 def threaded_handle_general_request(): # need more details
     global pending_requests, all_lobbies, all_games, waiting_clients
     while True:
@@ -214,7 +209,7 @@ def threaded_handle_general_request(): # need more details
             traceback.print_exc()
             time.sleep(0.05)
 
-
+# transformation general templates
 """  
 example of full packages:
 
@@ -243,11 +238,9 @@ all_clients = []  # list of Client objects
 all_lobbies = []  # connected clients and created lobbies 
 all_games   = []  # to track all the current playing games
 
-
 pending_requests = []  # new global list for client requests that are not input or shoot (client_package)
 waiting_clients  = {} 
 shared_lock = threading.Lock()
-
 
 s = create_server_socket()
 start_new_thread(threaded_handle_general_request, ())  # Start the request handler thread
