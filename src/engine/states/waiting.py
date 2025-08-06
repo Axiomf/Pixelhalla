@@ -25,34 +25,51 @@ class WaitingState(BaseState):
         print(f"Initializing WaitingState with username: {state_manager.username}, fighter_id: {state_manager.fighter1_id}, map_name: {state_manager.current_map}")
         try:
             self.client_socket.connect((self.server, self.port))
-            # self.client_socket.settimeout(5.0)
-            # join_request = {
-            #     "request_type": "join",
-            #     "username": state_manager.username,
-            #     "fighter_id": state_manager.fighter1_id,
-            #     "map_name": state_manager.current_map
-            # }
-            # print(f"Sending join request: {join_request}")
-            # self.client_socket.send(pickle.dumps(join_request))
-            # response = pickle.loads(self.client_socket.recv(2048))
-            # print(f"Received join response: {response}")
-            # self.client_socket.settimeout(None)
-            # if response["request_type"] == "joined":
-            #     self.client_id = response["client_id"]
-            #     print(f"Client ID set to: {self.client_id}")
-            # elif state_manager.fighter_type:
-            #     self.state_manager.error_message = response.get("message", "Failed to join server")
-            #     print(f"Join failed, error message: {self.state_manager.error_message}")
-            #     if self.client_socket:
-            #         self.client_socket.close()
-            #     self.state_manager.change_state(config.GAME_STATE_MAP_SELECT)
-        except Exception as e:
-            print(f"Connection error: {e}")
-            self.state_manager.error_message = "Failed to connect to server. Is the server running?"
+            self.client_socket.settimeout(5.0)
+            # Receive client_id from server
+            self.client_id = pickle.loads(self.client_socket.recv(2048))
+            print(f"Received client_id: {self.client_id}")
+            # Send find_random_game request
+            join_request = {
+                "request_type": "find_random_game",
+                "client_id": self.client_id,
+                "game_mode": "1vs1",  # or "2vs2" based on user selection
+                "username": state_manager.username or "default_user",
+                "fighter_id": state_manager.fighter1_id or "default_fighter",
+                "map_name": state_manager.current_map or "map1"
+            }
+            print(f"Sending find_random_game request: {join_request}")
+            self.client_socket.send(pickle.dumps(join_request))
+            self.client_socket.settimeout(None)
+            self.state_manager.is_initialized = True
+        except socket.timeout:
+            print(f"Connection timeout to server {self.server}:{self.port}")
+            self.state_manager.error_message = "Connection to server timed out"
             if self.client_socket:
                 self.client_socket.close()
+            self.state_manager.client_socket = None
+            self.state_manager.client_id = None
+            self.state_manager.is_initialized = False
             self.state_manager.change_state(config.GAME_STATE_MAP_SELECT)
-            print(f"Returning to Map Select due to connection error")
+        except pickle.UnpicklingError as e:
+            print(f"Unpickling error: {e}")
+            self.state_manager.error_message = "Invalid server response"
+            if self.client_socket:
+                self.client_socket.close()
+            self.state_manager.client_socket = None
+            self.state_manager.client_id = None
+            self.state_manager.is_initialized = False
+            self.state_manager.change_state(config.GAME_STATE_MAP_SELECT)
+        except Exception as e:
+            print(f"Connection error: {e}")
+            self.state_manager.error_message = f"Failed to connect to server: {str(e)}"
+            if self.client_socket:
+                self.client_socket.close()
+            self.state_manager.client_socket = None
+            self.state_manager.client_id = None
+            self.state_manager.is_initialized = False
+            self.state_manager.change_state(config.GAME_STATE_MAP_SELECT)
+            print(f"Returning to Map Select due to connection error: {str(e)}")
 
     def handle_event(self, event, current_time, scale, current_map, state_manager):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and current_time - state_manager.last_click_time > config.CLICK_COOLDOWN:
@@ -64,79 +81,93 @@ class WaitingState(BaseState):
                     self.client_socket.close()
                 state_manager.client_socket = None
                 state_manager.client_id = None
+                self.client_id = None
+                state_manager.is_initialized = False
                 state_manager.change_state(config.GAME_STATE_MAP_SELECT)
                 state_manager.last_click_time = current_time
                 pygame.event.clear()
 
     def update(self, current_time, scale, state_manager):
-        if state_manager.is_initialized == False:
-            self.client_socket.settimeout(5.0)
-            join_request = {
-                "request_type": "join",
-                "username": "ali",
-                "fighter_id": state_manager.fighter1_id,
-                "map_name": state_manager.current_map
-            }
-            print(f"Sending join request: {join_request}")
-            self.client_socket.send(pickle.dumps(join_request))
-            response = pickle.loads(self.client_socket.recv(2048))
-            print(f"Received join response: {response}")
-            self.client_socket.settimeout(None)
-            if response["request_type"] == "joined":
-                self.client_id = response["client_id"]
-                print(f"Client ID set to: {self.client_id}")
-            elif state_manager.fighter_type:
-                self.state_manager.error_message = response.get("message", "Failed to join server")
-                print(f"Join failed, error message: {self.state_manager.error_message}")
-                if self.client_socket:
-                    self.client_socket.close()
-                self.state_manager.change_state(config.GAME_STATE_MAP_SELECT)
-            state_manager.is_initialized = True
         if not hasattr(self, 'client_id') or self.client_id is None:
             print(f"Update skipped: client_id is {getattr(self, 'client_id', 'undefined')}")
             return
         if current_time - self.last_check_time > self.check_interval * 1000:
-            print("Hi")
+            print("Checking for game start")
             try:
                 self.client_socket.settimeout(1.0)
-                match_request = {"request_type": "check_match", "client_id": self.client_id, "map_name": state_manager.current_map}
-                print(f"Sending check_match request: {match_request}")
-                self.client_socket.send(pickle.dumps(match_request))
-                response = pickle.loads(self.client_socket.recv(2048))
-                print(f"Received match response: {response}")
+                # Receive response from server asynchronously
+                data = self.client_socket.recv(4096)
+                if not data:
+                    print(f"No data received from server for client {self.client_id}")
+                    return
+                response = pickle.loads(data)
+                print(f"Received response: {response}")
                 self.client_socket.settimeout(None)
-                print(f"Response request_type: {response['request_type']}")
-                if response["request_type"] == "matched":
+                if not isinstance(response, dict):
+                    print(f"Error: Received non-dict response: {response}")
+                    self.state_manager.error_message = f"Invalid server response: {response}"
+                    if self.client_socket:
+                        self.client_socket.close()
+                    state_manager.client_socket = None
+                    state_manager.client_id = None
+                    self.client_id = None
+                    state_manager.is_initialized = False
+                    state_manager.change_state(config.GAME_STATE_MAP_SELECT)
+                    return
+                request_type = response.get("request_type")
+                print(f"Response request_type: {request_type}")
+                if request_type == "game_started":
                     state_manager.client_socket = self.client_socket
                     state_manager.client_id = self.client_id
+                    state_manager.game_id = response.get("game_id")
+                    state_manager.opponents = response.get("members", [])
                     state_manager.change_state(config.GAME_STATE_MULTIPLATER, PlayingState_Multiplayer(self.scene, state_manager))
-                    print(f"Matched, moving to multiplayer state with game_id: {response['game_id']}")
-                elif response["request_type"] == "error":
-                    state_manager.error_message = response.get("message", "Match check failed")
-                    print(f"Match error: {state_manager.error_message}")
+                    print(f"Game started, moving to multiplayer state with game_id: {response['game_id']}")
+                elif request_type == "game_update":
+                    print(f"Unexpected game_update received in WaitingState: {response}")
+                    self.state_manager.error_message = "Received unexpected game update"
                     if self.client_socket:
                         self.client_socket.close()
                     state_manager.client_socket = None
                     state_manager.client_id = None
+                    self.client_id = None
+                    state_manager.is_initialized = False
                     state_manager.change_state(config.GAME_STATE_MAP_SELECT)
-                elif response["request_type"] == "waiting":
-                    print("Still waiting for opponent")
-                    # Stay in WaitingState
+                elif request_type == "error":
+                    self.state_manager.error_message = response.get("message", "Server error")
+                    print(f"Server error: {self.state_manager.error_message}")
+                    if self.client_socket:
+                        self.client_socket.close()
+                    state_manager.client_socket = None
+                    state_manager.client_id = None
+                    self.client_id = None
+                    state_manager.is_initialized = False
+                    state_manager.change_state(config.GAME_STATE_MAP_SELECT)
                 else:
                     print(f"Unknown response: {response}")
-                    state_manager.error_message = "Unknown server response"
-                    if self.client_socket:
-                        self.client_socket.close()
-                    state_manager.client_socket = None
-                    state_manager.client_id = None
-                    state_manager.change_state(config.GAME_STATE_MAP_SELECT)
-            except Exception as e:
-                print(f"Match check error: {e}")
-                state_manager.error_message = "Lost connection to server"
+                    # Instead of closing connection, wait for next response
+            except socket.timeout:
+                print(f"Timeout waiting for server response for client {self.client_id}")
+                # Continue in waiting state
+            except pickle.UnpicklingError as e:
+                print(f"Unpickling error: {e}")
+                self.state_manager.error_message = "Invalid server response"
                 if self.client_socket:
                     self.client_socket.close()
                 state_manager.client_socket = None
                 state_manager.client_id = None
+                self.client_id = None
+                state_manager.is_initialized = False
+                state_manager.change_state(config.GAME_STATE_MAP_SELECT)
+            except Exception as e:
+                print(f"Error receiving response: {e}")
+                self.state_manager.error_message = f"Lost connection to server: {str(e)}"
+                if self.client_socket:
+                    self.client_socket.close()
+                state_manager.client_socket = None
+                state_manager.client_id = None
+                self.client_id = None
+                state_manager.is_initialized = False
                 state_manager.change_state(config.GAME_STATE_MAP_SELECT)
             self.last_check_time = current_time
 
