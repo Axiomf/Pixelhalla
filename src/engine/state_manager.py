@@ -26,26 +26,25 @@ class StateManager:
         self.username = None
         self.client_socket = None
         self.client_id = None
+        self.game_id = None
+        self.opponents = []  # Track opponent client IDs for multiplayer
         self.fighter_type = None
         self.error_message = ""  # Track error messages
-        # Initialize states
+        # Initialize states (excluding WaitingState and PlayingState_Multiplayer)
         self.states = {
             config.GAME_STATE_LOADING: LoadingState(scene),
             config.GAME_STATE_MODE_SELECT: ModeSelectState(scene),
             config.GAME_STATE_MAP_SELECT: MapSelectState(scene),
             config.GAME_STATE_FIGHTER_SELECT: FighterSelectState(scene),
             config.GAME_STATE_PLAYING: PlayingState(scene),
-            # config.GAME_STATE_MULTIPLATER: PlayingState_Multiplayer(scene, self),  # Will be initialized in WaitingState
-            config.GAME_STATE_WAITING : WaitingState(scene, self)
+            config.GAME_STATE_MULTIPLATER: None,  # Initialized later in change_state
+            config.GAME_STATE_WAITING: None  # Initialized later in change_state
         }
         # Load click sound
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
         self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
         self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
-        self.level_complete_sound = pygame.mixer.Sound("src/assets/sounds/level complete.mp3")
-        self.game_over = pygame.mixer.Sound("src/assets/sounds/game-over-classic-206486.mp3")
-        self.game_over_boss = pygame.mixer.Sound("src/assets/sounds/possessed-laugh-94851.mp3")
-        # Load menu music (only load once)
+        # Load menu music
         try:
             pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
             pygame.mixer.music.play(-1)
@@ -77,7 +76,19 @@ class StateManager:
         """Change the current game state."""
         previous_state = self.game_state
         self.game_state = new_state
-        if state_instance:
+        # Initialize WaitingState or PlayingState_Multiplayer only when needed
+        if new_state == config.GAME_STATE_WAITING and not self.states[new_state]:
+            # Ensure required variables are set before entering WaitingState
+            if not self.username:
+                self.username = "default_user"
+            if not self.fighter1_id:
+                self.fighter1_id = "default_fighter"
+            if not self.current_map:
+                self.current_map = "map1"
+            self.states[new_state] = WaitingState(self.scene, self)
+        elif new_state == config.GAME_STATE_MULTIPLATER and not self.states[new_state]:
+            self.states[new_state] = PlayingState_Multiplayer(self.scene, self)
+        elif state_instance:
             self.states[new_state] = state_instance
         # Manage music based on state
         if new_state not in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER]:
