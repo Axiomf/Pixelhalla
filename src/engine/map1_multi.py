@@ -13,6 +13,7 @@ all_sprites = CustomGroup()
 platforms = pygame.sprite.Group()
 projectiles = pygame.sprite.Group()
 fighters = pygame.sprite.Group()
+power_ups = pygame.sprite.Group()
 
 def create_fighter(fighter_id, client_id, username, platforms, fighters_group):
     """Create a fighter based on fighter_id with client_id and username."""
@@ -21,7 +22,7 @@ def create_fighter(fighter_id, client_id, username, platforms, fighters_group):
                        controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
                        animations=load_animations_Elf_Archer(), username=username, id=client_id)
     elif fighter_id == "fighter2":
-        return MeleeFighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, fighters=fighters_group,
+        return MeleeFighter(550, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=platforms, fighters=fighters_group,
                             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "attack": pygame.K_SPACE},
                             animations=load_animations_Samurai(scale=1), username=username, id=client_id)
     elif fighter_id == "fighter3":
@@ -34,7 +35,7 @@ def create_fighter(fighter_id, client_id, username, platforms, fighters_group):
                        animations=load_animations_Arcane_Archer(scale=1), username=username, id=client_id)
     return None
 
-def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase, client_id, username):
+def load_map(fighter1_id, client_id, username):
     platforms.empty()
     fighters.empty()
     all_sprites.empty()
@@ -46,7 +47,7 @@ def load_map(level_state, fighter1_id, fighter2_id, fighter_select_phase, client
                                130, config.SCENE_HEIGHT*1/200, color=None)
     platforms.add(static_platform1, static_platform2, static_platform3)
     all_sprites.add(static_platform1, static_platform2, static_platform3)
-    
+    print(fighter1_id)
     # Create fighter for this client
     fighter = create_fighter(fighter1_id, client_id, username, platforms, fighters)
     if fighter:

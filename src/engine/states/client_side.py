@@ -7,6 +7,7 @@ from src.engine import map1_multi, map4, map_boss, map_jesus, map_levels
 import socket
 import pickle
 import threading
+import time
 
 class PlayingState_Multiplayer(BaseState):
     def __init__(self, scene, state_manager):
@@ -38,27 +39,49 @@ class PlayingState_Multiplayer(BaseState):
         self.client_id = state_manager.client_id
         self.game_id = state_manager.game_id
         self.opponents = state_manager.opponents
+        self.load_map(state_manager.current_map, state_manager.fighter1_id, state_manager.client_id, state_manager.username)
         # Load map and initialize game
-        map_data = self.load_map(state_manager.current_map, state_manager.fighter1_id)
-        self.platforms.add(map_data["platforms"])
-        self.fighters.add(map_data["fighters"])
-        self.all_sprites.add(map_data["platforms"], map_data["fighters"])
+        # map_data = self.load_map(state_manager.current_map, state_manager.fighter1_id, state_manager.username)
+        # self.platforms.add(map_data["platforms"])
+        # self.fighters.add(map_data["fighters"])
+        # self.all_sprites.add(map_data["platforms"], map_data["fighters"])
         # Start a thread to receive server updates
         self.running = True
         self.receive_thread = threading.Thread(target=self.receive_server_updates)
         self.receive_thread.daemon = True
         self.receive_thread.start()
 
-    def load_map(self, map_name, fighter_id):
-        map_functions = {
-            "map1": map1_multi.load_map,
-            "map4": map4.load_map,
-            "map_boss": map_boss.load_map,
-            "map_jesus": map_jesus.load_map,
-            "map_levels": map_levels.load_map
+    def load_map(self, map_name, fighter1_id, client_id, username):
+        """Load map components using a module mapping."""
+        map_modules = {
+            "map1": "src.engine.map1_multi",
+            "map_levels": "src.engine.map_levels",
+            "map_jesus": "src.engine.map_jesus",
+            "map4": "src.engine.map4",
+            "map_boss" : "src.engine.map_boss"
         }
-        map_func = map_functions.get(map_name, map1_multi.load_map)
-        return map_func(self.client_id, fighter_id)
+        module_path = map_modules.get(map_name)
+        if module_path:
+            try:
+                if map_name == "map1" and not self.audio_playing:
+                    map1_multi.load_map(fighter1_id, client_id, username)
+                if map_name == "map_levels" and not self.audio_playing:
+                    map_levels.load_map(fighter1_id, client_id, username)
+                if map_name == "map_jesus" and not self.audio_playing:
+                    map_jesus.load_map(fighter1_id, client_id, username)
+                if map_name == "map4" and not self.audio_playing:
+                    map4.load_map(fighter1_id, client_id, username)
+
+                mod = __import__(module_path, fromlist=['all_sprites', 'platforms', 'fighters', 'projectiles', 'power_ups', 'draw_background'])
+                self.all_sprites = mod.all_sprites
+                self.platforms = mod.platforms
+                self.fighters = mod.fighters
+                self.projectiles = mod.projectiles
+                self.power_ups = mod.power_ups
+                self.draw_background = mod.draw_background
+            except ImportError as e:
+                return
+                        
 
     def receive_server_updates(self):
         while self.running:
@@ -248,11 +271,14 @@ class PlayingState_Multiplayer(BaseState):
             sprite.handle_platform_collision(self.platforms)
 
     def draw(self, scene, scale, state_manager):
+        if not self.draw_background:
+            print("YEEESSSSSSSSSSs")
+            return
         mouse_pos = pygame.mouse.get_pos()
         default_color = self.button_color
         hover_color = (0, 200, 255)
-        if self.draw_background:
-            scene.blit(self.draw_background, (0, 0))
+        self.draw_background()  # Draw map background
+        time.sleep(6)
         self.all_sprites.draw(scene)
         if self.level_complete:
             scene.fill((0, 0, 0, 128))

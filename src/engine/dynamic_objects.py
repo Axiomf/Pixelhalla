@@ -365,7 +365,7 @@ class Player(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, animations=None, id=None, team = 1):
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 1):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
@@ -377,7 +377,7 @@ class Fighter(Player):
         self.client_input  = []
         self.fighter_id = id or "id not given"
         self.team = team
-
+        self.username = username
         
 
         # Store the original image to avoid quality loss when flipping repeatedly

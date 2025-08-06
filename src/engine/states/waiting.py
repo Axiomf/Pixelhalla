@@ -94,11 +94,19 @@ class WaitingState(BaseState):
         if current_time - self.last_check_time > self.check_interval * 1000:
             print("Checking for game start")
             try:
-                self.client_socket.settimeout(1.0)
+                self.client_socket.settimeout(3.0)  # Increased timeout for server response
                 # Receive response from server asynchronously
                 data = self.client_socket.recv(4096)
                 if not data:
                     print(f"No data received from server for client {self.client_id}")
+                    self.state_manager.error_message = "No response from server"
+                    if self.client_socket:
+                        self.client_socket.close()
+                    state_manager.client_socket = None
+                    state_manager.client_id = None
+                    self.client_id = None
+                    state_manager.is_initialized = False
+                    state_manager.change_state(config.GAME_STATE_MAP_SELECT)
                     return
                 response = pickle.loads(data)
                 print(f"Received response: {response}")
@@ -121,8 +129,8 @@ class WaitingState(BaseState):
                     state_manager.client_id = self.client_id
                     state_manager.game_id = response.get("game_id")
                     state_manager.opponents = response.get("members", [])
+                    print(f"Transitioning to multiplayer state with game_id: {state_manager.game_id}, opponents: {state_manager.opponents}")
                     state_manager.change_state(config.GAME_STATE_MULTIPLATER, PlayingState_Multiplayer(self.scene, state_manager))
-                    print(f"Game started, moving to multiplayer state with game_id: {response['game_id']}")
                 elif request_type == "game_update":
                     print(f"Unexpected game_update received in WaitingState: {response}")
                     self.state_manager.error_message = "Received unexpected game update"
