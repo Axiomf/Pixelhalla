@@ -1,6 +1,6 @@
 import pygame
 from src.engine.dynamic_objects import *
-
+from .base import CustomGroup
 class Client:
     def __init__(self, client_id, conn, state="menu"):
         self.client_id = client_id
@@ -45,10 +45,10 @@ class Game:
     def __init__(self,id, mode, ID1, ID2, ID3 = None, ID4 = None, world = None): # "world" has info about fighters
         self.game_clients = [ID1, ID2] if mode == "1vs1" else [ID1, ID2, ID3, ID4]
         self.game_id = id
-        self.platforms = pygame.sprite.Group()
-        self.fighters = pygame.sprite.Group()
-        self.projectiles = pygame.sprite.Group()
-        self.power_ups = pygame.sprite.Group()
+        self.platforms = CustomGroup()
+        self.fighters = CustomGroup()
+        self.projectiles = CustomGroup()
+        self.power_ups = CustomGroup()
         self.game_updates = []
         self.mode = mode
         self.finished = False

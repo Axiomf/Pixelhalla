@@ -3,6 +3,7 @@ import pickle
 import threading
 import time
 import pygame  # added import
+from src.engine.dynamic_objects import *
 
 # transformation general templates
 """  
@@ -21,9 +22,6 @@ client_package = {
 
 server_package = {
     "request_type": "game_update", "first_time"
-    
-
-
 
     "game_world":
         "platforms": platforms,
@@ -36,9 +34,11 @@ server_package = {
 
 # Global game state variable to store server updates
 game_state = None
+shared_lock = threading.Lock()
 
-def threaded_receive_messages(sock):
+def threaded_receive_update(sock):
     global game_state
+    
     while True:
         try:
             data = sock.recv(4096)
@@ -48,85 +48,122 @@ def threaded_receive_messages(sock):
             message = pickle.loads(data)
             # Update game state if message is a game update, else print it.
             if message.get("request_type") == "game_update":
-                game_state = message
+                with shared_lock:
+                    game_state = message.get("game_world")
             else:
                 print("Server message:", message)
+
         except Exception as e:
             print("Error receiving message:", e)
             break
 
-def main():
-    pygame.init()  # initialize pygame
-    screen = pygame.display.set_mode((1200,600))
-    pygame.display.set_caption("Pixelhala Client")
-    clock = pygame.time.Clock()
+# Inlined main function code at global scope.
+pygame.init()  # initialize pygame
+screen = pygame.display.set_mode((1200,600))
+pygame.display.set_caption("Pixelhala Client")
+clock = pygame.time.Clock()
 
-    server_ip = "127.0.0.1"
-    server_port = 5555  # ensure this matches your server configuration
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
-    try:
-        conn.connect((server_ip, server_port))
-    except Exception as e:
-        print("Could not connect to the server:", e)
-        return
+server_ip = "127.0.0.1"
+server_port = 5555  # ensure this matches your server configuration
+conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    try:
-        client_id_data = conn.recv(4096)
-        client_id = pickle.loads(client_id_data)
-        print("Connected to server. Your client ID is:", client_id)
-    except Exception as e:
-        print("Error receiving client ID:", e)
-        conn.close()
-        return
+try:
+    conn.connect((server_ip, server_port))
+except Exception as e:
+    print("Could not connect to the server:", e)
+    exit()
 
-    # Start thread to listen for server messages
-    recv_thread = threading.Thread(target=threaded_receive_messages, args=(conn,))
-    recv_thread.daemon = True
-    recv_thread.start()
-
-    running = True
-    while running:
-        inputs = []  # list to capture keyboard events
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:
-                inputs.append(pygame.key.name(event.key))
-                
-        # Send captured inputs to server if any
-        if inputs:
-            client_package = {
-                "client_id": client_id,
-                "request_type": "input",
-                "game_mode": "1vs1",   # default value
-                "inputs": inputs,
-                "shoots": []
-            }
-            try:
-                conn.sendall(pickle.dumps(client_package))
-            except Exception as e:
-                print("Error sending data:", e)
-                running = False
-
-        # Simple display: clear screen and show counts from server game update.
-        screen.fill((0, 0, 0))
-        if game_state:
-            font = pygame.font.SysFont("Arial", 20)
-            text_lines = [
-                f"Platforms: {len(game_state.get('platforms', []))}",
-                f"Fighters: {len(game_state.get('fighters', []))}",
-                f"Projectiles: {len(game_state.get('projectiles', []))}",
-                f"Power-ups: {len(game_state.get('power_ups', []))}"
-            ]
-            for i, line in enumerate(text_lines):
-                text_surface = font.render(line, True, (255, 255, 255))
-                screen.blit(text_surface, (20, 20 + i * 25))
-        pygame.display.flip()
-        clock.tick(60)
-
-    pygame.quit()
+try:
+    client_id_data = conn.recv(4096)
+    client_id = pickle.loads(client_id_data)
+    print("Connected to server. Your client ID is:", client_id)
+except Exception as e:
+    print("Error receiving client ID:", e)
     conn.close()
+    exit()
 
-if __name__ == '__main__':
-    main()
+# Start thread to listen for server messages
+recv_thread = threading.Thread(target=threaded_receive_update, args=(conn,))
+recv_thread.daemon = True
+recv_thread.start()
+
+# Add a new function for drawing the game state.
+def draw_game_state(screen):
+    """
+    "game_world":
+        "platforms": platforms,
+        "fighters": fighters,
+        "projectiles": projectiles, 
+        "power_ups": power_ups, 
+        "sounds": []
+    """
+    screen.fill((0, 0, 0))
+    with shared_lock:
+        if game_state:
+            for key in ['platforms', 'fighters', 'projectiles', 'power_ups']:
+                group = game_state.get(key, [])
+                # If group has a .draw method (like pygame.sprite.Group), use it
+                if hasattr(group, 'draw'):
+                    group.draw(screen)
+                else:
+                    for obj in group:
+                        if hasattr(obj, 'draw'):
+                            obj.draw(screen)
+    pygame.display.flip()
+
+def send_request_to_server(client_package):
+    global running
+    """
+    Sends a request (client_package) to the server using the given connection.
+    """
+    try:
+        conn.sendall(pickle.dumps(client_package))
+    except Exception as e:
+        print("Error sending data:", e)
+        running = False
+        return False
+    return True
+
+running = True
+while running:
+    inputs = []  # list to capture keyboard events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            inputs.append(pygame.key.name(event.key))
+            print(event.key==49) # ++ 48
+            if event.key - 48 == 1: # "find_random_game"
+                client_package = {
+            "client_id": client_id,
+            "request_type": "find_random_game",
+            "game_mode": "1vs1",
+            "inputs": inputs,
+            "shoots": []
+        }
+                send_request_to_server(client_package)
+            elif event.key - 48 == 2:
+                print(2)
+            elif event.key - 48 == 3:
+                print(3)
+            elif event.key - 48 == 4:
+                print(4)
+
+
+
+            print(event.key)
+    if inputs:
+        client_package = {
+            "client_id": client_id,
+            "request_type": "input",
+            "game_mode": "1vs1",
+            "inputs": inputs,
+            "shoots": []
+        }
+        send_request_to_server(client_package)
+    
+    draw_game_state(screen)  # Call the new drawing function
+    clock.tick(60)
+
+pygame.quit()
+conn.close()

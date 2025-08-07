@@ -28,7 +28,7 @@ def threaded_client(conn):
                 break
             client_package = pickle.loads(data)
             request_type = client_package["request_type"]
-
+            print(f" request recived: {request_type} ")
             # handle requests based on their type:
             if request_type == "input":  # Append the client's package to game_updates if it is input.  
                 with shared_lock:
@@ -95,11 +95,16 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
             with shared_lock:
                 # Find possible 1vs1 games
                 one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
+                #print (f" number of one_vs_one_clients: {len(one_vs_one_clients)}")
                 while len(one_vs_one_clients) >= 2:
                     ids = one_vs_one_clients[:2]
+
                     game_id = "_".join(ids)
+                    print (f"game id:  {game_id}")
+
                     new_game = Game(game_id, "1vs1", ids[0], ids[1])
                     all_games.append(new_game)
+                    
                     # Remove clients from waiting_clients
                     for cid in ids:
                         waiting_clients.pop(cid, None)
@@ -150,12 +155,15 @@ def threaded_handle_general_request(): # need more details
                     time.sleep(0.05)
                     continue
                 client, client_package = pending_requests.pop(0)
+                print (client_package)
+
             request_type = client_package["request_type"]
 
             if request_type == "find_random_game":
                 with shared_lock:
                     if not client_package["client_id"] in waiting_clients:
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
+                    
 
             elif request_type == "join_lobby":
                 with shared_lock:
@@ -225,12 +233,14 @@ client_package = {
 }
 
 server_package = {
-    "request_type": "game_update",
-    "platforms": platforms,
-    "fighters": fighters,
-    "projectiles": projectiles, 
-    "power_ups": power_ups, 
-    "sounds": []
+    "request_type": "game_update", "first_time"
+
+    "game_world":
+        "platforms": platforms,
+        "fighters": fighters,
+        "projectiles": projectiles, 
+        "power_ups": power_ups, 
+        "sounds": []
 }
 """
 
@@ -244,6 +254,7 @@ shared_lock = threading.Lock()
 
 s = create_server_socket()
 start_new_thread(threaded_handle_general_request, ())  # Start the request handler thread
+start_new_thread(threaded_handle_waiting_clients, ())
 while True:
     try:
         conn, addr = s.accept()# The accept() method blocks until a client connects. It returns a new connection object (conn) and the client's address (addr).
