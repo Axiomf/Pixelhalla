@@ -15,19 +15,7 @@ def generate_unique_client_id():
 def broadcast(server_package, list_of_IDs, all_clients):
     """Send a package to all connected clients in a group."""
     for client_id in list_of_IDs:
-        target = None
-        for client in all_clients:
-            if client.client_id == client_id:
-                target = client
-                break
-        if target is None:
-            print(f"Client {client_id} not found in all_clients")
-            continue
-        try:
-            target.conn.sendall(pickle.dumps(server_package))
-            print(f"Sent to client {client_id} via broadcast: {server_package}")
-        except Exception as e:
-            print(f"Error sending to client {client_id} in broadcast: {e}")
+        send_to_client(server_package, client_id, all_clients)
 
 def send_to_client(server_package, client_id, all_clients):
     """Send a package to a specific client identified by client_id."""
@@ -36,6 +24,7 @@ def send_to_client(server_package, client_id, all_clients):
         if client.client_id == client_id:
             target = client
             break
+    
     if target is None:
         print(f"Client {client_id} not found in all_clients")
         return
@@ -44,3 +33,5 @@ def send_to_client(server_package, client_id, all_clients):
         print(f"Sent to client {client_id}: {server_package}")
     except Exception as e:
         print(f"Error sending to client {client_id}: {e}")
+
+        

@@ -1,5 +1,6 @@
 import pygame
 from src.engine.dynamic_objects import *
+from src.engine.platforms import *
 from .base import CustomGroup
 class Client:
     def __init__(self, client_id, conn, state="menu"):
@@ -52,7 +53,28 @@ class Game:
         self.game_updates = []
         self.mode = mode
         self.finished = False
-        
+
+        # test map:
+        platform1 = Platform(0, config.SCENE_HEIGHT - 20, 
+                            1200, 20, 
+                            color=(139, 140, 78))
+        moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
+                                    config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1,color=(139, 120, 78))
+        self.platforms.add(platform1,moving_platform)
+
+        fighter1 = Fighter(700, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=self.platforms,
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+                   id=ID1 ,team= 1,multiplayer=True, color=(200, 120, 78))
+        fighter2 = Fighter(450, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=self.platforms,
+                   controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+                   id=ID2 ,team =2,multiplayer=True, color=(200, 120, 120))
+        self.fighters.add(fighter1,fighter2)
+
+        #self.client_input  = []
+        #self.fighter_id = id or "id not given"
+        #self.team = team
+        #self.username = username
+
         # Team assignment: team1 and team2 are lists of fighter IDs
         if mode == "1vs1":
             self.team1_ids = [ID1]
@@ -93,7 +115,7 @@ class Game:
         if self.game_updates:
             for client_package in self.game_updates:
                 for fighter in self.fighters:
-                    if client_package["fighter_id"] == fighter.fighter_id:
+                    if client_package["client_id"] == fighter.fighter_id:
                         fighter.client_input.extend(client_package["inputs"])
                         if client_package["shoots"]:
                             for shot in client_package["shoots"]:

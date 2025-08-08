@@ -45,13 +45,14 @@ def threaded_receive_update(sock):
             if not data:
                 print("Disconnected from server.")
                 break
-            message = pickle.loads(data)
+            client_package = pickle.loads(data)
             # Update game state if message is a game update, else print it.
-            if message.get("request_type") == "game_update":
+            if client_package.get("request_type") == "game_update":
                 with shared_lock:
-                    game_state = message.get("game_world")
+                    game_state = client_package.get("game_world")
             else:
-                print("Server message:", message)
+                pass
+            print("Server message:", client_package)
 
         except Exception as e:
             print("Error receiving message:", e)
@@ -102,8 +103,12 @@ def draw_game_state(screen):
         if game_state:
             for key in ['platforms', 'fighters', 'projectiles', 'power_ups']:
                 group = game_state.get(key, [])
-                # If group has a .draw method (like pygame.sprite.Group), use it
-                if hasattr(group, 'draw'):
+                if isinstance(group, list):
+                    for obj in group:
+                        rect = obj.get("rect")
+                        color = obj.get("color", (255, 255, 255))
+                        pygame.draw.rect(screen, color, rect)
+                elif hasattr(group, 'draw'):
                     group.draw(screen)
                 else:
                     for obj in group:
@@ -118,11 +123,22 @@ def send_request_to_server(client_package):
     """
     try:
         conn.sendall(pickle.dumps(client_package))
+        print(f"Sent: {client_package}")
     except Exception as e:
         print("Error sending data:", e)
         running = False
         return False
     return True
+
+
+client_first_package = {
+            "client_id": client_id,
+            "request_type": "find_random_game",
+            "game_mode": "1vs1",
+            "inputs": [],
+            "shoots": []
+        }
+send_request_to_server(client_first_package)
 
 running = True
 while running:
@@ -131,17 +147,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            inputs.append(pygame.key.name(event.key))
-            print(event.key==49) # ++ 48
+            inputs.append(event.key)
+
+            
             if event.key - 48 == 1: # "find_random_game"
-                client_package = {
-            "client_id": client_id,
-            "request_type": "find_random_game",
-            "game_mode": "1vs1",
-            "inputs": inputs,
-            "shoots": []
-        }
-                send_request_to_server(client_package)
+                print(f" I pressed: 1  {event.key==49}") # ++ 48
             elif event.key - 48 == 2:
                 print(2)
             elif event.key - 48 == 3:
@@ -151,7 +161,6 @@ while running:
 
 
 
-            print(event.key)
     if inputs:
         client_package = {
             "client_id": client_id,
@@ -160,6 +169,7 @@ while running:
             "inputs": inputs,
             "shoots": []
         }
+        
         send_request_to_server(client_package)
     
     draw_game_state(screen)  # Call the new drawing function

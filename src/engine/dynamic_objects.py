@@ -365,7 +365,7 @@ class Player(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 1):
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 0,multiplayer=False):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
@@ -378,6 +378,7 @@ class Fighter(Player):
         self.fighter_id = id or "id not given"
         self.team = team
         self.username = username
+        self.multi_player_mode = multiplayer
         
 
         # Store the original image to avoid quality loss when flipping repeatedly
@@ -392,7 +393,7 @@ class Fighter(Player):
         if self.freeze:
             self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed     
         else:
-            if self.client_input:
+            if self.client_input and self.multi_player_mode : # it needs to update all inputs I fix it later
                 previous_facing = self.facing_right
                 if self.controls.get("left") and self.controls["left"] in self.client_input:
                     self.change_x = (-1) * self.speed
@@ -410,7 +411,7 @@ class Fighter(Player):
                     if self.original_image:  # Only flip if original_image exists
                         self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
                 self.client_input = []  # Clear the input list after processing
-            else:
+            elif not self.multi_player_mode:
                 keys = pygame.key.get_pressed()  # Get the state of keyboard keys
                 # Track previous direction to detect changes
                 previous_facing = self.facing_right
@@ -437,7 +438,7 @@ class Fighter(Player):
 
 
 
-        #@@@@@@@ Check for horizontal collisions with platforms
+        # Check for horizontal collisions with platforms
         if self.platforms:
             self.rect.x += self.change_x
             collided_platforms = pygame.sprite.spritecollide(self, self.platforms, False)
@@ -455,7 +456,7 @@ class Fighter(Player):
                 if self.change_y < 0 and self.rect.top < platform.rect.bottom:  # Moving up, hit bottom of platform
                     self.rect.top = platform.rect.bottom
                     self.change_y = 0
-        #@@@@@@@ Check for scene boundaries
+        # Check for scene boundaries
         if self.rect.right + self.change_x > config.SCENE_WIDTH:
             self.rect.right = config.SCENE_WIDTH
             self.change_x = 0
@@ -514,7 +515,7 @@ class Fighter(Player):
                              velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
                              damage=self.damage,image_path=path,
                              image=frame, 
-                             owner=self)
+                             owner=self,team=self.team)
 
 class MeleeFighter(Fighter):
     def __init__(self, *args, **kwargs):

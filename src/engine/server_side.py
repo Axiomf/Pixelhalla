@@ -6,6 +6,19 @@ from src.config.server_config import create_server_socket  # New import for serv
 import threading
 from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client  # <-- updated import
 import traceback
+import pygame  # Add pygame if needed for accessing Rect
+
+# Updated helper to include sprite color in serialized data.
+def serialize_group(group):
+    serialized = []
+    for sprite in group.sprites():
+        color = getattr(sprite, "color", (255, 255, 255))
+        serialized.append({
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
+            "color": color
+            # ...other serializable properties...
+        })
+    return serialized
 
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
 def threaded_client(conn):
@@ -63,13 +76,14 @@ def threaded_game(game):# it sees only the game_updates then Processes the pendi
             game.update()
             server_package = {
                 "request_type": "game_update",
-                "platforms": game.platforms,
-                "fighters": game.fighters,
-                "projectiles": game.projectiles, 
-                "power_ups": game.power_ups, 
-                "sounds": []
+                "game_world": {
+                    "platforms": serialize_group(game.platforms),
+                    "fighters": serialize_group(game.fighters),
+                    "projectiles": serialize_group(game.projectiles),
+                    "power_ups": serialize_group(game.power_ups),
+                    "sounds": []
                 }
-        
+            }
             if game.mode == "1vs1":
                 with shared_lock:
                     broadcast(server_package, game.game_clients, all_clients)
@@ -78,11 +92,12 @@ def threaded_game(game):# it sees only the game_updates then Processes the pendi
                     broadcast(server_package, game.game_clients, all_clients)
     
             if game.finished:
+                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                print("game.finishedgame.finishedgame.finishedgame.finished")
                 with shared_lock:
                     if game in all_games:
                         all_games.remove(game)
                 break
-        
             time.sleep(0.05)
         except Exception as e:
             print(f"Exception in threaded_game {game.game_id}: {e}")
@@ -264,6 +279,9 @@ while True:
         print(f"Exception in main server loop: {e}")
         traceback.print_exc()
 
+# cannot pickle 'pygame.surface.Surface' objectcannot pickle 'pygame.surface.Surface' object
+        traceback.print_exc()
 
+# cannot pickle 'pygame.surface.Surface' objectcannot pickle 'pygame.surface.Surface' object
 
 
