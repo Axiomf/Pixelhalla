@@ -6,7 +6,7 @@ from src.config.server_config import create_server_socket  # New import for serv
 import threading
 from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client  # <-- updated import
 import traceback
-import pygame  # Add pygame if needed for accessing Rect
+#import pygame  # Add pygame if needed for accessing Rect
 import queue  # new import for pending requests
 
 # Updated helper to include sprite color in serialized data.
@@ -42,7 +42,8 @@ def threaded_client(conn):
                 break
             client_package = pickle.loads(data)
             request_type = client_package["request_type"]
-            print(f" request recived: {request_type} ")
+            # Removed per-request logging to reduce overhead
+            # print(f" request recived: {request_type} ")
             # handle requests based on their type:
             if request_type == "input":  # Append the client's package to game_updates if it is input.  
                 with games_lock:  # replaced shared_lock for game updates
@@ -103,7 +104,7 @@ def threaded_game(game):  # changed for precise frame timing
         next_frame_time = start_time + target_frame_duration
         sleep_time = next_frame_time - time.perf_counter()
         if sleep_time > 0:
-            time.sleep(sleep_time)
+            time.sleep(sleep_time)  # Previously was 'pass'
 def threaded_handle_waiting_clients(): # actively reads waiting_clients if a game is possible creates it and adds it to all_games
     global waiting_clients, all_games , all_clients
     while True:
@@ -160,11 +161,11 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
                     # Update list for next iteration
                     two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
-            time.sleep(0.1) # avoid busy loop
+            time.sleep(0.2) # avoid busy loop
         except Exception as e:
             print(f"Exception in threaded_handle_waiting_clients: {e}")
             traceback.print_exc()
-            time.sleep(0.1)
+            time.sleep(0.2)
 def threaded_handle_general_request():  # optimized to reduce periodic lag
     global all_lobbies, all_games, waiting_clients
     while True:
@@ -234,7 +235,7 @@ def threaded_handle_general_request():  # optimized to reduce periodic lag
         except Exception as e:
             print(f"Exception in threaded_handle_general_request: {e}")
             traceback.print_exc()
-            time.sleep(0.1)
+            time.sleep(0.5)
 
 # transformation general templates
 """  

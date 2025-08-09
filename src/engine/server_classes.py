@@ -59,7 +59,7 @@ class Game:
                             1200, 20, 
                             color=(139, 140, 78))
         moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
-                                    config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1,color=(139, 120, 78))
+                                    config.SCENE_WIDTH/4, 10, range_x=500, range_y=0, speed=1,color=(139, 120, 78))
         self.platforms.add(platform1,moving_platform)
 
         fighter1 = Fighter(700, config.SCENE_HEIGHT*3/5 - 70, 32, 32, platforms=self.platforms,

@@ -9,7 +9,8 @@ def generate_unique_client_id():
         client_id = str(uuid.uuid4())[:8]
         if client_id not in generated_ids:
             generated_ids.add(client_id)
-            print(f"Generated unique client_id: {client_id}")
+            # Removed heavy logging to prevent slowdown
+            # print(f"Generated unique client_id: {client_id}")
             return client_id
 
 def broadcast(server_package, list_of_IDs, all_clients):
@@ -30,8 +31,8 @@ def send_to_client(server_package, client_id, all_clients):
         return
     try:
         target.conn.sendall(pickle.dumps(server_package))
-        print(f"Sent to client {client_id}: {server_package}")
+        # Removed frequent logging to reduce overhead
+        # print(f"Sent to client {client_id}: {server_package}")
     except Exception as e:
         print(f"Error sending to client {client_id}: {e}")
 
-        

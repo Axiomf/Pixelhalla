@@ -34,11 +34,13 @@ server_package = {
 
 # Global game state variable to store server updates
 game_state = None
+previous_game_state = None              # New global for interpolation
+last_update_time = 0                    # Timestamp of last update
+network_interval = 0.1                  # Estimated network update interval (in seconds)
 shared_lock = threading.Lock()
 
 def threaded_receive_update(sock):
-    global game_state
-    
+    global game_state, previous_game_state, last_update_time
     while True:
         try:
             data = sock.recv(4096)
@@ -46,13 +48,14 @@ def threaded_receive_update(sock):
                 print("Disconnected from server.")
                 break
             client_package = pickle.loads(data)
-            # Update game state if message is a game update, else print it.
             if client_package.get("request_type") == "game_update":
                 with shared_lock:
+                    previous_game_state = game_state  # store the old state
                     game_state = client_package.get("game_world")
+                    last_update_time = time.time()   # update timestamp
             else:
                 pass
-            print("Server message:", client_package)
+            #print("Server message:", client_package)
 
         except Exception as e:
             print("Error receiving message:", e)
@@ -91,29 +94,38 @@ recv_thread.start()
 # Add a new function for drawing the game state.
 def draw_game_state(screen):
     """
-    "game_world":
-        "platforms": platforms,
-        "fighters": fighters,
-        "projectiles": projectiles, 
-        "power_ups": power_ups, 
-        "sounds": []
+    Draws the interpolated game state based on previous and current state.
     """
     screen.fill((0, 0, 0))
+    now = time.time()
     with shared_lock:
-        if game_state:
-            for key in ['platforms', 'fighters', 'projectiles', 'power_ups']:
-                group = game_state.get(key, [])
-                if isinstance(group, list):
-                    for obj in group:
-                        rect = obj.get("rect")
-                        color = obj.get("color", (255, 255, 255))
-                        pygame.draw.rect(screen, color, rect)
-                elif hasattr(group, 'draw'):
-                    group.draw(screen)
-                else:
-                    for obj in group:
-                        if hasattr(obj, 'draw'):
-                            obj.draw(screen)
+        current_state = game_state
+        prev_state = previous_game_state
+        last_time = last_update_time
+    if current_state:
+        # Calculate interpolation factor
+        alpha = 1.0
+        if prev_state and last_time:
+            alpha = min(1, (now - last_time) / network_interval)
+        for key in ['platforms', 'fighters', 'projectiles', 'power_ups']:
+            current_group = current_state.get(key, [])
+            # Check if we have a previous state with the same key
+            if prev_state and len(prev_state.get(key, [])) == len(current_group):
+                prev_group = prev_state.get(key, [])
+                for idx, obj in enumerate(current_group):
+                    curr_rect = obj.get("rect")
+                    prev_rect = prev_group[idx].get("rect")
+                    if curr_rect and prev_rect:
+                        interp_rect = tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
+                    else:
+                        interp_rect = curr_rect
+                    color = obj.get("color", (255, 255, 255))
+                    pygame.draw.rect(screen, color, interp_rect)
+            else:
+                for obj in current_group:
+                    rect = obj.get("rect")
+                    color = obj.get("color", (255, 255, 255))
+                    pygame.draw.rect(screen, color, rect)
     pygame.display.flip()
 
 def send_request_to_server(client_package):
@@ -123,7 +135,7 @@ def send_request_to_server(client_package):
     """
     try:
         conn.sendall(pickle.dumps(client_package))
-        print(f"Sent: {client_package}")
+        #print(f"Sent: {client_package}")
     except Exception as e:
         print("Error sending data:", e)
         running = False
