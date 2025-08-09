@@ -25,7 +25,7 @@ def threaded_client(conn):
     global pending_requests, all_games, all_lobbies
     client_id = generate_unique_client_id()
     client = Client(client_id, conn)
-    with shared_lock:
+    with clients_lock:  # replaced shared_lock
         all_clients.append(client)
     try:
         conn.sendall(pickle.dumps(client_id)) # sends clients ID as a first time massage
@@ -44,12 +44,12 @@ def threaded_client(conn):
             print(f" request recived: {request_type} ")
             # handle requests based on their type:
             if request_type == "input":  # Append the client's package to game_updates if it is input.  
-                with shared_lock:
+                with games_lock:  # replaced shared_lock for game updates
                     for game in all_games:
                         if game.game_id == client.connected_game_id:
                             game.game_updates.append(client_package)
             else:
-                with shared_lock:
+                with pending_requests_lock:  # replaced shared_lock
                     pending_requests.append((client, client_package))  # Pass client object for context
 
         except Exception as e:
@@ -59,7 +59,7 @@ def threaded_client(conn):
 
     print(f"{client_id} Lost connection")
 
-    with shared_lock:
+    with clients_lock:  # replaced shared_lock
         # Remove client safely
         for i, c in enumerate(all_clients):
             if c.client_id == client_id:
@@ -84,17 +84,14 @@ def threaded_game(game):# it sees only the game_updates then Processes the pendi
                     "sounds": []
                 }
             }
-            if game.mode == "1vs1":
-                with shared_lock:
-                    broadcast(server_package, game.game_clients, all_clients)
-            else:
-                with shared_lock:
-                    broadcast(server_package, game.game_clients, all_clients)
+            # For broadcasting, use clients_lock when accessing all_clients.
+            with clients_lock:
+                broadcast(server_package, game.game_clients, all_clients)
     
             if game.finished:
                 print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                 print("game.finishedgame.finishedgame.finishedgame.finished")
-                with shared_lock:
+                with games_lock:  # replaced shared_lock for all_games manip.
                     if game in all_games:
                         all_games.remove(game)
                 break
@@ -107,7 +104,7 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
     global waiting_clients, all_games , all_clients
     while True:
         try:
-            with shared_lock:
+            with waiting_clients_lock:  # replaced shared_lock
                 # Find possible 1vs1 games
                 one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
                 #print (f" number of one_vs_one_clients: {len(one_vs_one_clients)}")
@@ -118,17 +115,20 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
                     print (f"game id:  {game_id}")
 
                     new_game = Game(game_id, "1vs1", ids[0], ids[1])
-                    all_games.append(new_game)
+                    with games_lock:
+                        all_games.append(new_game)
                     
                     # Remove clients from waiting_clients
                     for cid in ids:
-                        waiting_clients.pop(cid, None)
+                        with waiting_clients_lock:
+                            waiting_clients.pop(cid, None)
                     # Start game thread
                     start_new_thread(threaded_game, (new_game,))
-                    # Update connected_game_id for clients
-                    for c in all_clients:
-                        if c.client_id in ids:
-                            c.connected_game_id = game_id
+                    with clients_lock:
+                        # Update connected_game_id for clients
+                        for c in all_clients:
+                            if c.client_id in ids:
+                                c.connected_game_id = game_id
                     # Notify clients
                     for cid in ids:
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
@@ -141,16 +141,19 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
                     ids = two_vs_two_clients[:4]
                     game_id = "_".join(ids)
                     new_game = Game(game_id, "2vs2", ids[0], ids[1], ids[2], ids[3])
-                    all_games.append(new_game)
+                    with games_lock:
+                        all_games.append(new_game)
                     # Remove clients from waiting_clients
                     for cid in ids:
-                        waiting_clients.pop(cid, None)
+                        with waiting_clients_lock:
+                            waiting_clients.pop(cid, None)
                     # Start game thread
                     start_new_thread(threaded_game, (new_game,))
-                    # Update connected_game_id for clients
-                    for c in all_clients:
-                        if c.client_id in ids:
-                            c.connected_game_id = game_id
+                    with clients_lock:
+                        # Update connected_game_id for clients
+                        for c in all_clients:
+                            if c.client_id in ids:
+                                c.connected_game_id = game_id
                     # Notify clients
                     for cid in ids:
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
@@ -165,7 +168,7 @@ def threaded_handle_general_request(): # need more details
     global pending_requests, all_lobbies, all_games, waiting_clients
     while True:
         try:
-            with shared_lock:
+            with pending_requests_lock:  # replaced shared_lock
                 if not pending_requests:
                     time.sleep(0.05)
                     continue
@@ -175,13 +178,12 @@ def threaded_handle_general_request(): # need more details
             request_type = client_package["request_type"]
 
             if request_type == "find_random_game":
-                with shared_lock:
-                    if not client_package["client_id"] in waiting_clients:
+                with waiting_clients_lock:  # replaced shared_lock
+                    if client_package["client_id"] not in waiting_clients:
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
-                    
 
             elif request_type == "join_lobby":
-                with shared_lock:
+                with clients_lock, lobbies_lock:  # replaced shared_lock
                     if client.connected_lobby_id == "":
                         for lobby in all_lobbies:
                             if client_package["room_id"] == lobby.lobby_id:
@@ -189,7 +191,7 @@ def threaded_handle_general_request(): # need more details
                                 client.connected_lobby_id = client_package["room_id"]
 
             elif request_type == "make_lobby":
-                with shared_lock:
+                with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
                         lobby_id = client_package.get("client_id")
                         game_mode = client_package.get("game_mode")
@@ -202,29 +204,33 @@ def threaded_handle_general_request(): # need more details
 
             elif request_type == "start_the_game_as_host":
                 lobby = None
-                with shared_lock:
+                with lobbies_lock:
                     for l in all_lobbies:
                         if l.lobby_id == client.connected_lobby_id and l.is_host(client.client_id):
                             lobby = l
                             break
-                    if lobby and lobby.state == "full":
-                        game_id = lobby.lobby_id
-                        ids = lobby.members
-                        game_mode = lobby.game_mode
-                        if game_mode == "1vs1":
-                            new_game = Game(game_id, game_mode, ids[0], ids[1])
-                        else:
-                            if len(ids) < 4:
-                                continue
-                            new_game = Game(game_id, game_mode, ids[0], ids[1], ids[2], ids[3])
+                if lobby and lobby.state == "full":
+                    game_id = lobby.lobby_id
+                    ids = lobby.members
+                    game_mode = lobby.game_mode
+                    if game_mode == "1vs1":
+                        new_game = Game(game_id, game_mode, ids[0], ids[1])
+                    else:
+                        if len(ids) < 4:
+                            continue
+                        new_game = Game(game_id, game_mode, ids[0], ids[1], ids[2], ids[3])
+                    with games_lock:
                         all_games.append(new_game)
+                    with clients_lock:
                         for cid in ids:
                             for c in all_clients:
                                 if c.client_id == cid:
                                     c.connected_game_id = game_id
-                        for cid in ids:
-                            send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                        all_lobbies.remove(lobby)
+                    for cid in ids:
+                        send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
+                    with lobbies_lock:
+                        if lobby in all_lobbies:
+                            all_lobbies.remove(lobby)
             # ...add more request types as needed...
             time.sleep(0.05)
         except Exception as e:
@@ -264,8 +270,14 @@ all_lobbies = []  # connected clients and created lobbies
 all_games   = []  # to track all the current playing games
 
 pending_requests = []  # new global list for client requests that are not input or shoot (client_package)
-waiting_clients  = {} 
-shared_lock = threading.Lock()
+waiting_clients  = {}
+
+# Replace the single lock with multiple locks:
+clients_lock = threading.Lock()
+games_lock = threading.Lock()
+lobbies_lock = threading.Lock()
+pending_requests_lock = threading.Lock()
+waiting_clients_lock = threading.Lock()
 
 s = create_server_socket()
 start_new_thread(threaded_handle_general_request, ())  # Start the request handler thread
