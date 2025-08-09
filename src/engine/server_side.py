@@ -118,10 +118,9 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
                     with games_lock:
                         all_games.append(new_game)
                     
-                    # Remove clients from waiting_clients
+                    # Remove clients from waiting_clients (inner lock removed)
                     for cid in ids:
-                        with waiting_clients_lock:
-                            waiting_clients.pop(cid, None)
+                        waiting_clients.pop(cid, None)
                     # Start game thread
                     start_new_thread(threaded_game, (new_game,))
                     with clients_lock:
@@ -143,10 +142,8 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
                     new_game = Game(game_id, "2vs2", ids[0], ids[1], ids[2], ids[3])
                     with games_lock:
                         all_games.append(new_game)
-                    # Remove clients from waiting_clients
                     for cid in ids:
-                        with waiting_clients_lock:
-                            waiting_clients.pop(cid, None)
+                        waiting_clients.pop(cid, None)
                     # Start game thread
                     start_new_thread(threaded_game, (new_game,))
                     with clients_lock:
