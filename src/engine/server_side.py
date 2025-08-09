@@ -7,6 +7,7 @@ import threading
 from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client  # <-- updated import
 import traceback
 import pygame  # Add pygame if needed for accessing Rect
+import queue  # new import for pending requests
 
 # Updated helper to include sprite color in serialized data.
 def serialize_group(group):
@@ -49,8 +50,8 @@ def threaded_client(conn):
                         if game.game_id == client.connected_game_id:
                             game.game_updates.append(client_package)
             else:
-                with pending_requests_lock:  # replaced shared_lock
-                    pending_requests.append((client, client_package))  # Pass client object for context
+                # Replace lock+append with a thread-safe queue put.
+                pending_requests.put((client, client_package))
 
         except Exception as e:
             print(f"Exception in threaded_client for {client_id}: {e}")
@@ -70,8 +71,10 @@ def threaded_client(conn):
     except Exception as e:
         print(f"Error closing connection for {client_id}: {e}")
         traceback.print_exc()
-def threaded_game(game):# it sees only the game_updates then Processes the pending game changes then sends it to all clients, input and shooting
+def threaded_game(game):  # changed for precise frame timing
+    target_frame_duration = 1.0 / 60  # 60 FPS update
     while True:
+        start_time = time.perf_counter()
         try:
             game.update()
             server_package = {
@@ -84,22 +87,23 @@ def threaded_game(game):# it sees only the game_updates then Processes the pendi
                     "sounds": []
                 }
             }
-            # For broadcasting, use clients_lock when accessing all_clients.
             with clients_lock:
                 broadcast(server_package, game.game_clients, all_clients)
     
             if game.finished:
-                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                print("game.finishedgame.finishedgame.finishedgame.finished")
-                with games_lock:  # replaced shared_lock for all_games manip.
+                with games_lock:
                     if game in all_games:
                         all_games.remove(game)
                 break
-            time.sleep(0.05)
         except Exception as e:
             print(f"Exception in threaded_game {game.game_id}: {e}")
             traceback.print_exc()
             break
+        # Use precise timing based on perf_counter.
+        next_frame_time = start_time + target_frame_duration
+        sleep_time = next_frame_time - time.perf_counter()
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 def threaded_handle_waiting_clients(): # actively reads waiting_clients if a game is possible creates it and adds it to all_games
     global waiting_clients, all_games , all_clients
     while True:
@@ -161,26 +165,22 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
             print(f"Exception in threaded_handle_waiting_clients: {e}")
             traceback.print_exc()
             time.sleep(0.1)
-def threaded_handle_general_request(): # need more details
-    global pending_requests, all_lobbies, all_games, waiting_clients
+def threaded_handle_general_request():  # optimized to reduce periodic lag
+    global all_lobbies, all_games, waiting_clients
     while True:
         try:
-            with pending_requests_lock:  # replaced shared_lock
-                if not pending_requests:
-                    time.sleep(0.05)
-                    continue
-                client, client_package = pending_requests.pop(0)
-                print (client_package)
-
+            client, client_package = pending_requests.get(timeout=0.1)
+            # Reduced logging to one line per request type instead of full package dump.
+            # print(client_package)
             request_type = client_package["request_type"]
 
             if request_type == "find_random_game":
-                with waiting_clients_lock:  # replaced shared_lock
+                with waiting_clients_lock:
                     if client_package["client_id"] not in waiting_clients:
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
 
             elif request_type == "join_lobby":
-                with clients_lock, lobbies_lock:  # replaced shared_lock
+                with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
                         for lobby in all_lobbies:
                             if client_package["room_id"] == lobby.lobby_id:
@@ -228,12 +228,13 @@ def threaded_handle_general_request(): # need more details
                     with lobbies_lock:
                         if lobby in all_lobbies:
                             all_lobbies.remove(lobby)
-            # ...add more request types as needed...
-            time.sleep(0.05)
+            # Removed extra sleep here to reduce delay buildup.
+        except queue.Empty:
+            continue
         except Exception as e:
             print(f"Exception in threaded_handle_general_request: {e}")
             traceback.print_exc()
-            time.sleep(0.05)
+            time.sleep(0.1)
 
 # transformation general templates
 """  
@@ -266,14 +267,13 @@ all_clients = []  # list of Client objects
 all_lobbies = []  # connected clients and created lobbies 
 all_games   = []  # to track all the current playing games
 
-pending_requests = []  # new global list for client requests that are not input or shoot (client_package)
+pending_requests = queue.Queue()
 waiting_clients  = {}
 
 # Replace the single lock with multiple locks:
 clients_lock = threading.Lock()
 games_lock = threading.Lock()
 lobbies_lock = threading.Lock()
-pending_requests_lock = threading.Lock()
 waiting_clients_lock = threading.Lock()
 
 s = create_server_socket()
