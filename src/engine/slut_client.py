@@ -12,14 +12,17 @@ screen = pygame.display.set_mode((1200, 600))
 pygame.display.set_caption("Pixelhala Client")
 clock = pygame.time.Clock()
 
+transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)  
+transparent_surface.fill((0, 0, 0, 0))  
+
 images = {
-    "Fighter": pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
+    "Fighter": transparent_surface 
 }
 try:
     fighter_animations = load_animations_Arcane_Archer()
-    # print(f"Loaded animations: {list(fighter_animations.keys())}")
+    print(f"Loaded animations: {list(fighter_animations.keys())}")
 except Exception as e:
-    # print(f"Error loading animations: {e}")
+    print(f"Error loading animations: {e}")
     fighter_animations = {}
 
 game_state = None
@@ -89,7 +92,7 @@ def draw_game_state(screen):
         current_state = game_state
         prev_state = previous_game_state
         last_time = last_update_time
-    # print(f"Current game_state: {current_state}")
+    print(f"Current game_state: {current_state}")
     if current_state:
         alpha = 1.0
         if prev_state and last_time:
@@ -107,7 +110,7 @@ def draw_game_state(screen):
                     current_animation = obj.get("state", "idle")
                     current_frame = obj.get("current_frame", 0)
                     facing_right = obj.get("facing_right", True)
-                    # print(f"Rendering {sprite_type}: rect={curr_rect}, animation={current_animation}, frame={current_frame}, facing_right={facing_right}")
+                    print(f"Rendering {sprite_type}: rect={curr_rect}, animation={current_animation}, frame={current_frame}, facing_right={facing_right}")
                     if curr_rect and prev_rect:
                         interp_rect = tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
                     else:
@@ -135,7 +138,7 @@ def draw_game_state(screen):
                     current_animation = obj.get("state", "idle")
                     current_frame = obj.get("current_frame", 0)
                     facing_right = obj.get("facing_right", True)
-                    # print(f"Rendering {sprite_type}: rect={rect}, animation={current_animation}, frame={current_frame}, facing_right={facing_right}")
+                    print(f"Rendering {sprite_type}: rect={rect}, animation={current_animation}, frame={current_frame}, facing_right={facing_right}")
                     if rect:
                         if sprite_type == "Fighter":
                             if current_animation in fighter_animations:
