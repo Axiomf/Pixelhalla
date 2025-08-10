@@ -10,8 +10,9 @@ pygame.mixer.init()  # Initialize mixer for audio
 # "animations" is a dictionary with keys of states and values of corresponding frames in order
 class DynamicObject(GameObject):
     """Base class for objects that can move or be affected by forces."""
-    def __init__(self, x, y, width, height, color=None, image_path=None, animations=None,image=None):
+    def __init__(self, x, y, width, height, color=None, image_path=None, animations=None,image=None, multi_player_mode=False):
         super().__init__(x, y, width, height, color, image_path, image)
+        self.multi_player_mode = multi_player_mode
         self.change_x = 0  # Horizontal velocity
         self.change_y = 0  # Vertical velocity
         self.state = "idle"
@@ -152,9 +153,9 @@ class DynamicObject(GameObject):
             self.current_animation = self.state
 
 class Player(DynamicObject):
-    def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None):
-        # Pass animations into DynamicObject for centralized animation management
-        super().__init__(x, y, width, height, color, image_path, animations)
+    def __init__(self, x, y, width=30, height=30, color=None, health=100, damage=100, image_path=None, animations=None, multi_player_mode=False):
+        # Pass multi_player_mode to DynamicObject
+        super().__init__(x, y, width, height, color, image_path, animations, multi_player_mode=multi_player_mode)
         self.health = health          # Current health of the player
         self.max_health = health      # Maximum health for the player
         self.damage = damage          # Damage that this player can inflict
@@ -207,6 +208,8 @@ class Player(DynamicObject):
 
     def draw_health_bar(self, surface):
         """Draws a health bar above the player based on current health."""
+        if self.multi_player_mode:
+            return
         # Health bar dimensions
         bar_width = self.rect.width  # Same width as the player sprite
         bar_height = config.PLAYER_BAR_HEIGHT  # Height of the health bar
@@ -365,8 +368,9 @@ class Player(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 0,multiplayer=False):
-        super().__init__(x, y, width, height, color, health, damage, image_path, animations)
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 0, multi_player_mode=False):
+        # Pass multi_player_mode to Player
+        super().__init__(x, y, width, height, color, health, damage, image_path, animations, multi_player_mode=multi_player_mode)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
         self.platforms = platforms  # Store platforms group
@@ -378,7 +382,6 @@ class Fighter(Player):
         self.fighter_id = id or "id not given"
         self.team = team
         self.username = username
-        self.multi_player_mode = multiplayer
         
 
         # Store the original image to avoid quality loss when flipping repeatedly
@@ -1050,8 +1053,8 @@ class Projectile(DynamicObject):
     """A projectile that moves with a fixed velocity.
        Optionally, it can be affected by gravity (e.g., for arrows)."""
     def __init__(self, x, y, image_path, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE,team = 1, 
-                 use_gravity=False, owner=None, animations=None, image=None):
-        super().__init__(x, y, width, height, color, image_path, animations,image=image)
+                 use_gravity=False, owner=None, animations=None, image=None, multi_player_mode=False):
+        super().__init__(x, y, width, height, color, image_path, animations,image=image, multi_player_mode=multi_player_mode)
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
@@ -1072,8 +1075,8 @@ class Projectile(DynamicObject):
 
 class PowerUp(DynamicObject):
     """A power-up that moves with a fixed velocity and respawns periodically."""
-    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None, all_sprites=None, power_ups=None, platforms=None):
-        super().__init__(x, y, width, height, color, image_path, animations)
+    def __init__(self, x, y, type, amount, width=10, height=10, color=(255,255,0), image_path=None, animations=None, all_sprites=None, power_ups=None, platforms=None, multi_player_mode=False):
+        super().__init__(x, y, width, height, color, image_path, animations, multi_player_mode=multi_player_mode)
         self.color = color
         self.image_path = image_path
         self.upgrade_type = type

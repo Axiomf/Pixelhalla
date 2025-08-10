@@ -85,9 +85,11 @@ def threaded_game(game):  # changed for precise frame timing
                     "fighters": serialize_group(game.fighters),
                     "projectiles": serialize_group(game.projectiles),
                     "power_ups": serialize_group(game.power_ups),
-                    "sounds": []
+                    "sounds": game.sounds
                 }
+
             }
+            game.sounds = []  # Clear the sounds
             with clients_lock:
                 broadcast(server_package, game.game_clients, all_clients)
     
@@ -229,6 +231,8 @@ def threaded_handle_general_request():  # optimized to reduce periodic lag
                     with lobbies_lock:
                         if lobby in all_lobbies:
                             all_lobbies.remove(lobby)
+                # Start game thread
+                start_new_thread(threaded_game, (new_game,))
             # Removed extra sleep here to reduce delay buildup.
         except queue.Empty:
             continue
@@ -253,8 +257,8 @@ client_package = {
 }
 
 server_package = {
-    "request_type": "game_update", "first_time"
-
+    "request_type": "game_update", "first_time", "report"
+    "report" : "sfsfsdfs"
     "game_world":
         "platforms": platforms,
         "fighters": fighters,

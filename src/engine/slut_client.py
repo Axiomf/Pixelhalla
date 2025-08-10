@@ -21,8 +21,8 @@ client_package = {
 }
 
 server_package = {
-    "request_type": "game_update", "first_time"
-
+    "request_type": "game_update", "first_time" , "report"
+    "report" : "sfsfsdfs"
     "game_world":
         "platforms": platforms,
         "fighters": fighters,
@@ -53,8 +53,9 @@ def threaded_receive_update(sock):
                     previous_game_state = game_state  # store the old state
                     game_state = client_package.get("game_world")
                     last_update_time = time.time()   # update timestamp
-            else:
-                pass
+
+            elif client_package.get("request_type") == "report":
+                print("Server report:", client_package.get("report"))
             #print("Server message:", client_package)
 
         except Exception as e:
@@ -142,7 +143,6 @@ def send_request_to_server(client_package):
         return False
     return True
 
-
 client_first_package = {
             "client_id": client_id,
             "request_type": "find_random_game",
@@ -154,22 +154,26 @@ send_request_to_server(client_first_package)
 
 running = True
 while running:
-    inputs = []  # list to capture keyboard events
+    inputs = []  # list to capture keyboard events w a s d space = 119 97 115 100 32
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
             inputs.append(event.key)
 
-            
-            if event.key - 48 == 1: # "find_random_game"
+            print(event.key)
+            if event.key - 48 == 1: # find_random_game
                 print(f" I pressed: 1  {event.key==49}") # ++ 48
-            elif event.key - 48 == 2:
+                print(event.key)
+            elif event.key - 48 == 2:# join_lobby
                 print(2)
-            elif event.key - 48 == 3:
+            elif event.key - 48 == 3:# make_lobby
                 print(3)
-            elif event.key - 48 == 4:
+            elif event.key - 48 == 4:# start_the_game_as_host
                 print(4)
+
+            
+            
 
 
 
