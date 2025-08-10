@@ -73,7 +73,7 @@ class Game:
             id=ID1, 
             team=1, 
             color=(200, 120, 78),
-            multiplayer=True
+            multi_player_mode=True
         )
         fighter2 = Fighter(
             x=450, 
@@ -85,7 +85,7 @@ class Game:
             id=ID2, 
             team=2, 
             color=(200, 120, 120),
-            multiplayer=True
+            multi_player_mode=True
         )
         self.fighters.add(fighter1, fighter2)
         # print(f"Fighters created: {len(self.fighters)}")
