@@ -165,7 +165,7 @@ class PlayingState_Multiplayer(BaseState):
         # Update fighters
         self.fighters.empty()
         for fighter_data in server_package.get("fighters", []):
-            fighter = Fighter(fighter_data["fighter_id"], fighter_data["x"], fighter_data["y"])
+            fighter = Fighter(fighter_data["fighter_id"], fighter_data["x"], fighter_data["y"],multi_player_mode=True)
             fighter.health = fighter_data.get("health", 100)
             fighter.team = fighter_data.get("team", 0)
             self.fighters.add(fighter)
@@ -173,14 +173,14 @@ class PlayingState_Multiplayer(BaseState):
         # Update projectiles
         self.projectiles.empty()
         for proj_data in server_package.get("projectiles", []):
-            projectile = Projectile(proj_data["x"], proj_data["y"], proj_data["velocity_x"], proj_data["velocity_y"], proj_data["damage"])
+            projectile = Projectile(proj_data["x"], proj_data["y"], proj_data["velocity_x"], proj_data["velocity_y"], proj_data["damage"],multi_player_mode=True)
             projectile.team = proj_data.get("team", 0)
             self.projectiles.add(projectile)
             self.all_sprites.add(projectile)
         # Update power-ups
         self.power_ups.empty()
         for power_data in server_package.get("power_ups", []):
-            power_up = PowerUp(power_data["x"], power_data["y"], power_data["upgrade_type"], power_data["amount"])
+            power_up = PowerUp(power_data["x"], power_data["y"], power_data["upgrade_type"], power_data["amount"],multi_player_mode=True)
             self.power_ups.add(power_up)
             self.all_sprites.add(power_up)
         # Check for game end

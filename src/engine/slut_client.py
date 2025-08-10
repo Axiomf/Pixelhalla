@@ -6,7 +6,32 @@ import time
 import pygame
 from src.engine.dynamic_objects import *
 from src.engine.animation_loader import load_animations_Arcane_Archer
+# transformation general templates
+"""  
+example of full packages:
 
+client_package = {
+    "room_id" : "12345678"
+    "client_id": "12345678"
+    "game_mode": "1vs1" or "2vs2"
+    "request_type" : "input" or "find_random_game" or "join_lobby" or "make_lobby" or "start_the_game_as_host"
+    "state": "menu" or "waiting" or "lobby" or "in_game"
+    
+    "shoots" " [] 
+    "inputs" : [] 
+}
+
+server_package = {
+    "request_type": "game_update", "first_time", "report"
+    "report" : "sfsfsdfs"
+    "game_world":
+        "platforms": platforms,
+        "fighters": fighters,
+        "projectiles": projectiles, 
+        "power_ups": power_ups, 
+        "sounds": []
+}
+"""
 pygame.init()
 screen = pygame.display.set_mode((1200, 600))
 pygame.display.set_caption("Pixelhala Client")
