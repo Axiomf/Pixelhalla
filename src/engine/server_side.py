@@ -87,10 +87,11 @@ def threaded_game(game):
                     "fighters": serialize_group(game.fighters),
                     "projectiles": serialize_group(game.projectiles),
                     "power_ups": serialize_group(game.power_ups),
-                    "sounds": []
+                    "sounds": game.sounds
                 }
+
             }
-            # print(f"Sending server_package: {server_package}")
+            game.sounds = []  # Clear the sounds
             with clients_lock:
                 broadcast(server_package, game.game_clients, all_clients)
     
@@ -218,6 +219,9 @@ def threaded_handle_general_request():
                     with lobbies_lock:
                         if lobby in all_lobbies:
                             all_lobbies.remove(lobby)
+                # Start game thread
+                start_new_thread(threaded_game, (new_game,))
+            # Removed extra sleep here to reduce delay buildup.
         except queue.Empty:
             continue
         except Exception as e:
@@ -225,9 +229,37 @@ def threaded_handle_general_request():
             traceback.print_exc()
             time.sleep(0.5)
 
-all_clients = []
-all_lobbies = []
-all_games = []
+# transformation general templates
+"""  
+example of full packages:
+
+client_package = {
+    "room_id" : "12345678"
+    "client_id": "12345678"
+    "game_mode": "1vs1" or "2vs2"
+    "request_type" : "input" or "find_random_game" or "join_lobby" or "make_lobby" or "start_the_game_as_host"
+    "state": "menu" or "waiting" or "lobby" or "in_game"
+    
+    "shoots" " [] 
+    "inputs" : [] 
+}
+
+server_package = {
+    "request_type": "game_update", "first_time", "report"
+    "report" : "sfsfsdfs"
+    "game_world":
+        "platforms": platforms,
+        "fighters": fighters,
+        "projectiles": projectiles, 
+        "power_ups": power_ups, 
+        "sounds": []
+}
+"""
+
+all_clients = []  # list of Client objects
+all_lobbies = []  # connected clients and created lobbies 
+all_games   = []  # to track all the current playing games
+
 pending_requests = queue.Queue()
 waiting_clients = {}
 

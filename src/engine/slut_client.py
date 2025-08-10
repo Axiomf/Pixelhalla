@@ -53,6 +53,8 @@ def threaded_receive_update(sock):
                     print(f"Received game_state: {game_state}")
             elif client_package.get("request_type") == "game_started":
                 print(f"Game started: {client_package}")
+            elif client_package.get("request_type") == "report":
+                print("Server report:", client_package.get("report"))   
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
@@ -173,11 +175,23 @@ send_request_to_server(client_first_package)
 
 running = True
 while running:
-    inputs = []
+    inputs = []  # list to capture keyboard events w a s d space = 119 97 115 100 32
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            inputs.append(event.key)
+
+            print(event.key)
+            if event.key - 48 == 1: # find_random_game
+                print(f" I pressed: 1  {event.key==49}") # ++ 48
+                print(event.key)
+            elif event.key - 48 == 2:# join_lobby
+                print(2)
+            elif event.key - 48 == 3:# make_lobby
+                print(3)
+            elif event.key - 48 == 4:# start_the_game_as_host
+                print(4)
             if event.key in key_pressed and not key_pressed[event.key]:
                 key_pressed[event.key] = True
                 inputs.append(("down", event.key))
@@ -187,6 +201,7 @@ while running:
                 key_pressed[event.key] = False
                 inputs.append(("up", event.key))
                 # print(f"KEYUP: {event.key}")
+            
 
     if inputs:
         client_package = {

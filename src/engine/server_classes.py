@@ -25,7 +25,7 @@ class Lobby:
         self.state = "waiting"
 
     def add_member(self, client_id):
-        if client_id not in self.members:
+        if client_id not in self.members and self.state == "waiting":
             self.members.append(client_id)
             self.update_state()
 
@@ -48,10 +48,13 @@ class Game:
     def __init__(self, id, mode, ID1, ID2, ID3=None, ID4=None, world=None):
         self.game_clients = [ID1, ID2] if mode == "1vs1" else [ID1, ID2, ID3, ID4]
         self.game_id = id
+
         self.platforms = CustomGroup()
         self.fighters = CustomGroup()
         self.projectiles = CustomGroup()
         self.power_ups = CustomGroup()
+        self.sounds = []
+
         self.game_updates = []
         self.mode = mode
         self.finished = False
@@ -104,6 +107,7 @@ class Game:
                 if hasattr(projectile, "team") and fighter.team != projectile.team:
                     fighter.take_damage(projectile.damage)
                     projectile.kill()
+                    self.sounds.append("blood")
         for power in self.power_ups:
             hit_fighters = pygame.sprite.spritecollide(power, self.fighters, False)
             for fighter in hit_fighters:
