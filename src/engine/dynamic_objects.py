@@ -393,24 +393,36 @@ class Fighter(Player):
         if self.freeze:
             self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed     
         else:
-            if self.client_input and self.multi_player_mode : # it needs to update all inputs I fix it later
-                previous_facing = self.facing_right
-                if self.controls.get("left") and self.controls["left"] in self.client_input:
-                    self.change_x = (-1) * self.speed
-                    self.facing_right = False
-                elif self.controls.get("right") and self.controls["right"] in self.client_input:
-                    self.change_x = self.speed
-                    self.facing_right = True
-                else:
-                    self.change_x = 0
-                if self.controls.get("jump") and self.controls["jump"] in self.client_input:
-                    if self.change_y == 0:
-                        self.change_y = self.jump_strength
-                # Update the image based on direction
-                if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
-                    if self.original_image:  # Only flip if original_image exists
-                        self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
-                self.client_input = []  # Clear the input list after processing
+            if self.multi_player_mode:
+                print(f"Processing client_input for fighter {self.fighter_id}: {self.client_input}")
+                while self.client_input:
+                    action, key = self.client_input.pop(0)
+                    print(f"Action: {action}, Key: {key}")
+                    if action == "down":
+                        if key == self.controls["left"]:
+                            self.change_x = -self.speed
+                            self.facing_right = False
+                            self.state = "walk"
+                            print(f"Moving left, change_x: {self.change_x}")
+                        elif key == self.controls["right"]:
+                            self.change_x = self.speed
+                            self.facing_right = True
+                            self.state = "walk"
+                            print(f"Moving right, change_x: {self.change_x}")
+                        elif key == self.controls["jump"] and self.change_y == 0:
+                            self.change_y = self.jump_strength
+                            self.state = "jump"
+                            print(f"Jumping, change_y: {self.change_y}")
+                        elif key == self.controls["shoot"] and pygame.time.get_ticks() - self.last_shoot_time >= self.shoot_cooldown:
+                            self.last_shoot_time = pygame.time.get_ticks()
+                            self.state = "shoot"
+                            print("Shooting")
+                            return self.shoot()
+                    elif action == "up":
+                        if key == self.controls["left"] or key == self.controls["right"]:
+                            self.change_x = 0
+                            self.state = "idle"
+                            print(f"Stopped moving, change_x: {self.change_x}")
             elif not self.multi_player_mode:
                 keys = pygame.key.get_pressed()  # Get the state of keyboard keys
                 # Track previous direction to detect changes

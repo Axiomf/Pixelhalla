@@ -27,7 +27,7 @@ def send_to_client(server_package, client_id, all_clients):
             break
     
     if target is None:
-        print(f"Client {client_id} not found in all_clients")
+        # print(f"Client {client_id} not found in all_clients")
         return
     try:
         target.conn.sendall(pickle.dumps(server_package))

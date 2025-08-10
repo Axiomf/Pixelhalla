@@ -14,11 +14,16 @@ def serialize_group(group):
     serialized = []
     for sprite in group.sprites():
         color = getattr(sprite, "color", (255, 255, 255))
+        sprite_type = sprite.__class__.__name__
         serialized.append({
             "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
-            "color": color
-            # ...other serializable properties...
+            "color": color,
+            "type": sprite_type,
+            "state": getattr(sprite, "state", "idle"),
+            "current_frame": getattr(sprite, "current_frame", 0),
+            "facing_right": getattr(sprite, "facing_right", True)
         })
+        # print(f"Serialized {sprite_type}: {serialized[-1]}")
     return serialized
 
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
@@ -31,7 +36,7 @@ def threaded_client(conn):
     try:
         conn.sendall(pickle.dumps(client_id)) # sends clients ID as a first time massage
     except Exception as e:
-        print(f"Error sending client ID to {client_id}: {e}")
+        # print(f"Error sending client ID to {client_id}: {e}")
         traceback.print_exc()
         return
 
@@ -51,18 +56,14 @@ def threaded_client(conn):
                         if game.game_id == client.connected_game_id:
                             game.game_updates.append(client_package)
             else:
-                # Replace lock+append with a thread-safe queue put.
                 pending_requests.put((client, client_package))
-
         except Exception as e:
-            print(f"Exception in threaded_client for {client_id}: {e}")
+            # print(f"Exception in threaded_client for {client_id}: {e}")
             traceback.print_exc()
             break
 
-    print(f"{client_id} Lost connection")
-
-    with clients_lock:  # replaced shared_lock
-        # Remove client safely
+    # print(f"{client_id} Lost connection")
+    with clients_lock:
         for i, c in enumerate(all_clients):
             if c.client_id == client_id:
                 del all_clients[i]
@@ -70,10 +71,11 @@ def threaded_client(conn):
     try:
         conn.close()
     except Exception as e:
-        print(f"Error closing connection for {client_id}: {e}")
+        # print(f"Error closing connection for {client_id}: {e}")
         traceback.print_exc()
-def threaded_game(game):  # changed for precise frame timing
-    target_frame_duration = 1.0 / 60  # 60 FPS update
+
+def threaded_game(game):
+    target_frame_duration = 1.0 / 60
     while True:
         start_time = time.perf_counter()
         try:
@@ -88,6 +90,7 @@ def threaded_game(game):  # changed for precise frame timing
                     "sounds": []
                 }
             }
+            # print(f"Sending server_package: {server_package}")
             with clients_lock:
                 broadcast(server_package, game.game_clients, all_clients)
     
@@ -97,49 +100,40 @@ def threaded_game(game):  # changed for precise frame timing
                         all_games.remove(game)
                 break
         except Exception as e:
-            print(f"Exception in threaded_game {game.game_id}: {e}")
+            # print(f"Exception in threaded_game {game.game_id}: {e}")
             traceback.print_exc()
             break
-        # Use precise timing based on perf_counter.
         next_frame_time = start_time + target_frame_duration
         sleep_time = next_frame_time - time.perf_counter()
         if sleep_time > 0:
-            time.sleep(sleep_time)  # Previously was 'pass'
-def threaded_handle_waiting_clients(): # actively reads waiting_clients if a game is possible creates it and adds it to all_games
-    global waiting_clients, all_games , all_clients
+            time.sleep(sleep_time)
+
+def threaded_handle_waiting_clients():
+    global waiting_clients, all_games, all_clients
     while True:
         try:
-            with waiting_clients_lock:  # replaced shared_lock
-                # Find possible 1vs1 games
+            with waiting_clients_lock:
                 one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
-                #print (f" number of one_vs_one_clients: {len(one_vs_one_clients)}")
+                # print(f"1vs1 clients waiting: {one_vs_one_clients}")
                 while len(one_vs_one_clients) >= 2:
                     ids = one_vs_one_clients[:2]
-
                     game_id = "_".join(ids)
-                    print (f"game id:  {game_id}")
-
+                    # print(f"Creating game: {game_id}")
                     new_game = Game(game_id, "1vs1", ids[0], ids[1])
                     with games_lock:
                         all_games.append(new_game)
-                    
-                    # Remove clients from waiting_clients (inner lock removed)
                     for cid in ids:
                         waiting_clients.pop(cid, None)
-                    # Start game thread
                     start_new_thread(threaded_game, (new_game,))
                     with clients_lock:
-                        # Update connected_game_id for clients
                         for c in all_clients:
                             if c.client_id in ids:
                                 c.connected_game_id = game_id
-                    # Notify clients
                     for cid in ids:
+                        # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                    # Update list for next iteration
                     one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
 
-                # Find possible 2vs2 games
                 two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
                 while len(two_vs_two_clients) >= 4:
                     ids = two_vs_two_clients[:4]
@@ -149,37 +143,33 @@ def threaded_handle_waiting_clients(): # actively reads waiting_clients if a gam
                         all_games.append(new_game)
                     for cid in ids:
                         waiting_clients.pop(cid, None)
-                    # Start game thread
                     start_new_thread(threaded_game, (new_game,))
                     with clients_lock:
-                        # Update connected_game_id for clients
                         for c in all_clients:
                             if c.client_id in ids:
                                 c.connected_game_id = game_id
-                    # Notify clients
                     for cid in ids:
+                        # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                    # Update list for next iteration
                     two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
-            time.sleep(0.2) # avoid busy loop
+            time.sleep(0.2)
         except Exception as e:
-            print(f"Exception in threaded_handle_waiting_clients: {e}")
+            # print(f"Exception in threaded_handle_waiting_clients: {e}")
             traceback.print_exc()
             time.sleep(0.2)
-def threaded_handle_general_request():  # optimized to reduce periodic lag
+
+def threaded_handle_general_request():
     global all_lobbies, all_games, waiting_clients
     while True:
         try:
             client, client_package = pending_requests.get(timeout=0.1)
-            # Reduced logging to one line per request type instead of full package dump.
-            # print(client_package)
             request_type = client_package["request_type"]
-
+            # print(f"Processing request: {client_package}")
             if request_type == "find_random_game":
                 with waiting_clients_lock:
                     if client_package["client_id"] not in waiting_clients:
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
-
+                        # print(f"Added to waiting clients: {client_package['client_id']}")
             elif request_type == "join_lobby":
                 with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
@@ -187,7 +177,6 @@ def threaded_handle_general_request():  # optimized to reduce periodic lag
                             if client_package["room_id"] == lobby.lobby_id:
                                 lobby.add_member(client.client_id)
                                 client.connected_lobby_id = client_package["room_id"]
-
             elif request_type == "make_lobby":
                 with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
@@ -199,7 +188,6 @@ def threaded_handle_general_request():  # optimized to reduce periodic lag
                         client.is_host = True
                         client.game_mode = game_mode
                         send_to_client({"request_type": "lobby_created", "lobby_id": lobby_id, "game_mode": game_mode}, client.client_id, all_clients)
-
             elif request_type == "start_the_game_as_host":
                 lobby = None
                 with lobbies_lock:
@@ -225,73 +213,37 @@ def threaded_handle_general_request():  # optimized to reduce periodic lag
                                 if c.client_id == cid:
                                     c.connected_game_id = game_id
                     for cid in ids:
+                        # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
                     with lobbies_lock:
                         if lobby in all_lobbies:
                             all_lobbies.remove(lobby)
-            # Removed extra sleep here to reduce delay buildup.
         except queue.Empty:
             continue
         except Exception as e:
-            print(f"Exception in threaded_handle_general_request: {e}")
+            # print(f"Exception in threaded_handle_general_request: {e}")
             traceback.print_exc()
             time.sleep(0.5)
 
-# transformation general templates
-"""  
-example of full packages:
-
-client_package = {
-    "room_id" : "12345678"
-    "client_id": "12345678"
-    "game_mode": "1vs1" or "2vs2"
-    "request_type" : "input" or "find_random_game" or "join_lobby" or "make_lobby" or "start_the_game_as_host"
-    "state": "menu" or "waiting" or "lobby" or "in_game"
-    
-    "shoots" " [] 
-    "inputs" : [] 
-}
-
-server_package = {
-    "request_type": "game_update", "first_time"
-
-    "game_world":
-        "platforms": platforms,
-        "fighters": fighters,
-        "projectiles": projectiles, 
-        "power_ups": power_ups, 
-        "sounds": []
-}
-"""
-
-all_clients = []  # list of Client objects
-all_lobbies = []  # connected clients and created lobbies 
-all_games   = []  # to track all the current playing games
-
+all_clients = []
+all_lobbies = []
+all_games = []
 pending_requests = queue.Queue()
-waiting_clients  = {}
+waiting_clients = {}
 
-# Replace the single lock with multiple locks:
 clients_lock = threading.Lock()
 games_lock = threading.Lock()
 lobbies_lock = threading.Lock()
 waiting_clients_lock = threading.Lock()
 
 s = create_server_socket()
-start_new_thread(threaded_handle_general_request, ())  # Start the request handler thread
+start_new_thread(threaded_handle_general_request, ())
 start_new_thread(threaded_handle_waiting_clients, ())
 while True:
     try:
-        conn, addr = s.accept()# The accept() method blocks until a client connects. It returns a new connection object (conn) and the client's address (addr).
+        conn, addr = s.accept()
         print("Connected to:", addr)
-        start_new_thread(threaded_client, (conn,)) # When a client connects, we start a new thread for them with a new generated ID. This allows the server to handle multiple clients simultaneously without blocking
+        start_new_thread(threaded_client, (conn,))
     except Exception as e:
         print(f"Exception in main server loop: {e}")
         traceback.print_exc()
-
-# cannot pickle 'pygame.surface.Surface' objectcannot pickle 'pygame.surface.Surface' object
-        traceback.print_exc()
-
-# cannot pickle 'pygame.surface.Surface' objectcannot pickle 'pygame.surface.Surface' object
-
-
