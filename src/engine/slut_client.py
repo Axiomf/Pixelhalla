@@ -180,9 +180,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            inputs.append(event.key)
+            #inputs.append(event.key)
 
             print(event.key)
+            # this is for sending requests with the keyboard:
             if event.key - 48 == 1: # find_random_game
                 print(f" I pressed: 1  {event.key==49}") # ++ 48
                 print(event.key)
