@@ -35,17 +35,24 @@ server_package = {
 }
 """
 # Updated helper to include sprite color in serialized data.
-def serialize_group(group,type):
-    
+def serialize_group(group):
     serialized = []
     for sprite in group.sprites():
-        serialized.append({
+        color = getattr(sprite, "color", (255, 255, 255))
+        sprite_type = sprite.__class__.__name__
+        if hasattr(sprite, "color") and sprite.color is not None:
+            color = sprite.color
+        data = {
             "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
-            "state": getattr(sprite, "state", "idle"),
-            "id": getattr(sprite, "fighter_id", "id not given"),
-            "is_doing" : getattr(sprite, "is_doing", "is_doing not given"), # complete cycle animations like: death, shoot, attack, hurt 
-            "facing_right": getattr(sprite, "facing_right", True)
-        })
+            "color": color,
+            "type": sprite_type
+        }
+        if sprite_type == "Fighter":
+            data["fighter_id"] = getattr(sprite, "fighter_id", "unknown")
+            data["state"] = getattr(sprite, "state", "idle")
+            data["facing_right"] = getattr(sprite, "facing_right", True)
+        serialized.append(data)
+        print(f"Serialized {sprite_type}: {data}")
     return serialized
 
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
@@ -101,29 +108,27 @@ def threaded_game(game):
     while True:
         start_time = time.perf_counter()
         try:
+            print(f"Game updates before processing: {game.game_updates}")
             game.update()
             server_package = {
                 "request_type": "game_update",
                 "game_world": {
-                    "platforms": serialize_group(game.platforms,"platforms"),
-                    "fighters": serialize_group(game.fighters,"fighters"),
-                    "projectiles": serialize_group(game.projectiles,"projectiles"),
-                    "power_ups": serialize_group(game.power_ups,"power_ups"),
-                    "sounds": game.sounds
+                    "platforms": serialize_group(game.platforms),
+                    "fighters": serialize_group(game.fighters),
+                    "projectiles": serialize_group(game.projectiles),
+                    "power_ups": serialize_group(game.power_ups),
+                    "sounds": []
                 }
             }
-            game.sounds = [] # Clear the sounds list
-            # print(f"Sending server_package: {server_package}")
             with clients_lock:
                 broadcast(server_package, game.game_clients, all_clients)
-    
             if game.finished:
                 with games_lock:
                     if game in all_games:
                         all_games.remove(game)
                 break
         except Exception as e:
-            # print(f"Exception in threaded_game {game.game_id}: {e}")
+            print(f"Exception in threaded_game {game.game_id}: {e}")
             traceback.print_exc()
             break
         next_frame_time = start_time + target_frame_duration
