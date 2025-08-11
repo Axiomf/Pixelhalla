@@ -119,21 +119,14 @@ def interpolate_rect(prev_rect, curr_rect, alpha):
 def render_obj(screen, rect, obj):
     sprite_type = obj.get("type", "Fighter")
     color = obj.get("color", (255, 255, 255))
-    current_animation = obj.get("state", "idle")
-    current_frame = obj.get("current_frame", 0)
     facing_right = obj.get("facing_right", True)
+    # Clients handle animation themselves so omit server animation frames.
     if sprite_type == "Fighter":
-        if current_animation in fighter_animations:
-            frame = fighter_animations[current_animation][current_frame % len(fighter_animations[current_animation])]
-            if not facing_right:
-                frame = pygame.transform.flip(frame, True, False)
-            scaled_frame = pygame.transform.scale(frame, (rect[2], rect[3]))
-            screen.blit(scaled_frame, (rect[0], rect[1]))
-        else:
-            # Fallback to static image
-            image = images[sprite_type]
-            scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
-            screen.blit(scaled_image, (rect[0], rect[1]))
+        image = images[sprite_type]
+        if not facing_right:
+            image = pygame.transform.flip(image, True, False)
+        scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+        screen.blit(scaled_image, (rect[0], rect[1]))
     else:
         pygame.draw.rect(screen, color, rect)
 

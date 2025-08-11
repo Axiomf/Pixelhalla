@@ -29,26 +29,23 @@ server_package = {
     "game_world":
         "platforms": platforms,
         "fighters": fighters,
-        "projectiles": projectiles, 
+        "projectiles": projectiles,
         "power_ups": power_ups, 
         "sounds": []
 }
 """
 # Updated helper to include sprite color in serialized data.
-def serialize_group(group):
+def serialize_group(group,type):
+    
     serialized = []
     for sprite in group.sprites():
-        color = getattr(sprite, "color", (255, 255, 255))
-        sprite_type = sprite.__class__.__name__
         serialized.append({
             "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
-            "color": color,
-            "type": sprite_type,
             "state": getattr(sprite, "state", "idle"),
-            "current_frame": getattr(sprite, "current_frame", 0),
+            "id": getattr(sprite, "fighter_id", "id not given"),
+            "is_doing" : getattr(sprite, "is_doing", "is_doing not given"), # complete cycle animations like: death, shoot, attack, hurt 
             "facing_right": getattr(sprite, "facing_right", True)
         })
-        # print(f"Serialized {sprite_type}: {serialized[-1]}")
     return serialized
 
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
@@ -108,10 +105,10 @@ def threaded_game(game):
             server_package = {
                 "request_type": "game_update",
                 "game_world": {
-                    "platforms": serialize_group(game.platforms),
-                    "fighters": serialize_group(game.fighters),
-                    "projectiles": serialize_group(game.projectiles),
-                    "power_ups": serialize_group(game.power_ups),
+                    "platforms": serialize_group(game.platforms,"platforms"),
+                    "fighters": serialize_group(game.fighters,"fighters"),
+                    "projectiles": serialize_group(game.projectiles,"projectiles"),
+                    "power_ups": serialize_group(game.power_ups,"power_ups"),
                     "sounds": game.sounds
                 }
             }
