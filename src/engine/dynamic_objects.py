@@ -37,6 +37,7 @@ class DynamicObject(GameObject):
         self.attack_duration = 500  # Duration of shoot animation in ms, adjust based on animation length
         self.last_attack_time = 0  # Track the last time shoot occurred
         
+        self.is_dooing = None # shoot/attack , hurt , death
         self.freeze = False # it can not move while being freezed
         self.freeze_duration = 1000 # lenght of freeze duration
         self.freezed_time = 0 # the time it got freezed
@@ -45,6 +46,8 @@ class DynamicObject(GameObject):
     def _cycle_frame(self):
         # Advance to the next frame and update the sprite image
         self.current_frame = (self.current_frame + 1) % len(self.animations[self.current_animation])
+        if self.current_frame == 0:
+            self.is_dooing = self.current_animation  # Full cycle completed; update is_dooing for server/client sync
         self.image = self.animations[self.current_animation][self.current_frame]
         if hasattr(self, "facing_right"):
             self.image = pygame.transform.flip(self.image, not self.facing_right, False)
@@ -379,7 +382,6 @@ class Fighter(Player):
         self.fighter_id = id or "id not given"
         self.team = team
         self.username = username
-        self.multi_player_mode = multi_player_mode
         
 
         # Store the original image to avoid quality loss when flipping repeatedly
@@ -446,9 +448,6 @@ class Fighter(Player):
                 if self.facing_right != previous_facing and not self.animations.get(self.current_animation):  # Only flip if no animation
                     if self.original_image:  # Only flip if original_image exists
                         self.image = pygame.transform.flip(self.original_image, not self.facing_right, False)
-
-
-
 
 
         # Check for horizontal collisions with platforms
@@ -1070,6 +1069,9 @@ class Projectile(DynamicObject):
         self.use_gravity = use_gravity
         self.owner = owner  # Store the owner of the projectile (the fighter who shot it)
         self.team = team
+        self.fighter_id = None
+        if isinstance(self.owner, Fighter):
+            self.fighter_id = self.owner.fighter_id
         # For projectiles we typically do not use the standard gravity unless needed
         if not self.use_gravity:
             self.change_y = 0  

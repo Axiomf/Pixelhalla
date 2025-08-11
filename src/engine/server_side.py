@@ -29,7 +29,7 @@ server_package = {
     "game_world":
         "platforms": platforms,
         "fighters": fighters,
-        "projectiles": projectiles, 
+        "projectiles": projectiles,
         "power_ups": power_ups, 
         "sounds": []
 }
@@ -38,17 +38,13 @@ server_package = {
 def serialize_group(group):
     serialized = []
     for sprite in group.sprites():
-        color = getattr(sprite, "color", (255, 255, 255))
-        sprite_type = sprite.__class__.__name__
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
-            "color": color,
-            "type": sprite_type,
+            "x": sprite.rect.x,
+            "y": sprite.rect.y,
             "state": getattr(sprite, "state", "idle"),
-            "current_frame": getattr(sprite, "current_frame", 0),
-            "facing_right": getattr(sprite, "facing_right", True)
+            "id": sprite.id,
+            "is_doing" : sprite.is_doing # complete cycle animations like: death, shoot, attack, hurt 
         })
-        # print(f"Serialized {sprite_type}: {serialized[-1]}")
     return serialized
 
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
