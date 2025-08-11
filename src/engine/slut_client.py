@@ -10,6 +10,13 @@ from src.engine.animation_loader import load_animations_Arcane_Archer
 """  
 example of full packages:
 
+objets_serialized:
+        "x": sprite.rect.x,
+        "y": sprite.rect.y,
+        "state": getattr(sprite, "state", "idle"),
+        "id": sprite.id,
+        "is_doing" : sprite.is_doing
+
 client_package = {
     "room_id" : "12345678"
     "client_id": "12345678"
@@ -105,6 +112,31 @@ recv_thread = threading.Thread(target=threaded_receive_update, args=(conn,))
 recv_thread.daemon = True
 recv_thread.start()
 
+def interpolate_rect(prev_rect, curr_rect, alpha):
+    # Interpolates between two rects.
+    return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
+
+def render_obj(screen, rect, obj):
+    sprite_type = obj.get("type", "Fighter")
+    color = obj.get("color", (255, 255, 255))
+    current_animation = obj.get("state", "idle")
+    current_frame = obj.get("current_frame", 0)
+    facing_right = obj.get("facing_right", True)
+    if sprite_type == "Fighter":
+        if current_animation in fighter_animations:
+            frame = fighter_animations[current_animation][current_frame % len(fighter_animations[current_animation])]
+            if not facing_right:
+                frame = pygame.transform.flip(frame, True, False)
+            scaled_frame = pygame.transform.scale(frame, (rect[2], rect[3]))
+            screen.blit(scaled_frame, (rect[0], rect[1]))
+        else:
+            # Fallback to static image
+            image = images[sprite_type]
+            scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+            screen.blit(scaled_image, (rect[0], rect[1]))
+    else:
+        pygame.draw.rect(screen, color, rect)
+
 def draw_game_state(screen):
     screen.fill((0, 0, 0))
     now = time.time()
@@ -125,55 +157,18 @@ def draw_game_state(screen):
                 for idx, obj in enumerate(current_group):
                     curr_rect = obj.get("rect")
                     prev_rect = prev_group[idx].get("rect")
-                    sprite_type = obj.get("type", "Fighter")
-                    color = obj.get("color", (255, 255, 255))
-                    current_animation = obj.get("state", "idle")
-                    current_frame = obj.get("current_frame", 0)
-                    facing_right = obj.get("facing_right", True)
-                    # print(f"Rendering {sprite_type}: rect={curr_rect}, animation={current_animation}, frame={current_frame}, facing_right={facing_right}")
+                    # interp_rect = interpolate_rect(prev_rect, curr_rect, alpha) if (curr_rect and prev_rect) else curr_rect
                     if curr_rect and prev_rect:
-                        interp_rect = tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
+                        interp_rect = interpolate_rect(prev_rect, curr_rect, alpha)
                     else:
                         interp_rect = curr_rect
                     if interp_rect:
-                        if sprite_type == "Fighter":
-                            if current_animation in fighter_animations:
-                                frame = fighter_animations[current_animation][current_frame % len(fighter_animations[current_animation])]
-                                if not facing_right:
-                                    frame = pygame.transform.flip(frame, True, False)
-                                scaled_frame = pygame.transform.scale(frame, (interp_rect[2], interp_rect[3]))
-                                screen.blit(scaled_frame, (interp_rect[0], interp_rect[1]))
-                            else:
-                                # print(f"Animation {current_animation} not found, using fallback image")
-                                image = images[sprite_type]
-                                scaled_image = pygame.transform.scale(image, (interp_rect[2], interp_rect[3]))
-                                screen.blit(scaled_image, (interp_rect[0], interp_rect[1]))
-                        else:
-                            pygame.draw.rect(screen, color, interp_rect)
+                        render_obj(screen, interp_rect, obj)
             else:
                 for obj in current_group:
                     rect = obj.get("rect")
-                    sprite_type = obj.get("type", "Fighter")
-                    color = obj.get("color", (255, 255, 255))
-                    current_animation = obj.get("state", "idle")
-                    current_frame = obj.get("current_frame", 0)
-                    facing_right = obj.get("facing_right", True)
-                    # print(f"Rendering {sprite_type}: rect={rect}, animation={current_animation}, frame={current_frame}, facing_right={facing_right}")
                     if rect:
-                        if sprite_type == "Fighter":
-                            if current_animation in fighter_animations:
-                                frame = fighter_animations[current_animation][current_frame % len(fighter_animations[current_animation])]
-                                if not facing_right:
-                                    frame = pygame.transform.flip(frame, True, False)
-                                scaled_frame = pygame.transform.scale(frame, (rect[2], rect[3]))
-                                screen.blit(scaled_frame, (rect[0], rect[1]))
-                            else:
-                                # print(f"Animation {current_animation} not found, using fallback image")
-                                image = images[sprite_type]
-                                scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
-                                screen.blit(scaled_image, (rect[0], rect[1]))
-                        else:
-                            pygame.draw.rect(screen, color, rect)
+                        render_obj(screen, rect, obj)
     pygame.display.flip()
 
 def send_request_to_server(client_package):
