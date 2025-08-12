@@ -415,7 +415,7 @@ class Fighter(Player):
                             self.facing_right = True
                             self.state = "walk"
                             print(f"Moving right, change_x: {self.change_x}")
-                        elif key == self.controls["jump"] and self.change_y == 0:
+                        elif key == self.controls["jump"]:
                             self.change_y = self.jump_strength
                             self.state = "jump"
                             print(f"Jumping, change_y: {self.change_y}")

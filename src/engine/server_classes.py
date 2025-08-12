@@ -139,6 +139,7 @@ class Game:
                             for shot in client_package["shoots"]:
                                 projectile = fighter.shoot()
                                 self.projectiles.add(projectile)
+                                print("yes")
             self.game_updates.clear()
         self.fighters.update()
         self.projectiles.update()

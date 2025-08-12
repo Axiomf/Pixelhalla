@@ -104,7 +104,7 @@ transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)
 transparent_surface.fill((0, 0, 0, 0))  
 images = {
     "fighter": transparent_surface,
-    "projectiles" : "src/assets/images/inused_single_images/bullet.png"
+    "projectiles" :  pygame.image.load("src/assets/images/inused_single_images/bullet.png")
 }
 try:
     fighter_animations = load_animations_Arcane_Archer()
@@ -242,11 +242,15 @@ send_request_to_server(client_first_package)
 running = True
 while running:
     inputs = []
+    shoots = []
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key in key_pressed and not key_pressed[event.key]:
+                if event.key == pygame.K_SPACE:
+                    shoots.append("arcane") 
+                    print(f"Shoot input added: arcane")
                 key_pressed[event.key] = True
                 inputs.append(("down", event.key))
                 # print(f"KEYDOWN: {event.key}")
@@ -262,7 +266,7 @@ while running:
             "request_type": "input",
             "game_mode": "1vs1",
             "inputs": inputs,
-            "shoots": []
+            "shoots": shoots
         }
         send_request_to_server(client_package)
     
