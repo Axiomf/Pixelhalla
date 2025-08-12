@@ -4,7 +4,7 @@ import pickle  # To serialize Python objects to send over the network
 import time  # added for game world update timing
 from src.config.server_config import create_server_socket  # New import for server configuration
 import threading
-from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client  # <-- updated import
+from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
 import traceback
 #import pygame  # Add pygame if needed for accessing Rect
 import queue  # new import for pending requests
@@ -58,10 +58,10 @@ def threaded_game(game):
             server_package = {
                 "request_type": "game_update",
                 "game_world": {
-                    "platforms": serialize_group(game.platforms,"platform"),
-                    "fighters": serialize_group(game.fighters,"fighter"),
-                    "projectiles": serialize_group(game.projectiles,"projectile"),
-                    "power_ups": serialize_group(game.power_ups,"power_up"),
+                    "platforms": serialize_platforms(game.platforms),
+                    "fighters": serialize_fighters(game.fighters),
+                    "projectiles": serialize_projectiles(game.projectiles),
+                    "power_ups": serialize_power_ups(game.power_ups),
                     "sounds": game.sounds
                 }
             }

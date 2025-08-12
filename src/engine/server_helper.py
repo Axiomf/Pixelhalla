@@ -36,3 +36,41 @@ def send_to_client(server_package, client_id, all_clients):
     except Exception as e:
         print(f"Error sending to client {client_id}: {e}")
 
+def serialize_fighters(group):
+    
+    serialized = []
+    for sprite in group.sprites():
+        serialized.append({
+            "rect": (sprite.rect.x, sprite.rect.y),  # modified: only x and y coordinates
+            "state": getattr(sprite, "state", "idle"),
+            "id": getattr(sprite, "fighter_id", "id not given"),
+            "is_doing": getattr(sprite, "is_doing", "is_doing not given"),  # cycle animations info
+            "facing_right": getattr(sprite, "facing_right", True)
+        })
+    return serialized
+def serialize_projectiles(group):
+    
+    serialized = []
+    for sprite in group.sprites():
+        serialized.append({
+            "rect": (sprite.rect.x, sprite.rect.y),  # modified: only x and y coordinates
+            "id": getattr(sprite, "fighter_id", "id not given")
+        })
+    return serialized
+def serialize_power_ups(group):
+    
+    serialized = []
+    for sprite in group.sprites():
+        serialized.append({
+            "rect": (sprite.rect.x, sprite.rect.y)  # modified: only x and y coordinates
+        })
+    return serialized
+def serialize_platforms(group):
+    
+    serialized = []
+    for sprite in group.sprites():
+        serialized.append({
+            "rect": (sprite.rect.x, sprite.rect.y)  # modified: only x and y coordinates
+        })
+    return serialized
+
