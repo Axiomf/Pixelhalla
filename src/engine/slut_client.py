@@ -53,6 +53,7 @@ key_pressed = {
     pygame.K_SPACE: False
 }
 
+
 def threaded_receive_update(sock):
     global game_state, previous_game_state, last_update_time
     while True:
@@ -99,8 +100,10 @@ recv_thread = threading.Thread(target=threaded_receive_update, args=(conn,))
 recv_thread.daemon = True
 recv_thread.start()
 
+transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)  
+transparent_surface.fill((0, 0, 0, 0))  
 images = {
-    "Fighter": pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
+    "fighter": transparent_surface
 }
 try:
     fighter_animations = load_animations_Arcane_Archer()
