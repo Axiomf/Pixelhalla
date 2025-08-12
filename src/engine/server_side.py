@@ -9,6 +9,7 @@ import traceback
 #import pygame  # Add pygame if needed for accessing Rect
 import queue  # new import for pending requests
 # transformation general templates
+
 """  
 example of full packages:
 
@@ -77,6 +78,7 @@ def threaded_game(game):
                 break
         except Exception as e:
             # print(f"Exception in threaded_game {game.game_id}: {e}")
+            print(1)
             traceback.print_exc()
             break
         next_frame_time = start_time + target_frame_duration
@@ -95,6 +97,7 @@ def threaded_client(conn):
         conn.sendall(pickle.dumps(client_id)) # sends clients ID as a first time massage
     except Exception as e:
         # print(f"Error sending client ID to {client_id}: {e}")
+        print(2)
         traceback.print_exc()
         return
 
@@ -117,6 +120,7 @@ def threaded_client(conn):
                 pending_requests.put((client, client_package))
         except Exception as e:
             # print(f"Exception in threaded_client for {client_id}: {e}")
+            print(3)
             traceback.print_exc()
             break
 
@@ -130,6 +134,7 @@ def threaded_client(conn):
         conn.close()
     except Exception as e:
         # print(f"Error closing connection for {client_id}: {e}")
+        print(4)
         traceback.print_exc()
 
 
@@ -180,6 +185,7 @@ def threaded_handle_waiting_clients():
             time.sleep(0.2)
         except Exception as e:
             # print(f"Exception in threaded_handle_waiting_clients: {e}")
+            print(5)
             traceback.print_exc()
             time.sleep(0.2)
 
@@ -250,6 +256,7 @@ def threaded_handle_general_request():
             continue
         except Exception as e:
             # print(f"Exception in threaded_handle_general_request: {e}")
+            print(6)
             traceback.print_exc()
             time.sleep(0.5)
 
@@ -275,3 +282,4 @@ while True:
     except Exception as e:
         print(f"Exception in main server loop: {e}")
         traceback.print_exc()
+        print(7)

@@ -103,7 +103,8 @@ recv_thread.start()
 transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)  
 transparent_surface.fill((0, 0, 0, 0))  
 images = {
-    "fighter": transparent_surface
+    "fighter": transparent_surface,
+    "projectiles" : "src/assets/images/inused_single_images/bullet.png"
 }
 try:
     fighter_animations = load_animations_Arcane_Archer()

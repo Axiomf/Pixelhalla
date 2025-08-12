@@ -382,7 +382,8 @@ class Fighter(Player):
         self.fighter_id = id or "id not given"
         self.team = team
         self.username = username
-        
+        self.shoot_cooldown = 500  
+        self.last_shoot_time = 0
 
         # Store the original image to avoid quality loss when flipping repeatedly
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
@@ -394,7 +395,7 @@ class Fighter(Player):
             self.change_x *= 28/30  # Stop horizontal movement if no keys are pressed     
         else:
             if self.multi_player_mode:
-                print(f"Processing client_input for fighter {self.fighter_id}: {self.client_input}")
+                # print(f"Processing client_input for fighter {self.fighter_id}: {self.client_input}")
                 while self.client_input:
                     action, key = self.client_input.pop(0)
                     print(f"Action: {action}, Key: {key}")
@@ -413,7 +414,7 @@ class Fighter(Player):
                             self.change_y = self.jump_strength
                             self.state = "jump"
                             print(f"Jumping, change_y: {self.change_y}")
-                        elif key == self.controls["shoot"] and pygame.time.get_ticks() - self.last_shoot_time >= self.shoot_cooldown:
+                        elif key == self.controls["shoot"]:
                             self.last_shoot_time = pygame.time.get_ticks()
                             self.state = "shoot"
                             print("Shooting")
@@ -491,40 +492,45 @@ class Fighter(Player):
         velocity_x = config.PROJECTILE_SPEED if self.facing_right else (-1) * config.PROJECTILE_SPEED
         # Adjust projectile starting position to account for smaller fighter size
         offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
-        
-        if arrow == "default":          
-            return Projectile(self.rect.centerx + offset_x, 
-                             self.rect.centery, 
-                             velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
-                             damage=self.damage,
-                             image_path="src/assets/images/inused_single_images/bullet.png", 
-                             owner=self,team=self.team,multi_player_mode=self.multi_player_mode)
-        elif arrow =="arcane":
-            path = "src/assets/images/inused_single_images/projectile_Arcane.png"
+        if self.multi_player_mode:
+            return Projectile(self.rect.centerx, self.rect.centery, None,
+                                     velocity=(10 if self.facing_right else -10, 0), damage=10,
+                                       team=self.team, owner=self, multi_player_mode=True)
+        else:
+            
+            if arrow == "default":          
+                return Projectile(self.rect.centerx + offset_x, 
+                                self.rect.centery, 
+                                velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
+                                damage=self.damage,
+                                image_path="src/assets/images/inused_single_images/bullet.png", 
+                                owner=self,team=self.team,multi_player_mode=self.multi_player_mode)
+            elif arrow =="arcane":
+                path = "src/assets/images/inused_single_images/projectile_Arcane.png"
 
-            frame = pygame.image.load(path).convert_alpha()
-            frame = pygame.transform.flip(frame, not self.facing_right, False)
-            return Projectile(self.rect.centerx + offset_x, 
-                             self.rect.centery,width=40,height=5,
-                             velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
-                             damage=self.damage,
-                             image_path="src/assets/images/inused_single_images/projectile_Arcane.png", 
-                             owner=self,image=frame,team=self.team,multi_player_mode=self.multi_player_mode)
-                             
-        elif arrow =="elf":
+                frame = pygame.image.load(path).convert_alpha()
+                frame = pygame.transform.flip(frame, not self.facing_right, False)
+                return Projectile(self.rect.centerx + offset_x, 
+                                self.rect.centery,width=40,height=5,
+                                velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
+                                damage=self.damage,
+                                image_path="src/assets/images/inused_single_images/projectile_Arcane.png", 
+                                owner=self,image=frame,team=self.team,multi_player_mode=self.multi_player_mode)
+                                
+            elif arrow =="elf":
 
-            path = "src/assets/images/inused_single_images/projectile_Elf.png"
+                path = "src/assets/images/inused_single_images/projectile_Elf.png"
 
-            sheet = pygame.image.load(path).convert_alpha()
-            crop_rect = pygame.Rect(109, 56, 36, 14)
-            frame = sheet.subsurface(crop_rect)
-            frame = pygame.transform.flip(frame, not self.facing_right, False)
-            return Projectile(self.rect.centerx + offset_x, 
-                             self.rect.centery, width=36,height=14,
-                             velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
-                             damage=self.damage,image_path=path,
-                             image=frame, 
-                             owner=self,team=self.team,multi_player_mode=self.multi_player_mode)
+                sheet = pygame.image.load(path).convert_alpha()
+                crop_rect = pygame.Rect(109, 56, 36, 14)
+                frame = sheet.subsurface(crop_rect)
+                frame = pygame.transform.flip(frame, not self.facing_right, False)
+                return Projectile(self.rect.centerx + offset_x, 
+                                self.rect.centery, width=36,height=14,
+                                velocity=(velocity_x*self.supershot_amount, 0),  # Only horizontal movement
+                                damage=self.damage,image_path=path,
+                                image=frame, 
+                                owner=self,team=self.team,multi_player_mode=self.multi_player_mode)
 
 class MeleeFighter(Fighter):
     def __init__(self, *args, **kwargs):
@@ -1060,7 +1066,10 @@ class Projectile(DynamicObject):
        Optionally, it can be affected by gravity (e.g., for arrows)."""
     def __init__(self, x, y, image_path, width=10, height=10, color=(255,255,0), velocity=(10, 0), damage=config.PROJECTILE_DAMAGE,team = 1, 
                  use_gravity=False, owner=None, animations=None, image=None,multi_player_mode=False):
-        super().__init__(x, y, width, height, color, image_path, animations,image=image,multi_player_mode=multi_player_mode)
+        if not multi_player_mode:
+            super().__init__(x, y, width, height, color, image_path, animations, image=image, multi_player_mode=multi_player_mode)
+        else:
+            super().__init__(x, y, width, height, color, None, None, None, multi_player_mode=multi_player_mode)  
         self.damage = damage
         self.velocity_x, self.velocity_y = velocity
         self.use_gravity = use_gravity
