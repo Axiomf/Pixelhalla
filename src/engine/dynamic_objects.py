@@ -388,9 +388,6 @@ class Fighter(Player):
         self.original_image = self.image if image_path else pygame.Surface([width, height]) if color else None
         if self.original_image and not image_path:
             self.original_image.fill(color)
-
-    
-    
     def update(self):
 
         if self.freeze:
