@@ -35,18 +35,54 @@ server_package = {
 }
 """
 # Updated helper to include sprite color in serialized data.
-def serialize_group(group,type):
+def serialize_group(group, type):
     
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
+            "rect": (sprite.rect.x, sprite.rect.y),  # modified: only x and y coordinates
             "state": getattr(sprite, "state", "idle"),
             "id": getattr(sprite, "fighter_id", "id not given"),
-            "is_doing" : getattr(sprite, "is_doing", "is_doing not given"), # complete cycle animations like: death, shoot, attack, hurt 
-            "facing_right": getattr(sprite, "facing_right", True)
+            "is_doing": getattr(sprite, "is_doing", "is_doing not given"),  # cycle animations info
+            "facing_right": getattr(sprite, "facing_right", True),
+            #"type": type
         })
     return serialized
+
+def threaded_game(game):
+    target_frame_duration = 1.0 / 60
+    while True:
+        start_time = time.perf_counter()
+        try:
+            game.update()
+            server_package = {
+                "request_type": "game_update",
+                "game_world": {
+                    "platforms": serialize_group(game.platforms,"platform"),
+                    "fighters": serialize_group(game.fighters,"fighter"),
+                    "projectiles": serialize_group(game.projectiles,"projectile"),
+                    "power_ups": serialize_group(game.power_ups,"power_up"),
+                    "sounds": game.sounds
+                }
+            }
+            game.sounds = [] # Clear the sounds list
+            # print(f"Sending server_package: {server_package}")
+            with clients_lock:
+                broadcast(server_package, game.game_clients, all_clients)
+    
+            if game.finished:
+                with games_lock:
+                    if game in all_games:
+                        all_games.remove(game)
+                break
+        except Exception as e:
+            # print(f"Exception in threaded_game {game.game_id}: {e}")
+            traceback.print_exc()
+            break
+        next_frame_time = start_time + target_frame_duration
+        sleep_time = next_frame_time - time.perf_counter()
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
 def threaded_client(conn):
@@ -96,40 +132,6 @@ def threaded_client(conn):
         # print(f"Error closing connection for {client_id}: {e}")
         traceback.print_exc()
 
-def threaded_game(game):
-    target_frame_duration = 1.0 / 60
-    while True:
-        start_time = time.perf_counter()
-        try:
-            game.update()
-            server_package = {
-                "request_type": "game_update",
-                "game_world": {
-                    "platforms": serialize_group(game.platforms,"platforms"),
-                    "fighters": serialize_group(game.fighters,"fighters"),
-                    "projectiles": serialize_group(game.projectiles,"projectiles"),
-                    "power_ups": serialize_group(game.power_ups,"power_ups"),
-                    "sounds": game.sounds
-                }
-            }
-            game.sounds = [] # Clear the sounds list
-            # print(f"Sending server_package: {server_package}")
-            with clients_lock:
-                broadcast(server_package, game.game_clients, all_clients)
-    
-            if game.finished:
-                with games_lock:
-                    if game in all_games:
-                        all_games.remove(game)
-                break
-        except Exception as e:
-            # print(f"Exception in threaded_game {game.game_id}: {e}")
-            traceback.print_exc()
-            break
-        next_frame_time = start_time + target_frame_duration
-        sleep_time = next_frame_time - time.perf_counter()
-        if sleep_time > 0:
-            time.sleep(sleep_time)
 
 def threaded_handle_waiting_clients():
     global waiting_clients, all_games, all_clients

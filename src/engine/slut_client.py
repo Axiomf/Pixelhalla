@@ -11,11 +11,11 @@ from src.engine.animation_loader import load_animations_Arcane_Archer
 example of full packages:
 
 objets_serialized:
-        "x": sprite.rect.x,
-        "y": sprite.rect.y,
+        "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
         "state": getattr(sprite, "state", "idle"),
-        "id": sprite.id,
-        "is_doing" : sprite.is_doing
+        "id": getattr(sprite, "fighter_id", "id not given"),
+        "is_doing" : getattr(sprite, "is_doing", "is_doing not given"), # complete cycle animations like: death, shoot, attack, hurt 
+        "facing_right": getattr(sprite, "facing_right", True)
 
 client_package = {
     "room_id" : "12345678"
@@ -44,21 +44,6 @@ screen = pygame.display.set_mode((1200, 600))
 pygame.display.set_caption("Pixelhala Client")
 clock = pygame.time.Clock()
 
-images = {
-    "Fighter": pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
-}
-try:
-    fighter_animations = load_animations_Arcane_Archer()
-    # print(f"Loaded animations: {list(fighter_animations.keys())}")
-except Exception as e:
-    # print(f"Error loading animations: {e}")
-    fighter_animations = {}
-
-game_state = None
-previous_game_state = None
-last_update_time = 0
-network_interval = 0.1
-shared_lock = threading.Lock()
 
 key_pressed = {
     pygame.K_a: False,
@@ -76,15 +61,16 @@ def threaded_receive_update(sock):
                 print("Disconnected from server.")
                 break
             client_package = pickle.loads(data)
-            print(f"Received package: {client_package}")
+            #print(f"Received package: {client_package}")
             if client_package.get("request_type") == "game_update":
                 with shared_lock:
                     previous_game_state = game_state
                     game_state = client_package.get("game_world")
                     last_update_time = time.time()
-                    print(f"Received game_state: {game_state}")
+                    #print(f"Received game_state: {game_state}")
             elif client_package.get("request_type") == "game_started":
-                print(f"Game started: {client_package}")
+                pass
+                #print(f"Game started: {client_package}")
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
@@ -112,23 +98,73 @@ recv_thread = threading.Thread(target=threaded_receive_update, args=(conn,))
 recv_thread.daemon = True
 recv_thread.start()
 
+images = {
+    "Fighter": pygame.image.load("src/assets/images/inused_single_images/fighter.png").convert_alpha()
+}
+try:
+    fighter_animations = load_animations_Arcane_Archer()
+    # print(f"Loaded animations: {list(fighter_animations.keys())}")
+except Exception as e:
+    # print(f"Error loading animations: {e}")
+    fighter_animations = {}
+
+game_state = None
+previous_game_state = None
+last_update_time = 0
+network_interval = 0.1
+shared_lock = threading.Lock()
+
+# Add global dictionary to track per-object animation state
+client_anim_states = {}  # key: object id, value: dict with current_animation, current_frame, last_update
+
+def get_full_rect(rect):
+    # Ensure rect is (x, y, width, height), default width and height = 32 if missing
+    return rect if len(rect) == 4 else (rect[0], rect[1], 64, 64)
+
 def interpolate_rect(prev_rect, curr_rect, alpha):
+    prev_rect = get_full_rect(prev_rect)
+    curr_rect = get_full_rect(curr_rect)
     # Interpolates between two rects.
     return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
 
 def render_obj(screen, rect, obj):
-    sprite_type = obj.get("type", "Fighter")
-    color = obj.get("color", (255, 255, 255))
+    rect = get_full_rect(rect)
+    sprite_type = obj.get("type", "fighter")
     facing_right = obj.get("facing_right", True)
-    # Clients handle animation themselves so omit server animation frames.
-    if sprite_type == "Fighter":
-        image = images[sprite_type]
-        if not facing_right:
-            image = pygame.transform.flip(image, True, False)
-        scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
-        screen.blit(scaled_image, (rect[0], rect[1]))
+    if sprite_type == "fighter":
+        anim = fighter_animations.get(obj.get("state"), None)
+        if anim:
+            state = client_anim_states.get(obj["id"], {"current_animation": obj.get("state"), "current_frame": 0, "last_update": time.time()})
+            if state["current_animation"] != obj.get("state"):
+                state = {"current_animation": obj.get("state"), "current_frame": 0, "last_update": time.time()}
+            now = time.time()
+            if now - state["last_update"] > 0.1:  # 100ms per frame
+                state["current_frame"] = (state["current_frame"] + 1) % len(anim)
+                state["last_update"] = now
+            client_anim_states[obj["id"]] = state
+            image = anim[state["current_frame"]]
+            if not facing_right:
+                image = pygame.transform.flip(image, True, False)
+            scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+            screen.blit(scaled_image, (rect[0], rect[1]))
+        else:
+            image = images.get("fighter")
+            if image:
+                if not facing_right:
+                    image = pygame.transform.flip(image, True, False)
+                scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+                screen.blit(scaled_image, (rect[0], rect[1]))
+            else:
+                pygame.draw.rect(screen, (255, 255, 255), rect)
     else:
-        pygame.draw.rect(screen, color, rect)
+        image = images.get(sprite_type)
+        if image:
+            if not facing_right:
+                image = pygame.transform.flip(image, True, False)
+            scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+            screen.blit(scaled_image, (rect[0], rect[1]))
+        else:
+            pygame.draw.rect(screen, (255, 255, 255), rect)
 
 def draw_game_state(screen):
     screen.fill((0, 0, 0))
@@ -168,7 +204,7 @@ def send_request_to_server(client_package):
     global running
     try:
         conn.sendall(pickle.dumps(client_package))
-        print(f"Sent client_package: {client_package}")
+        #print(f"Sent client_package: {client_package}")
     except Exception as e:
         print(f"Error sending data: {e}")
         running = False
