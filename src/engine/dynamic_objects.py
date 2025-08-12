@@ -73,6 +73,11 @@ class DynamicObject(GameObject):
 
     def update_state(self):
         # Only update the state if not currently in a death, hurt, or shoot animation
+        now = pygame.time.get_ticks()
+        if self.multi_player_mode:
+            self._handle_hurt_animation(now)
+            self._handle_shoot_animation(now)
+            self._handle_attack_animation(now)
         if not self.is_hurting and not self.is_shooting and (not hasattr(self, 'is_dying') or not self.is_dying):
             # Determine state based on vertical and horizontal velocities
             if self.change_y >= 5:

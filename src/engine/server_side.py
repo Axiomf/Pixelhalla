@@ -9,6 +9,8 @@ import traceback
 #import pygame  # Add pygame if needed for accessing Rect
 import queue  # new import for pending requests
 # transformation general templates
+import pygame
+pygame.init()  # Initialize all imported pygame modules
 
 """  
 example of full packages:
@@ -35,6 +37,7 @@ server_package = {
         "sounds": []
 }
 """
+
 # Updated helper to include sprite color in serialized data.
 def serialize_group(group, type):
     
