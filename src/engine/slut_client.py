@@ -1,4 +1,5 @@
 # slut_client.py
+
 import socket
 import pickle
 import threading
@@ -111,8 +112,8 @@ except Exception as e:
 game_state = None
 previous_game_state = None
 last_update_time = 0
-network_interval = 0.1
-shared_lock = threading.Lock()
+network_interval = 0.1  # How often we expect updates from server (in seconds)
+shared_lock = threading.Lock()  # For thread-safe access to game state
 
 # Add global dictionary to track per-object animation state
 client_anim_states = {}  # key: object id, value: dict with current_animation, current_frame, last_update
@@ -122,42 +123,42 @@ def get_full_rect(rect):
     return rect if len(rect) == 4 else (rect[0], rect[1], 64, 64)
 
 def interpolate_rect(prev_rect, curr_rect, alpha):
+    # Ensure both rects are (x, y, width, height)
     prev_rect = get_full_rect(prev_rect)
     curr_rect = get_full_rect(curr_rect)
-    # Interpolates between two rects.
+    # Interpolate each component (x, y, w, h) between previous and current rects
     return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
 
-def render_obj(screen, rect, obj):
-    rect = get_full_rect(rect)
-    sprite_type = obj.get("type", "fighter")
-    facing_right = obj.get("facing_right", True)
-    if sprite_type == "fighter":
-        anim = fighter_animations.get(obj.get("state"), None)
-        if anim:
-            state = client_anim_states.get(obj["id"], {"current_animation": obj.get("state"), "current_frame": 0, "last_update": time.time()})
-            if state["current_animation"] != obj.get("state"):
-                state = {"current_animation": obj.get("state"), "current_frame": 0, "last_update": time.time()}
-            now = time.time()
-            if now - state["last_update"] > 0.1:  # 100ms per frame
-                state["current_frame"] = (state["current_frame"] + 1) % len(anim)
-                state["last_update"] = now
-            client_anim_states[obj["id"]] = state
-            image = anim[state["current_frame"]]
-            if not facing_right:
-                image = pygame.transform.flip(image, True, False)
-            scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
-            screen.blit(scaled_image, (rect[0], rect[1]))
-        else:
-            image = images.get("fighter")
-            if image:
-                if not facing_right:
-                    image = pygame.transform.flip(image, True, False)
-                scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
-                screen.blit(scaled_image, (rect[0], rect[1]))
-            else:
-                pygame.draw.rect(screen, (255, 255, 255), rect)
+def static_render(screen, rect, obj, sprite_type):
+    image = images.get(sprite_type)
+    if image:
+        scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+        screen.blit(scaled_image, (rect[0], rect[1]))
     else:
-        image = images.get(sprite_type)
+        pygame.draw.rect(screen, (255, 255, 255), rect)
+
+def dynamic_render(screen, rect, obj):
+    facing_right = obj.get("facing_right", True)
+    anim = fighter_animations.get(obj.get("state"), None)
+    if anim:
+        state = client_anim_states.get(
+            obj["id"],
+            {"current_animation": obj.get("state"), "current_frame": 0, "last_update": time.time()}
+        )
+        if state["current_animation"] != obj.get("state"):
+            state = {"current_animation": obj.get("state"), "current_frame": 0, "last_update": time.time()}
+        now = time.time()
+        if now - state["last_update"] > 0.1:
+            state["current_frame"] = (state["current_frame"] + 1) % len(anim)
+            state["last_update"] = now
+        client_anim_states[obj["id"]] = state
+        image = anim[state["current_frame"]]
+        if not facing_right:
+            image = pygame.transform.flip(image, True, False)
+        scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+        screen.blit(scaled_image, (rect[0], rect[1]))
+    else:
+        image = images.get("fighter")
         if image:
             if not facing_right:
                 image = pygame.transform.flip(image, True, False)
@@ -166,38 +167,52 @@ def render_obj(screen, rect, obj):
         else:
             pygame.draw.rect(screen, (255, 255, 255), rect)
 
+def render_obj(screen, rect, obj, sprite_type):
+    rect = get_full_rect(rect)
+    if sprite_type == "fighters":
+        dynamic_render(screen, rect, obj)
+    else:
+        static_render(screen, rect, obj, sprite_type)
+
 def draw_game_state(screen):
+    # Clear the screen to black before drawing anything
     screen.fill((0, 0, 0))
     now = time.time()
+    # Safely copy the shared game state for this frame
     with shared_lock:
         current_state = game_state
         prev_state = previous_game_state
         last_time = last_update_time
-    # print(f"Current game_state: {current_state}")
+
+    # If we have a current game state, proceed to draw it
     if current_state:
-        alpha = 1.0
+        alpha = 1.0  # Default: no interpolation
+        # If we have a previous state and timestamp, calculate interpolation alpha
         if prev_state and last_time:
             alpha = min(1, (now - last_time) / network_interval)
+        # Draw each group of objects (platforms, fighters, projectiles, power_ups)
         for key in ['platforms', 'fighters', 'projectiles', 'power_ups']:
             current_group = current_state.get(key, [])
-            # print(f"Rendering {key}: {len(current_group)} items")
+            # If previous state exists and group lengths match, interpolate positions
             if prev_state and len(prev_state.get(key, [])) == len(current_group):
                 prev_group = prev_state.get(key, [])
                 for idx, obj in enumerate(current_group):
                     curr_rect = obj.get("rect")
                     prev_rect = prev_group[idx].get("rect")
-                    # interp_rect = interpolate_rect(prev_rect, curr_rect, alpha) if (curr_rect and prev_rect) else curr_rect
+                    # Interpolate rect if both current and previous rects exist
                     if curr_rect and prev_rect:
                         interp_rect = interpolate_rect(prev_rect, curr_rect, alpha)
                     else:
                         interp_rect = curr_rect
-                    if interp_rect:
-                        render_obj(screen, interp_rect, obj)
+                        
+                    render_obj(screen, interp_rect, obj,key)
             else:
+                # If no previous state or group size mismatch, just draw current positions
                 for obj in current_group:
                     rect = obj.get("rect")
                     if rect:
-                        render_obj(screen, rect, obj)
+                        render_obj(screen, rect, obj,key)
+    # Update the display with everything drawn this frame
     pygame.display.flip()
 
 def send_request_to_server(client_package):
