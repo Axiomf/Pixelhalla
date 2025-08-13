@@ -299,6 +299,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            # Handle menu/lobby actions
+            if event.key == pygame.K_1: # find_random_game
+                client_package = {"client_id": client_id, "request_type": "find_random_game", "game_mode": "1vs1"}
+                send_request_to_server(client_package)
+            elif event.key == pygame.K_2: # make_lobby
+                client_package = {"client_id": client_id, "request_type": "make_lobby", "game_mode": "1vs1"}
+                send_request_to_server(client_package)
+            elif event.key == pygame.K_3: # join_lobby
+                # For simplicity, we'll try to join a lobby with our own client_id as room_id
+                # In a real scenario, you'd get this from user input or a lobby list.
+                client_package = {"client_id": client_id, "request_type": "join_lobby", "room_id": client_id}
+                send_request_to_server(client_package)
+            elif event.key == pygame.K_4: # start_the_game_as_host
+                client_package = {"client_id": client_id, "request_type": "start_the_game_as_host"}
+                send_request_to_server(client_package)
+
             if event.key in key_pressed and not key_pressed[event.key]:
                 if event.key == pygame.K_SPACE:
                     shoots.append("arcane") 
