@@ -81,6 +81,9 @@ def threaded_receive_update(sock):
                 losing_team = client_package.get("losing_team")
                 game_over = True
                 print(f"Game finished: winning_team={winning_team}, losing_team={losing_team}")
+            elif client_package.get("request_type") == "lobby_destroyed":
+                print("Lobby has been destroyed by the host.")
+                is_waiting = True # Go back to a waiting/menu state
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
@@ -303,18 +306,29 @@ while running:
         elif event.type == pygame.KEYDOWN:
             # Handle menu/lobby actions
             if event.key == pygame.K_1: # find_random_game
-                client_package = {"client_id": client_id, "request_type": "find_random_game", "game_mode": "1vs1"}
+                client_package = {"client_id": client_id, 
+                                  "request_type": "find_random_game", 
+                                  "game_mode": "1vs1"}
                 send_request_to_server(client_package)
             elif event.key == pygame.K_2: # make_lobby
-                client_package = {"client_id": client_id, "request_type": "make_lobby", "game_mode": "1vs1"}
+                client_package = {"client_id": client_id, 
+                                  "request_type": "make_lobby", 
+                                  "game_mode": "1vs1"}
                 send_request_to_server(client_package)
             elif event.key == pygame.K_3: # join_lobby
                 # For simplicity, we'll try to join a lobby with our own client_id as room_id
                 # In a real scenario, you'd get this from user input or a lobby list.
-                client_package = {"client_id": client_id, "request_type": "join_lobby", "room_id": client_id}
+                client_package = {"client_id": client_id, 
+                                  "request_type": "join_lobby", 
+                                  "room_id": client_id}
                 send_request_to_server(client_package)
             elif event.key == pygame.K_4: # start_the_game_as_host
-                client_package = {"client_id": client_id, "request_type": "start_the_game_as_host"}
+                client_package = {"client_id": client_id, 
+                                  "request_type": "start_the_game_as_host"}
+                send_request_to_server(client_package)
+            elif event.key == pygame.K_5: # destroy_lobby
+                client_package = {"client_id": client_id,
+                                  "request_type": "destroy_lobby"}
                 send_request_to_server(client_package)
 
             if event.key in key_pressed and not key_pressed[event.key]:

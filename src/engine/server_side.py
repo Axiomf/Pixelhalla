@@ -225,6 +225,25 @@ def threaded_handle_general_request():
                         client.is_host = True
                         client.game_mode = game_mode
                         send_to_client({"request_type": "lobby_created", "lobby_id": lobby_id, "game_mode": game_mode}, client.client_id, all_clients)
+            elif request_type == "destroy_lobby":
+                lobby_to_remove = None
+                with clients_lock, lobbies_lock:
+                    for lobby in all_lobbies:
+                        if lobby.is_host(client.client_id):
+                            lobby_to_remove = lobby
+                            break
+                    if lobby_to_remove:
+                        client_ids_in_lobby = list(lobby_to_remove.members)
+                        for cid in client_ids_in_lobby:
+                            for c in all_clients:
+                                if c.client_id == cid:
+                                    c.connected_lobby_id = ""
+                                    c.is_host = False
+                                    c.state = "menu"
+                        broadcast({"request_type": "lobby_destroyed"}, client_ids_in_lobby, all_clients)
+                        all_lobbies.remove(lobby_to_remove)
+                        print(f"Lobby {lobby_to_remove.lobby_id} destroyed by host {client.client_id}")
+
             elif request_type == "start_the_game_as_host":
                 lobby = None
                 with lobbies_lock:
