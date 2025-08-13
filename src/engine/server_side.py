@@ -6,9 +6,7 @@ from src.config.server_config import create_server_socket  # New import for serv
 import threading
 from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
 import traceback
-#import pygame  # Add pygame if needed for accessing Rect
 import queue  # new import for pending requests
-# transformation general templates
 import pygame
 pygame.init()  # Initialize all imported pygame modules
 
@@ -201,12 +199,12 @@ def threaded_handle_general_request():
             client, client_package = pending_requests.get(timeout=0.1)
             request_type = client_package["request_type"]
             # print(f"Processing request: {client_package}")
+            
             if request_type == "find_random_game":
                 with waiting_clients_lock:
                     if client_package["client_id"] not in waiting_clients:
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
-                        # print(f"Added to waiting clients: {client_package['client_id']}")
-                        
+                        # print(f"Added to waiting clients: {client_package['client_id']}")                     
             elif request_type == "join_lobby":
                 with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
@@ -243,7 +241,6 @@ def threaded_handle_general_request():
                         broadcast({"request_type": "lobby_destroyed"}, client_ids_in_lobby, all_clients)
                         all_lobbies.remove(lobby_to_remove)
                         print(f"Lobby {lobby_to_remove.lobby_id} destroyed by host {client.client_id}")
-
             elif request_type == "start_the_game_as_host":
                 lobby = None
                 with lobbies_lock:
@@ -276,6 +273,7 @@ def threaded_handle_general_request():
                             all_lobbies.remove(lobby)
                 # Start game thread
                 start_new_thread(threaded_game, (new_game,))
+        
         except queue.Empty:
             continue
         except Exception as e:

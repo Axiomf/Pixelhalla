@@ -55,7 +55,7 @@ key_pressed = {
 
 
 def threaded_receive_update(sock):
-    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team, is_waiting
+    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team, client_state
     while True:
         try:
             data = sock.recv(4096)
@@ -69,13 +69,13 @@ def threaded_receive_update(sock):
                     previous_game_state = game_state
                     game_state = client_package.get("game_world")
                     last_update_time = time.time()
-                    is_waiting = False 
+                    client_state = "in_game" 
                     for fighter in game_state.get("fighters", []):
                         health = fighter.get("health", 100)
                         max_health = fighter.get("max_health", 100)
                         # print(f"Received fighter: id={fighter['id']}, health={health}/{max_health}, state={fighter.get('state', 'N/A')}, raw_data={fighter}")
             elif client_package.get("request_type") == "game_started":
-                is_waiting = False 
+                client_state = "in_game" 
             elif client_package.get("request_type") == "game_finished":
                 winning_team = client_package.get("winning_team")
                 losing_team = client_package.get("losing_team")
@@ -83,7 +83,7 @@ def threaded_receive_update(sock):
                 print(f"Game finished: winning_team={winning_team}, losing_team={losing_team}")
             elif client_package.get("request_type") == "lobby_destroyed":
                 print("Lobby has been destroyed by the host.")
-                is_waiting = True # Go back to a waiting/menu state
+                client_state = "menu" # Go back to a waiting/menu state
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
@@ -137,7 +137,7 @@ client_anim_states = {}  # key: object id, value: dict with current_animation, c
 game_over = False
 winning_team = None
 losing_team = None
-is_waiting = True  # حالت انتظار در ابتدا فعاله
+client_state = "menu"  # "menu", "lobby", "in_game", "searching", "waiting"
 
 def get_full_rect(rect):
     # Ensure rect is (x, y, width, height), default width and height = 32 if missing
@@ -225,6 +225,46 @@ def draw_waiting_screen(screen):
     screen.blit(text, text_rect)
     pygame.display.flip()
 
+def draw_menu_screen(screen):
+    screen.fill((20, 20, 80))
+    font = pygame.font.SysFont('arial', 40)
+    title_font = pygame.font.SysFont('arial', 60)
+    title = title_font.render("Pixelhalla", True, (255, 255, 255))
+    
+    options = [
+        "1: Find Random 1v1 Game",
+        "2: Create Lobby",
+        "3: Join Lobby (Not implemented)",
+    ]
+    
+    screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
+    
+    for i, option in enumerate(options):
+        text = font.render(option, True, (255, 255, 255))
+        screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 250 + i * 60))
+        
+    pygame.display.flip()
+
+def draw_lobby_screen(screen):
+    screen.fill((20, 80, 20))
+    font = pygame.font.SysFont('arial', 40)
+    title_font = pygame.font.SysFont('arial', 60)
+    title = title_font.render("Lobby", True, (255, 255, 255))
+    
+    options = [
+        "Waiting for players...",
+        "4: Start Game (as Host)",
+        "5: Destroy Lobby (as Host)",
+    ]
+    
+    screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
+    
+    for i, option in enumerate(options):
+        text = font.render(option, True, (255, 255, 255))
+        screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 250 + i * 60))
+        
+    pygame.display.flip()
+
 def draw_game_state(screen):
     # Clear the screen to black before drawing anything
     screen.fill((0, 0, 0))
@@ -309,19 +349,24 @@ while running:
                 client_package = {"client_id": client_id, 
                                   "request_type": "find_random_game", 
                                   "game_mode": "1vs1"}
-                send_request_to_server(client_package)
+                if send_request_to_server(client_package):
+                    client_state = "searching"
             elif event.key == pygame.K_2: # make_lobby
                 client_package = {"client_id": client_id, 
                                   "request_type": "make_lobby", 
                                   "game_mode": "1vs1"}
-                send_request_to_server(client_package)
+                if send_request_to_server(client_package):
+                    client_state = "lobby"
             elif event.key == pygame.K_3: # join_lobby
                 # For simplicity, we'll try to join a lobby with our own client_id as room_id
                 # In a real scenario, you'd get this from user input or a lobby list.
                 client_package = {"client_id": client_id, 
                                   "request_type": "join_lobby", 
                                   "room_id": client_id}
-                send_request_to_server(client_package)
+                if send_request_to_server(client_package):
+                    # may not join to the lobby, full or invalid
+                    #client_state = "lobby"
+                    pass
             elif event.key == pygame.K_4: # start_the_game_as_host
                 client_package = {"client_id": client_id, 
                                   "request_type": "start_the_game_as_host"}
@@ -357,10 +402,16 @@ while running:
     if game_over:
         draw_game_over(screen, winning_team, losing_team)
         running = False
-    elif is_waiting:
-        draw_waiting_screen(screen)
-    else:
+    elif client_state == "in_game":
         draw_game_state(screen)
+    elif client_state in ["searching", "waiting"]:
+        draw_waiting_screen(screen)
+    elif client_state == "lobby":
+        draw_lobby_screen(screen)
+    elif client_state == "menu":
+        draw_menu_screen(screen)
+    else: # Fallback
+        print("Unknown client_state:", client_state)
     clock.tick(60)
 
 pygame.quit()
