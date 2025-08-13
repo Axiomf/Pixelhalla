@@ -45,7 +45,9 @@ def serialize_fighters(group):
             "state": getattr(sprite, "state", "idle"),
             "id": getattr(sprite, "fighter_id", "id not given"),
             "is_doing": getattr(sprite, "is_doing", "is_doing not given"),  # cycle animations info
-            "facing_right": getattr(sprite, "facing_right", True)
+            "facing_right": getattr(sprite, "facing_right", True),
+            "health": getattr(sprite, "health", 100),
+            "max_health": getattr(sprite, "max_health", 100),
         })
     return serialized
 def serialize_projectiles(group):

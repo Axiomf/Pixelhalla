@@ -43,16 +43,20 @@ def serialize_group(group, type):
     
     serialized = []
     for sprite in group.sprites():
+        print("0000000000000")
         serialized.append({
             "rect": (sprite.rect.x, sprite.rect.y),  # modified: only x and y coordinates
             "state": getattr(sprite, "state", "idle"),
             "id": getattr(sprite, "fighter_id", "id not given"),
             "is_doing": getattr(sprite, "is_doing", "is_doing not given"),  # cycle animations info
             "facing_right": getattr(sprite, "facing_right", True),
-            "health": getattr(sprite, "health", 100),
-            "max_health": getattr(sprite, "max_health", 100),
+            # "health": getattr(sprite, "health", 100),
+            # "max_health": getattr(sprite, "max_health", 100),
             #"type": type
         })
+        print(sprite)
+        if sprite == "fighters":
+            print(getattr(sprite, "health", 100))
     return serialized
 
 def threaded_game(game):

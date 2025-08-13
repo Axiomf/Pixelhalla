@@ -55,7 +55,7 @@ key_pressed = {
 
 
 def threaded_receive_update(sock):
-    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team
+    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team, is_waiting
     while True:
         try:
             data = sock.recv(4096)
@@ -69,12 +69,14 @@ def threaded_receive_update(sock):
                     previous_game_state = game_state
                     game_state = client_package.get("game_world")
                     last_update_time = time.time()
-                    #print(f"Received game_state: {game_state}")
+                    is_waiting = False 
+                    for fighter in game_state.get("fighters", []):
+                        health = fighter.get("health", 100)
+                        max_health = fighter.get("max_health", 100)
+                        # print(f"Received fighter: id={fighter['id']}, health={health}/{max_health}, state={fighter.get('state', 'N/A')}, raw_data={fighter}")
             elif client_package.get("request_type") == "game_started":
-                pass
-                #print(f"Game started: {client_package}")
+                is_waiting = False 
             elif client_package.get("request_type") == "game_finished":
-                # دریافت پکیج پایان بازی
                 winning_team = client_package.get("winning_team")
                 losing_team = client_package.get("losing_team")
                 game_over = True
@@ -132,6 +134,7 @@ client_anim_states = {}  # key: object id, value: dict with current_animation, c
 game_over = False
 winning_team = None
 losing_team = None
+is_waiting = True  # حالت انتظار در ابتدا فعاله
 
 def get_full_rect(rect):
     # Ensure rect is (x, y, width, height), default width and height = 32 if missing
@@ -145,7 +148,6 @@ def interpolate_rect(prev_rect, curr_rect, alpha):
     return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
 
 def draw_health_bar(screen, rect, health, max_health):
-    print(health, max_health)
     bar_width = rect[2] 
     bar_height = 10  
     bar_x = rect[0]
@@ -189,8 +191,8 @@ def dynamic_render(screen, rect, obj):
             image = pygame.transform.flip(image, True, False)
         scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
         screen.blit(scaled_image, (rect[0], rect[1]))
-        health = obj.get("health")
-        max_health = obj.get("max_health")
+        health = obj.get("health",100)
+        max_health = obj.get("max_health", 100)
         draw_health_bar(screen, rect, health, max_health)
         # print(f"Rendered fighter: id={obj['id']}, state={state}, health={health}/{max_health}")
     else:
@@ -209,6 +211,14 @@ def render_obj(screen, rect, obj, sprite_type):
         dynamic_render(screen, rect, obj)
     else:
         static_render(screen, rect, obj, sprite_type)
+
+def draw_waiting_screen(screen):
+    screen.fill((0, 0, 0))  # پس‌زمینه سیاه
+    font = pygame.font.SysFont('arial', 50)
+    text = font.render("Waiting for game to start...", True, (255, 255, 255))
+    text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+    screen.blit(text, text_rect)
+    pygame.display.flip()
 
 def draw_game_state(screen):
     # Clear the screen to black before drawing anything
@@ -315,6 +325,8 @@ while running:
     if game_over:
         draw_game_over(screen, winning_team, losing_team)
         running = False
+    elif is_waiting:
+        draw_waiting_screen(screen)
     else:
         draw_game_state(screen)
     clock.tick(60)

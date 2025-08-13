@@ -71,7 +71,7 @@ class Game:
             x=700, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
             width=32, 
-            height=32, 
+            height=32, health=100,
             platforms=self.platforms,
             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
             id=ID1, 
@@ -83,7 +83,7 @@ class Game:
             x=450, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
             width=32, 
-            height=32, 
+            height=32, health=100,
             platforms=self.platforms,
             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
             id=ID2, 
@@ -107,6 +107,7 @@ class Game:
             for fighter in hit_fighters:
                 if hasattr(projectile, "team") and fighter.team != projectile.team:
                     fighter.take_damage(projectile.damage)
+                    print(fighter.health)
                     projectile.kill()
                     self.sounds.append("blood")
         for power in self.power_ups:
