@@ -498,8 +498,8 @@ class Fighter(Player):
         # Adjust projectile starting position to account for smaller fighter size
         offset_x = (self.rect.width // 2) if self.facing_right else (-self.rect.width // 2)
         if self.multi_player_mode:
-            return Projectile(self.rect.centerx, self.rect.centery, None,
-                                     velocity=(10 if self.facing_right else -10, 0), damage=10,
+            return Projectile(self.rect.centerx + offset_x, self.rect.centery,  width=10,height=10, image_path=None,
+                                     velocity=(velocity_x*self.supershot_amount, 0), damage=10,
                                        team=self.team, owner=self, multi_player_mode=True)
         else:
             

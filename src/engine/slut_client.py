@@ -104,7 +104,7 @@ transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)
 transparent_surface.fill((0, 0, 0, 0))  
 images = {
     "fighter": transparent_surface,
-    "projectiles" :  pygame.image.load("src/assets/images/inused_single_images/bullet.png")
+    "projectiles" :  pygame.image.load("src/assets/images/inused_single_images/projectile_Arcane.png")
 }
 try:
     fighter_animations = load_animations_Arcane_Archer()
@@ -136,7 +136,13 @@ def interpolate_rect(prev_rect, curr_rect, alpha):
 def static_render(screen, rect, obj, sprite_type):
     image = images.get(sprite_type)
     if image:
-        scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
+        # facing_right = obj.get("facing_right", True)
+        if sprite_type == "projectiles":
+            w = 10
+            h = 10
+        # if not facing_right:
+        #     image = pygame.transform.flip(image, True, False)
+        scaled_image = pygame.transform.scale(image, (w, h))
         screen.blit(scaled_image, (rect[0], rect[1]))
     else:
         pygame.draw.rect(screen, (255, 255, 255), rect)
