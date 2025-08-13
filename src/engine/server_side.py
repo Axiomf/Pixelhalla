@@ -73,8 +73,6 @@ def threaded_game(game):
                     "losing_team": losing_team,
                     "game_id": game.game_id
                 }
-                for client in game.game_clients: client.state = "menu" if client.connected_lobby_id == "" else "lobby"
-
                 print(f"Game finished: winning_team={game.winning_team}, losing_team={losing_team}")
                 with clients_lock:
                     broadcast(game_over_package, game.game_clients, all_clients)
