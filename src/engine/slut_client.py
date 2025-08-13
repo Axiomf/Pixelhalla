@@ -213,7 +213,9 @@ def render_obj(screen, rect, obj, sprite_type):
         static_render(screen, rect, obj, sprite_type)
 
 def draw_waiting_screen(screen):
-    screen.fill((0, 0, 0))  # پس‌زمینه سیاه
+    waiting_background = pygame.image.load("src/assets/images/background/blue-preview.png").convert_alpha()
+    waiting_background = pygame.transform.scale(waiting_background, (config.SCENE_WIDTH, config.SCENE_HEIGHT))
+    screen.blit(waiting_background, (0, 0))
     font = pygame.font.SysFont('arial', 50)
     text = font.render("Waiting for game to start...", True, (255, 255, 255))
     text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))

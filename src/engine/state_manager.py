@@ -37,8 +37,6 @@ class StateManager:
             config.GAME_STATE_MAP_SELECT: MapSelectState(scene),
             config.GAME_STATE_FIGHTER_SELECT: FighterSelectState(scene),
             config.GAME_STATE_PLAYING: PlayingState(scene),
-            config.GAME_STATE_MULTIPLATER: None,  # Initialized later in change_state
-            config.GAME_STATE_WAITING: None  # Initialized later in change_state
         }
         # Load click sound
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
