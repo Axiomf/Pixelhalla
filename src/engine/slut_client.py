@@ -122,6 +122,8 @@ shared_lock = threading.Lock()  # For thread-safe access to game state
 # Add global dictionary to track per-object animation state
 client_anim_states = {}  # key: object id, value: dict with current_animation, current_frame, last_update
 
+# we will store maps and other constants that don't need to be sent to the server
+
 def get_full_rect(rect):
     # Ensure rect is (x, y, width, height), default width and height = 32 if missing
     return rect if len(rect) == 4 else (rect[0], rect[1], 64, 64)

@@ -58,6 +58,7 @@ class Game:
         self.game_updates = []
         self.mode = mode
         self.finished = False
+        self.winning_team = None
 
         # print("Creating platforms...")
         platform1 = Platform(0, config.SCENE_HEIGHT - 20, 1200, 20, color=(139, 140, 78))
@@ -125,7 +126,13 @@ class Game:
         team1_alive = any(fid in alive_ids for fid in self.team1_ids if fid is not None)
         team2_alive = any(fid in alive_ids for fid in self.team2_ids if fid is not None)
         if not team1_alive or not team2_alive:
+            print("Game finished everything except animations should be freezing")
             self.finished = True
+            if team1_alive:
+                self.winning_team = 1
+            elif team2_alive:
+                self.winning_team = 2
+            
 
     def update(self):
         if self.game_updates:

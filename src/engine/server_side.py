@@ -75,6 +75,16 @@ def threaded_game(game):
                 broadcast(server_package, game.game_clients, all_clients)
     
             if game.finished:
+                game_over_package = {
+                    "request_type": "game_over",
+                    "winning_team": game.winning_team
+                }
+                with clients_lock:
+                    broadcast(game_over_package, game.game_clients, all_clients)
+                    for client in all_clients:
+                        if client.client_id in game.game_clients:
+                            client.connected_game_id = ""
+                            client.state = "menu"
                 with games_lock:
                     if game in all_games:
                         all_games.remove(game)
@@ -88,7 +98,7 @@ def threaded_game(game):
         sleep_time = next_frame_time - time.perf_counter()
         if sleep_time > 0:
             time.sleep(sleep_time)
-
+        
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
 def threaded_client(conn):
     global pending_requests, all_games, all_lobbies
