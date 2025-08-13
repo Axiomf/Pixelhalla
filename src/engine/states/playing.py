@@ -327,7 +327,7 @@ class PlayingState(BaseState):
             if self.audio_playing:
                 pygame.mixer.music.stop()
                 self.audio_playing = False
-            state_manager.level_complete_sound.play()
+            # state_manager.level_complete_sound.play()
         if state_manager.fighter_select_phase == 1 and len(self.fighters) == 0 and not self.level_complete:
             self.game_over_fighter1 = True
             if self.boss_state:

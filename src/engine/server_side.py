@@ -49,6 +49,8 @@ def serialize_group(group, type):
             "id": getattr(sprite, "fighter_id", "id not given"),
             "is_doing": getattr(sprite, "is_doing", "is_doing not given"),  # cycle animations info
             "facing_right": getattr(sprite, "facing_right", True),
+            "health": getattr(sprite, "health", 100),
+            "max_health": getattr(sprite, "max_health", 100),
             #"type": type
         })
     return serialized
@@ -59,6 +61,22 @@ def threaded_game(game):
         start_time = time.perf_counter()
         try:
             game.update()
+            if game.finished:
+                losing_team = 2 if game.winning_team == 1 else 1
+                game_over_package = {
+                    "request_type": "game_finished",
+                    "winning_team": game.winning_team,
+                    "losing_team": losing_team,
+                    "game_id": game.game_id
+                }
+                print(f"Game finished: winning_team={game.winning_team}, losing_team={losing_team}")
+                with clients_lock:
+                    broadcast(game_over_package, game.game_clients, all_clients)
+                with games_lock:
+                    if game in all_games:
+                        all_games.remove(game)
+                break  
+
             server_package = {
                 "request_type": "game_update",
                 "game_world": {
@@ -73,22 +91,6 @@ def threaded_game(game):
             # print(f"Sending server_package: {server_package}")
             with clients_lock:
                 broadcast(server_package, game.game_clients, all_clients)
-    
-            if game.finished:
-                game_over_package = {
-                    "request_type": "game_over",
-                    "winning_team": game.winning_team
-                }
-                with clients_lock:
-                    broadcast(game_over_package, game.game_clients, all_clients)
-                    for client in all_clients:
-                        if client.client_id in game.game_clients:
-                            client.connected_game_id = ""
-                            client.state = "menu"
-                with games_lock:
-                    if game in all_games:
-                        all_games.remove(game)
-                break
         except Exception as e:
             # print(f"Exception in threaded_game {game.game_id}: {e}")
             print(1)

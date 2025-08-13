@@ -183,6 +183,7 @@ class Player(DynamicObject):
         # Added shooting state attributes
 
     def take_damage(self, amount):
+        print("HUH")
         if self.shield:
             return
         """Subtracts the given amount from player's health."""

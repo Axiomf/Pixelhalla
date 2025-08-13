@@ -55,7 +55,7 @@ key_pressed = {
 
 
 def threaded_receive_update(sock):
-    global game_state, previous_game_state, last_update_time
+    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team
     while True:
         try:
             data = sock.recv(4096)
@@ -73,6 +73,12 @@ def threaded_receive_update(sock):
             elif client_package.get("request_type") == "game_started":
                 pass
                 #print(f"Game started: {client_package}")
+            elif client_package.get("request_type") == "game_finished":
+                # دریافت پکیج پایان بازی
+                winning_team = client_package.get("winning_team")
+                losing_team = client_package.get("losing_team")
+                game_over = True
+                print(f"Game finished: winning_team={winning_team}, losing_team={losing_team}")
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
@@ -107,7 +113,7 @@ images = {
     "projectiles" :  pygame.image.load("src/assets/images/inused_single_images/projectile_Arcane.png")
 }
 try:
-    fighter_animations = load_animations_Arcane_Archer()
+    fighter_animations = load_animations_Elf_Archer()
     # print(f"Loaded animations: {list(fighter_animations.keys())}")
 except Exception as e:
     # print(f"Error loading animations: {e}")
@@ -122,7 +128,10 @@ shared_lock = threading.Lock()  # For thread-safe access to game state
 # Add global dictionary to track per-object animation state
 client_anim_states = {}  # key: object id, value: dict with current_animation, current_frame, last_update
 
-# we will store maps and other constants that don't need to be sent to the server
+# متغیرهای جدید برای پایان بازی
+game_over = False
+winning_team = None
+losing_team = None
 
 def get_full_rect(rect):
     # Ensure rect is (x, y, width, height), default width and height = 32 if missing
@@ -134,6 +143,17 @@ def interpolate_rect(prev_rect, curr_rect, alpha):
     curr_rect = get_full_rect(curr_rect)
     # Interpolate each component (x, y, w, h) between previous and current rects
     return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
+
+def draw_health_bar(screen, rect, health, max_health):
+    print(health, max_health)
+    bar_width = rect[2] 
+    bar_height = 10  
+    bar_x = rect[0]
+    bar_y = rect[1] - bar_height - 5  
+    health_ratio = health / max_health
+    health_width = bar_width * health_ratio
+    pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height)) 
+    pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, health_width, bar_height))  
 
 def static_render(screen, rect, obj, sprite_type):
     image = images.get(sprite_type)
@@ -169,6 +189,10 @@ def dynamic_render(screen, rect, obj):
             image = pygame.transform.flip(image, True, False)
         scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
         screen.blit(scaled_image, (rect[0], rect[1]))
+        health = obj.get("health")
+        max_health = obj.get("max_health")
+        draw_health_bar(screen, rect, health, max_health)
+        # print(f"Rendered fighter: id={obj['id']}, state={state}, health={health}/{max_health}")
     else:
         image = images.get("fighter")
         if image:
@@ -227,6 +251,16 @@ def draw_game_state(screen):
     # Update the display with everything drawn this frame
     pygame.display.flip()
 
+def draw_game_over(screen, winning_team, losing_team):
+    screen.fill((0, 0, 0))  
+    font = pygame.font.SysFont('arial', 50) 
+    win_text = font.render(f"Team {winning_team} Won!", True, (0, 255, 0)) 
+    lose_text = font.render(f"Team {losing_team} Lost!", True, (255, 0, 0)) 
+    screen.blit(win_text, (400, 250)) 
+    screen.blit(lose_text, (400, 350)) 
+    pygame.display.flip()
+    time.sleep(5)
+
 def send_request_to_server(client_package):
     global running
     try:
@@ -258,7 +292,7 @@ while running:
             if event.key in key_pressed and not key_pressed[event.key]:
                 if event.key == pygame.K_SPACE:
                     shoots.append("arcane") 
-                    print(f"Shoot input added: arcane")
+                    # print(f"Shoot input added: arcane")
                 key_pressed[event.key] = True
                 inputs.append(("down", event.key))
                 # print(f"KEYDOWN: {event.key}")
@@ -278,7 +312,11 @@ while running:
         }
         send_request_to_server(client_package)
     
-    draw_game_state(screen)
+    if game_over:
+        draw_game_over(screen, winning_team, losing_team)
+        running = False
+    else:
+        draw_game_state(screen)
     clock.tick(60)
 
 pygame.quit()
