@@ -166,8 +166,15 @@ def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_u
                     rect = obj.get("rect")
                     if rect:
                         render_obj(screen, rect, obj, key, fighter_animations, client_anim_states, images)
+        
+            
     # Update the display with everything drawn this frame
     pygame.display.flip()
+    # handle sound
+    path = "src/assets/sounds/blood2.wav"
+    for _ in current_state.get("sounds", []):
+            sound = pygame.mixer.Sound(path)
+            sound.play()
 
 def draw_game_over(screen, winning_team, losing_team):
     screen.fill((0, 0, 0))  

@@ -8,7 +8,6 @@ from src.engine.server_helper import generate_unique_client_id, broadcast, send_
 import traceback
 import queue  # new import for pending requests
 import pygame
-pygame.init()  # Initialize all imported pygame modules
 
 """  
 example of full packages:
@@ -35,8 +34,6 @@ server_package = {
         "sounds": []
 }
 """
-
-
 
 def threaded_game(game):
     target_frame_duration = 1.0 / 60
@@ -87,8 +84,7 @@ def threaded_game(game):
         next_frame_time = start_time + target_frame_duration
         sleep_time = next_frame_time - time.perf_counter()
         if sleep_time > 0:
-            time.sleep(sleep_time)
-        
+            time.sleep(sleep_time)    
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
 def threaded_client(conn):
     global pending_requests, all_games, all_lobbies
@@ -139,8 +135,6 @@ def threaded_client(conn):
         # print(f"Error closing connection for {client_id}: {e}")
         print(4)
         traceback.print_exc()
-
-
 def threaded_handle_waiting_clients():
     global waiting_clients, all_games, all_clients
     while True:
@@ -191,7 +185,6 @@ def threaded_handle_waiting_clients():
             print(5)
             traceback.print_exc()
             time.sleep(0.2)
-
 def threaded_handle_general_request():
     global all_lobbies, all_games, waiting_clients
     while True:
@@ -206,12 +199,26 @@ def threaded_handle_general_request():
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
                         # print(f"Added to waiting clients: {client_package['client_id']}")                     
             elif request_type == "join_lobby":
+                lobby_joined = None
                 with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
                         for lobby in all_lobbies:
-                            if client_package["room_id"] == lobby.lobby_id:
-                                lobby.add_member(client.client_id)
-                                client.connected_lobby_id = client_package["room_id"]
+                            if client_package["room_id"] == lobby.lobby_id and lobby.state == "waiting":
+                                if lobby.add_member(client.client_id):
+                                    client.connected_lobby_id = client_package["room_id"]
+                                    lobby_joined = lobby
+                
+                if lobby_joined:
+                    info_package = {
+                        "request_type": "info", "lobby_id": lobby_joined.lobby_id, 
+                        "game_mode": lobby_joined.game_mode, "members": lobby_joined.members, "host_id": lobby_joined.host_id,
+                        "is_host": False, "lobby_members_id": lobby_joined.members
+                    }
+                    with clients_lock:
+                        broadcast(info_package, lobby_joined.members, all_clients)
+                else:
+                    send_to_client({"request_type": "lobby_not_found"}, client.client_id, all_clients)
+
             elif request_type == "make_lobby":
                 with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
@@ -222,7 +229,12 @@ def threaded_handle_general_request():
                         client.connected_lobby_id = lobby_id
                         client.is_host = True
                         client.game_mode = game_mode
-                        send_to_client({"request_type": "lobby_created", "lobby_id": lobby_id, "game_mode": game_mode}, client.client_id, all_clients)
+                        info_package = {
+                            "request_type": "info", "lobby_id": lobby_id, 
+                            "game_mode": game_mode, "members": new_lobby.members, "host_id": new_lobby.host_id,
+                            "is_host": True, "lobby_members_id": new_lobby.members
+                        }
+                        send_to_client(info_package, client.client_id, all_clients)
             elif request_type == "destroy_lobby":
                 lobby_to_remove = None
                 with clients_lock, lobbies_lock:
@@ -282,6 +294,7 @@ def threaded_handle_general_request():
             traceback.print_exc()
             time.sleep(0.5)
 
+pygame.init() 
 all_clients = []
 all_lobbies = []
 all_games = []
