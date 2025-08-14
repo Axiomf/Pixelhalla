@@ -28,6 +28,8 @@ class Lobby:
         if client_id not in self.members and self.state == "waiting":
             self.members.append(client_id)
             self.update_state()
+            return True
+        return False
 
     def remove_member(self, client_id):
         if client_id in self.members:

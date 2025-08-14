@@ -60,7 +60,36 @@ def threaded_game(game):
                 with games_lock:
                     if game in all_games:
                         all_games.remove(game)
-                break  
+
+                # Find the lobby and update its state to allow players to rejoin/start again
+                with lobbies_lock, clients_lock:
+                    lobby_to_update = None
+                    for l in all_lobbies:
+                        if l.lobby_id == game.game_id:
+                            lobby_to_update = l
+                            break
+                    
+                    if lobby_to_update:
+                        lobby_to_update.state = "waiting"
+                        info_package = {
+                            "request_type": "info",
+                            "lobby_id": lobby_to_update.lobby_id,
+                            "game_mode": lobby_to_update.game_mode,
+                            "members": lobby_to_update.members,
+                            "host_id": lobby_to_update.host_id,
+                            "lobby_members_id": lobby_to_update.members
+                        }
+                        
+                        for client in all_clients:
+                            if client.client_id in lobby_to_update.members:
+                                client.state = "lobby"
+                                client.is_host = (client.client_id == lobby_to_update.host_id)
+                                info_package["is_host"] = client.is_host
+                                send_to_client(info_package, client.client_id, all_clients)
+
+                break
+
+
 
             server_package = {
                 "request_type": "game_update",
@@ -202,17 +231,29 @@ def threaded_handle_general_request():
                 lobby_joined = None
                 with clients_lock, lobbies_lock:
                     if client.connected_lobby_id == "":
+                        print(1)
                         for lobby in all_lobbies:
+                            print(2)
                             if client_package["room_id"] == lobby.lobby_id and lobby.state == "waiting":
+                                print(3)
                                 if lobby.add_member(client.client_id):
+                                    print(4) # it dosen't reach here
                                     client.connected_lobby_id = client_package["room_id"]
                                     lobby_joined = lobby
-                
+                                    print(lobby_joined)
+                #print(lobby_joined) # it gives None 
+                print("wtf man")
                 if lobby_joined:
+                    print(f"Joined lobby: {lobby_joined.lobby_id}")
+                    print(lobby_joined)
                     info_package = {
-                        "request_type": "info", "lobby_id": lobby_joined.lobby_id, 
-                        "game_mode": lobby_joined.game_mode, "members": lobby_joined.members, "host_id": lobby_joined.host_id,
-                        "is_host": False, "lobby_members_id": lobby_joined.members
+                        "request_type": "info", 
+                        "lobby_id": lobby_joined.lobby_id, 
+                        "game_mode": lobby_joined.game_mode, 
+                        "members": lobby_joined.members, 
+                        "host_id": lobby_joined.lobby_id,
+                        "is_host": False, 
+                        "lobby_members_id": lobby_joined.members
                     }
                     with clients_lock:
                         broadcast(info_package, lobby_joined.members, all_clients)
@@ -230,9 +271,13 @@ def threaded_handle_general_request():
                         client.is_host = True
                         client.game_mode = game_mode
                         info_package = {
-                            "request_type": "info", "lobby_id": lobby_id, 
-                            "game_mode": game_mode, "members": new_lobby.members, "host_id": new_lobby.host_id,
-                            "is_host": True, "lobby_members_id": new_lobby.members
+                            "request_type": "info", 
+                            "lobby_id": lobby_id, 
+                            "game_mode": game_mode, 
+                            "members": new_lobby.members, 
+                            "host_id": new_lobby.host_client_id,
+                            "is_host": True, 
+                            "lobby_members_id": new_lobby.members
                         }
                         send_to_client(info_package, client.client_id, all_clients)
             elif request_type == "destroy_lobby":
@@ -280,9 +325,6 @@ def threaded_handle_general_request():
                     for cid in ids:
                         # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                    with lobbies_lock:
-                        if lobby in all_lobbies:
-                            all_lobbies.remove(lobby)
                 # Start game thread
                 start_new_thread(threaded_game, (new_game,))
         

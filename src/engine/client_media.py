@@ -170,11 +170,12 @@ def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_u
             
     # Update the display with everything drawn this frame
     pygame.display.flip()
-    # handle sound
-    path = "src/assets/sounds/blood2.wav"
-    for _ in current_state.get("sounds", []):
-            sound = pygame.mixer.Sound(path)
-            sound.play()
+    with shared_lock:
+        # handle sound
+        path = "src/assets/sounds/blood2.wav"
+        for _ in current_state.get("sounds", []):
+                sound = pygame.mixer.Sound(path)
+                sound.play()
 
 def draw_game_over(screen, winning_team, losing_team):
     screen.fill((0, 0, 0))  
@@ -184,4 +185,4 @@ def draw_game_over(screen, winning_team, losing_team):
     screen.blit(win_text, (400, 250)) 
     screen.blit(lose_text, (400, 350)) 
     pygame.display.flip()
-    time.sleep(5)
+    time.sleep(2)

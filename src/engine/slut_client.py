@@ -43,6 +43,16 @@ server_package = {
         "power_ups": power_ups, 
         "sounds": []
 }
+
+info_package = {
+                        "request_type": "info", 
+                        "lobby_id": lobby_joined.lobby_id, 
+                        "game_mode": lobby_joined.game_mode, 
+                        "members": lobby_joined.members, 
+                        "host_id": lobby_joined.host_id,
+                        "is_host": False, 
+                        "lobby_members_id": lobby_joined.members
+                    }
 """
 
 # --- Pygame and Display Setup ---
@@ -133,9 +143,12 @@ def threaded_receive_update(sock):
                 with info_lock:
                     client_state = "menu" # Go back to a waiting/menu state
             elif client_package.get("request_type") == "info":
-                with info_lock:
+                #print(f"Received info package: {client_package}")
+                with info_lock: # host_id
+                    
                     is_host = client_package.get("is_host")
                     lobby_id = client_package.get("lobby_id")
+                    print(f"Joined lobby: {lobby_id} this is important")
                     lobby_members_id = client_package.get("lobby_members_id")
                     game_mode = client_package.get("game_mode")
                     client_state = "lobby"
@@ -170,6 +183,7 @@ def handle_input():
                     send_request_to_server(pkg)
                     with info_lock:
                         client_state = "lobby"
+                        
                     input_text = ""
                 elif event.key == pygame.K_BACKSPACE:
                     input_text = input_text[:-1]
@@ -237,13 +251,19 @@ def handle_input():
 
 def update_and_render():
     """Renders the correct screen based on the current client state."""
-    global running, game_over, winning_team, losing_team
+    global running, game_over, winning_team, losing_team, client_state, lobby_id
     if game_over:
         draw_game_over(screen, winning_team, losing_team)
         pygame.display.flip()
         time.sleep(2) # show for 2 seconds
-        game_over = False # Reset for next game
-        return
+        with info_lock:
+            game_over = False # Reset for next game
+            print(lobby_id)
+            if lobby_id:
+                client_state = "lobby"
+            else:
+                client_state = "menu"
+        
     elif client_state == "in_game":
         draw_game_state(screen, game_lock, game_state, previous_game_state, last_update_time, network_interval, fighter_animations, client_anim_states, images)
     elif client_state in ["searching", "waiting"]:
@@ -296,7 +316,8 @@ def main():
     
     while running:
         inputs, shoots = handle_input()
-
+        #print(client_state)
+        #print(lobby_id)
         if (inputs or shoots) and client_state == "in_game" and not game_over:
             client_package = {
                 "client_id": client_id,
