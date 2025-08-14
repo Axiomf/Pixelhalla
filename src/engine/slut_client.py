@@ -45,13 +45,13 @@ server_package = {
 }
 
 info_package = {
-                        "request_type": "info", 
-                        "lobby_id": lobby_joined.lobby_id, 
-                        "game_mode": lobby_joined.game_mode, 
-                        "members": lobby_joined.members, 
-                        "host_id": lobby_joined.host_id,
-                        "is_host": False, 
-                        "lobby_members_id": lobby_joined.members
+                "request_type": "info", 
+                "lobby_id": lobby_joined.lobby_id, 
+                "game_mode": lobby_joined.game_mode, 
+                "members": lobby_joined.members, 
+                "host_id": lobby_joined.host_id,
+                "is_host": False, 
+                "lobby_members_id": lobby_joined.members
                     }
 """
 
