@@ -25,12 +25,9 @@ def draw_health_bar(screen, rect, health, max_health):
 def static_render(screen, rect, obj, sprite_type, images):
     image = images.get(sprite_type)
     if image:
-        # facing_right = obj.get("facing_right", True)
         if sprite_type == "projectiles":
             w = 10
             h = 10
-        # if not facing_right:
-        #     image = pygame.transform.flip(image, True, False)
         scaled_image = pygame.transform.scale(image, (w, h))
         screen.blit(scaled_image, (rect[0], rect[1]))
     else:
@@ -60,7 +57,6 @@ def dynamic_render(screen, rect, obj, fighter_animations, client_anim_states, im
         max_health = obj.get("max_health", 100)
         
         draw_health_bar(screen, rect, health, max_health)
-        # print(f"Rendered fighter: id={obj['id']}, state={state}, health={health}/{max_health}")
     else:
         image = images.get("fighter")
         if image:
@@ -88,34 +84,43 @@ def draw_waiting_screen(screen):
     screen.blit(text, text_rect)
     pygame.display.flip()
 
-def draw_menu_screen(screen):
+def draw_menu_screen(screen, mouse_pos=None):
     screen.fill((20, 20, 80))
     font = pygame.font.SysFont('arial', 40)
     title_font = pygame.font.SysFont('arial', 60)
     title = title_font.render("Pixelhalla", True, (255, 255, 255))
     
     options = [
-        "1: Find Random 1v1 Game",
+        "1: Find Random Game",
         "2: Create Lobby",
-        "3: Join Lobby (Not implemented)",
+        "3: Join Lobby",
     ]
     
     screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
     
+    # Store rectangles for each option to detect clicks
+    option_rects = []
     for i, option in enumerate(options):
-        text = font.render(option, True, (255, 255, 255))
-        screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 250 + i * 60))
+        text = font.render(option, True, (255, 255, 255) if not mouse_pos or not pygame.Rect(
+            screen.get_width() // 2 - 200, 250 + i * 60, 400, 50
+        ).collidepoint(mouse_pos) else (255, 255, 0))  # Highlight on hover
+        text_rect = text.get_rect(center=(screen.get_width() // 2, 250 + i * 60 + 25))
+        screen.blit(text, text_rect)
+        # Create a larger clickable area around the text
+        clickable_rect = pygame.Rect(screen.get_width() // 2 - 200, 250 + i * 60, 400, 50)
+        option_rects.append(clickable_rect)
         
     pygame.display.flip()
+    return option_rects  # Return the list of rectangles for click detection
 
-def draw_lobby_screen(screen):
+def draw_lobby_screen(screen, lobby_id=None):
     screen.fill((20, 80, 20))
     font = pygame.font.SysFont('arial', 40)
     title_font = pygame.font.SysFont('arial', 60)
     title = title_font.render("Lobby", True, (255, 255, 255))
     
     options = [
-        "Waiting for players...",
+        f"Waiting for players... Lobby ID: {lobby_id if lobby_id else 'Unknown'}",
         "4: Start Game (as Host)",
         "5: Destroy Lobby (as Host)",
     ]
@@ -178,11 +183,78 @@ def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_u
                 sound.play()
 
 def draw_game_over(screen, winning_team, losing_team):
-    screen.fill((0, 0, 0))  
-    font = pygame.font.SysFont('arial', 50) 
-    win_text = font.render(f"Team {winning_team} Won!", True, (0, 255, 0)) 
-    lose_text = font.render(f"Team {losing_team} Lost!", True, (255, 0, 0)) 
-    screen.blit(win_text, (400, 250)) 
-    screen.blit(lose_text, (400, 350)) 
+    game_over = pygame.image.load("src/assets/images/inused_single_images/game_over.jpg").convert_alpha()
+    game_over = pygame.transform.scale(game_over, (1200, 600))
+    screen.blit(game_over, (0, 0))
+    font = pygame.font.SysFont('arial', 50)
+    
+    # Render text
+    win_text = font.render(f"Team {winning_team} Won!", True, (0, 0, 0))
+    lose_text = font.render(f"Team {losing_team} Lost!", True, (0, 0, 0))
+    
+    # Create semi-transparent white rectangles as background
+    padding = 10  # Margin around text
+    win_rect = win_text.get_rect(topleft=(500, 250))
+    lose_rect = lose_text.get_rect(topleft=(500, 350))
+    
+    # Create surfaces for the rectangles with alpha
+    win_bg = pygame.Surface((win_rect.width + 2 * padding, win_rect.height + 2 * padding), pygame.SRCALPHA)
+    lose_bg = pygame.Surface((lose_rect.width + 2 * padding, lose_rect.height + 2 * padding), pygame.SRCALPHA)
+    
+    # Fill with semi-transparent white (255, 255, 255, 100)
+    win_bg.fill((255, 255, 255, 100))
+    lose_bg.fill((255, 255, 255, 100))
+    
+    # Blit the backgrounds
+    screen.blit(win_bg, (win_rect.x - padding, win_rect.y - padding))
+    screen.blit(lose_bg, (lose_rect.x - padding, lose_rect.y - padding))
+    
+    # Blit the text over the backgrounds
+    screen.blit(win_text, (500, 250))
+    screen.blit(lose_text, (500, 350))
+    
     pygame.display.flip()
     time.sleep(2)
+def draw_enter_lobby_screen(screen, entered_lobby_id):
+    screen.fill((20, 20, 80))
+    font = pygame.font.SysFont('arial', 40)
+    title_font = pygame.font.SysFont('arial', 60)
+    title = title_font.render("Enter Lobby ID", True, (255, 255, 255))
+    screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
+    
+    # Draw input box
+    input_box = pygame.Rect(screen.get_width() // 2 - 200, 300, 400, 50)
+    pygame.draw.rect(screen, (255, 255, 255), input_box, 2)  # White border
+    text_surface = font.render(entered_lobby_id, True, (255, 255, 255))
+    screen.blit(text_surface, (input_box.x + 10, input_box.y + 10))
+    
+    # Instructions
+    instruction = font.render("Press Enter to join, Backspace to delete", True, (255, 255, 255))
+    screen.blit(instruction, (screen.get_width() // 2 - instruction.get_width() // 2, 400))
+    
+    pygame.display.flip()
+def draw_game_mode_screen(screen, mouse_pos=None):
+    screen.fill((20, 20, 80))
+    font = pygame.font.SysFont('arial', 40)
+    title_font = pygame.font.SysFont('arial', 60)
+    title = title_font.render("Select Game Mode", True, (255, 255, 255))
+    
+    options = [
+        "1: 1 vs 1",
+        "2: 2 vs 2",
+    ]
+    
+    screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
+    
+    option_rects = []
+    for i, option in enumerate(options):
+        text = font.render(option, True, (255, 255, 255) if not mouse_pos or not pygame.Rect(
+            screen.get_width() // 2 - 200, 250 + i * 60, 400, 50
+        ).collidepoint(mouse_pos) else (255, 255, 0))  # Highlight on hover
+        text_rect = text.get_rect(center=(screen.get_width() // 2, 250 + i * 60 + 25))
+        screen.blit(text, text_rect)
+        clickable_rect = pygame.Rect(screen.get_width() // 2 - 200, 250 + i * 60, 400, 50)
+        option_rects.append(clickable_rect)
+        
+    pygame.display.flip()
+    return option_rects

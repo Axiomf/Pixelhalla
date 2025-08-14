@@ -116,7 +116,7 @@ def threaded_game(game):
             time.sleep(sleep_time)    
 # There is no mechanism to clean up threads or games when clients disconnect but we can fix it later now we need a minimal functioning server and client that can play a 1vs1 game.
 def threaded_client(conn):
-    global pending_requests, all_games, all_lobbies
+    global pending_requests, all_games, all_lobbies, waiting_clients
     client_id = generate_unique_client_id()
     client = Client(client_id, conn)
     with clients_lock:  # replaced shared_lock
@@ -158,6 +158,42 @@ def threaded_client(conn):
             if c.client_id == client_id:
                 del all_clients[i]
                 break
+
+        # Remove from lobby if in one
+        with lobbies_lock:
+            for lobby in all_lobbies:
+                if client_id in lobby.members:
+                    lobby.remove_member(client_id)
+                    if lobby.is_host(client_id):
+                        # If host disconnects, destroy the lobby
+                        client_ids_in_lobby = list(lobby.members)
+                        for cid in client_ids_in_lobby:
+                            for c in all_clients:
+                                if c.client_id == cid:
+                                    c.connected_lobby_id = ""
+                                    c.is_host = False
+                                    c.state = "menu"
+                        broadcast({"request_type": "lobby_destroyed"}, client_ids_in_lobby, all_clients)
+                        print(f"Lobby {lobby.lobby_id} destroyed due to host {client_id} disconnection")
+                        all_lobbies.remove(lobby)
+                    else:
+                        # Notify other lobby members about disconnection
+                        broadcast({"request_type": "client_disconnected", "client_id": client_id}, lobby.members, all_clients)
+                    break
+
+        # Remove from game if in one
+        with games_lock:
+            for game in all_games:
+                if client_id in game.game_clients:
+                    game.handle_client_disconnect(client_id)
+                    break
+
+        # Remove from waiting_clients if in waiting room
+        with waiting_clients_lock:
+            if client_id in waiting_clients:
+                waiting_clients.pop(client_id, None)
+                print(f"Client {client_id} removed from waiting_clients")
+
     try:
         conn.close()
     except Exception as e:
@@ -170,11 +206,9 @@ def threaded_handle_waiting_clients():
         try:
             with waiting_clients_lock:
                 one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
-                # print(f"1vs1 clients waiting: {one_vs_one_clients}")
                 while len(one_vs_one_clients) >= 2:
                     ids = one_vs_one_clients[:2]
                     game_id = "_".join(ids)
-                    # print(f"Creating game: {game_id}")
                     new_game = Game(game_id, "1vs1", ids[0], ids[1])
                     with games_lock:
                         all_games.append(new_game)
@@ -186,7 +220,6 @@ def threaded_handle_waiting_clients():
                             if c.client_id in ids:
                                 c.connected_game_id = game_id
                     for cid in ids:
-                        # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
                     one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
 
@@ -205,7 +238,6 @@ def threaded_handle_waiting_clients():
                             if c.client_id in ids:
                                 c.connected_game_id = game_id
                     for cid in ids:
-                        # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
                     two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
             time.sleep(0.2)
@@ -220,13 +252,11 @@ def threaded_handle_general_request():
         try:
             client, client_package = pending_requests.get(timeout=0.1)
             request_type = client_package["request_type"]
-            # print(f"Processing request: {client_package}")
             
             if request_type == "find_random_game":
                 with waiting_clients_lock:
                     if client_package["client_id"] not in waiting_clients:
                         waiting_clients[client_package["client_id"]] = client_package["game_mode"]
-                        # print(f"Added to waiting clients: {client_package['client_id']}")                     
             elif request_type == "join_lobby":
                 lobby_joined = None
                 with clients_lock, lobbies_lock:
@@ -323,7 +353,6 @@ def threaded_handle_general_request():
                                 if c.client_id == cid:
                                     c.connected_game_id = game_id
                     for cid in ids:
-                        # print(f"Sending game_started to {cid}")
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
                 # Start game thread
                 start_new_thread(threaded_game, (new_game,))
@@ -359,4 +388,3 @@ while True:
     except Exception as e:
         print(f"Exception in main server loop: {e}")
         traceback.print_exc()
-        print(7)
