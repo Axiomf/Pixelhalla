@@ -3,6 +3,7 @@ import pygame
 from src.engine.dynamic_objects import *
 from src.engine.platforms import *
 from .base import CustomGroup
+from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
 import config
 
 class Client:
@@ -60,13 +61,10 @@ class Game:
         self.finished = False
         self.winning_team = None
 
-        # print("Creating platforms...")
         platform1 = Platform(0, config.SCENE_HEIGHT - 20, 1200, 20, color=(139, 140, 78))
         moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4, config.SCENE_WIDTH/4, 10, range_x=500, range_y=0, speed=1, color=(139, 120, 78))
         self.platforms.add(platform1, moving_platform)
-        # print(f"Platforms created: {len(self.platforms)}")
 
-        # print("Creating fighters...")
         fighter1 = Fighter(
             x=700, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
@@ -91,15 +89,41 @@ class Game:
             color=(200, 120, 120),
             multi_player_mode=True
         )
-        self.fighters.add(fighter1, fighter2)
-        # print(f"Fighters created: {len(self.fighters)}")
+        if mode == "1vs1":
+            self.fighters.add(fighter1, fighter2)
+        elif mode == "2vs2":
+            fighter3 = Fighter(
+            x=800, 
+            y=config.SCENE_HEIGHT*3/5 - 70, 
+            width=32, 
+            height=32, health=100,
+            platforms=self.platforms,
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+            id=ID3, 
+            team=1, 
+            color=(200, 120, 78),
+            multi_player_mode=True
+            )
+            fighter4 = Fighter(
+                x=350, 
+                y=config.SCENE_HEIGHT*3/5 - 70, 
+                width=32, 
+                height=32, health=100,
+                platforms=self.platforms,
+                controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+                id=ID4, 
+                team=2, 
+                color=(200, 120, 120),
+                multi_player_mode=True
+            )
+            self.fighters.add(fighter1, fighter2, fighter3, fighter4)
 
         if mode == "1vs1":
             self.team1_ids = [ID1]
             self.team2_ids = [ID2]
         else:
-            self.team1_ids = [ID1, ID2]
-            self.team2_ids = [ID3, ID4]
+            self.team1_ids = [ID1, ID3]
+            self.team2_ids = [ID2, ID4]
 
     def handle_collisions(self):
         for projectile in self.projectiles:
@@ -114,6 +138,7 @@ class Game:
             hit_fighters = pygame.sprite.spritecollide(power, self.fighters, False)
             for fighter in hit_fighters:
                 fighter.upgrade(power.upgrade_type, power.amount)
+                self.sounds.append("power_up")
                 power.kill()
         for sprite in self.fighters:
             sprite.handle_platform_collision(self.platforms)
@@ -133,21 +158,39 @@ class Game:
                 self.winning_team = 1
             elif team2_alive:
                 self.winning_team = 2
-            
+
+    def handle_client_disconnect(self, client_id):
+        print(f"Handling disconnection of client {client_id} in game {self.game_id}")
+        if client_id in self.game_clients:
+            self.game_clients.remove(client_id)
+            # Remove fighter associated with this client
+            for fighter in self.fighters:
+                if fighter.fighter_id == client_id:
+                    fighter.kill()
+                    break
+            # Update team lists
+            if client_id in self.team1_ids:
+                self.team1_ids.remove(client_id)
+            elif client_id in self.team2_ids:
+                self.team2_ids.remove(client_id)
+            # Check if game should end due to disconnection
+            self.check_game_finished()
+            # Notify remaining clients
+            if not self.finished:
+                from server_side import all_clients, clients_lock
+                with clients_lock:
+                    broadcast({"request_type": "client_disconnected", "client_id": client_id}, self.game_clients, all_clients)
 
     def update(self):
         if self.game_updates:
             for client_package in self.game_updates:
-                # print(f"Processing client_package: {client_package}")
                 for fighter in self.fighters:
                     if client_package["client_id"] == fighter.fighter_id:
                         fighter.client_input.extend(client_package["inputs"])
-                        # print(f"Inputs for fighter {fighter.fighter_id}: {client_package['inputs']}")
                         if client_package["shoots"]:
                             for shot in client_package["shoots"]:
                                 projectile = fighter.shoot()
                                 self.projectiles.add(projectile)
-                                print("yes")
             self.game_updates.clear()
         self.fighters.update()
         self.projectiles.update()

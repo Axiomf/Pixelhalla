@@ -10,7 +10,7 @@ from src.engine.dynamic_objects import *
 from src.engine.animation_loader import load_animations_Arcane_Archer
 from src.engine.client_media import (
     draw_game_state, draw_game_over, draw_lobby_screen, 
-    draw_menu_screen, draw_waiting_screen
+    draw_menu_screen, draw_waiting_screen, draw_enter_lobby_screen, draw_game_mode_screen
 )
 """  
 example of full packages:
@@ -52,31 +52,28 @@ pygame.display.set_caption("Pixelhala Client")
 clock = pygame.time.Clock()
 
 # --- Global State and Configuration ---
-# Input state
 key_pressed = {
     pygame.K_a: False, pygame.K_d: False, pygame.K_w: False, pygame.K_SPACE: False
 }
 
-# Game state
 game_state = None
 previous_game_state = None
 last_update_time = 0
-network_interval = 0.1  # How often we expect updates from server (in seconds)
+network_interval = 0.1
 shared_lock = threading.Lock()
-client_anim_states = {}  # key: object id, value: dict with current_animation, current_frame, last_update
-
-# Client/Game status
-client_state = "menu"  # "menu", "lobby", "in_game", "searching", "waiting"
+client_anim_states = {}
+client_state = "select_game_mode"
 game_over = False
 winning_team = None
 losing_team = None
 running = True
+game_mode = None
 
-# Network variables
 conn = None
 client_id = None
+lobby_id = None
+entered_lobby_id = ""
 
-# --- Asset Loading ---
 try:
     fighter_animations = load_animations_Arcane_Archer()
 except Exception as e:
@@ -89,9 +86,8 @@ images = {
     "projectiles": pygame.image.load("src/assets/images/inused_single_images/projectile_Arcane.png")
 }
 
-
 def threaded_receive_update(sock):
-    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team, client_state
+    global game_state, previous_game_state, last_update_time, game_over, winning_team, losing_team, client_state, lobby_id
     while running:
         try:
             data = sock.recv(4096)
@@ -100,19 +96,14 @@ def threaded_receive_update(sock):
                     print("Disconnected from server.")
                 break
             client_package = pickle.loads(data)
-            #print(f"Received package: {client_package}")
             if client_package.get("request_type") == "game_update":
                 with shared_lock:
                     previous_game_state = game_state
                     game_state = client_package.get("game_world")
                     last_update_time = time.time()
-                    client_state = "in_game" 
-                    for fighter in game_state.get("fighters", []):
-                        health = fighter.get("health", 100)
-                        max_health = fighter.get("max_health", 100)
-                        # print(f"Received fighter: id={fighter['id']}, health={health}/{max_health}, state={fighter.get('state', 'N/A')}, raw_data={fighter}")
+                    client_state = "in_game"
             elif client_package.get("request_type") == "game_started":
-                client_state = "in_game" 
+                client_state = "in_game"
             elif client_package.get("request_type") == "game_finished":
                 winning_team = client_package.get("winning_team")
                 losing_team = client_package.get("losing_team")
@@ -120,7 +111,17 @@ def threaded_receive_update(sock):
                 print(f"Game finished: winning_team={winning_team}, losing_team={losing_team}")
             elif client_package.get("request_type") == "lobby_destroyed":
                 print("Lobby has been destroyed by the host.")
-                client_state = "menu" # Go back to a waiting/menu state
+                client_state = "menu"
+            elif client_package.get("request_type") == "lobby_created":
+                lobby_id = client_package.get("lobby_id")
+                client_state = "lobby"
+                print(f"Lobby created with ID: {lobby_id}")
+            elif client_package.get("request_type") == "lobby_joined":
+                lobby_id = client_package.get("lobby_id")
+                client_state = "lobby"
+                print(f"Joined lobby with ID: {lobby_id}")
+            elif client_package.get("request_type") == "client_disconnected":
+                print(f"Client {client_package.get('client_id')} disconnected from the game or lobby")
         except Exception as e:
             if running:
                 print(f"Error receiving message: {e}")
@@ -130,58 +131,91 @@ def send_request_to_server(client_package):
     global running
     try:
         conn.sendall(pickle.dumps(client_package))
-        #print(f"Sent client_package: {client_package}")
     except Exception as e:
         print(f"Error sending data: {e}")
         running = False
         return False
     return True
 
-def handle_input():
-    """Processes user input events and returns lists of inputs and shoots."""
-    global running, client_state
+def handle_input(option_rects):
+    global running, client_state, game_mode, entered_lobby_id
     inputs = []
     shoots = []
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            # Menu/Lobby actions
-            if event.key == pygame.K_1:  # find_random_game
-                pkg = {"client_id": client_id, "request_type": "find_random_game", "game_mode": "1vs1"}
-                if send_request_to_server(pkg):
-                    client_state = "searching"
-            elif event.key == pygame.K_2:  # make_lobby
-                pkg = {"client_id": client_id, "request_type": "make_lobby", "game_mode": "1vs1"}
-                if send_request_to_server(pkg):
-                    client_state = "lobby"
-            elif event.key == pygame.K_3:  # join_lobby
-                pkg = {"client_id": client_id, "request_type": "join_lobby", "room_id": client_id}
-                send_request_to_server(pkg)
-            elif event.key == pygame.K_4:  # start_the_game_as_host
-                pkg = {"client_id": client_id, "request_type": "start_the_game_as_host"}
-                send_request_to_server(pkg)
-            elif event.key == pygame.K_5:  # destroy_lobby
-                pkg = {"client_id": client_id, "request_type": "destroy_lobby"}
-                send_request_to_server(pkg)
-
-            # In-game actions
-            if event.key in key_pressed and not key_pressed[event.key]:
-                if event.key == pygame.K_SPACE:
-                    shoots.append("arcane") 
-                    # print(f"Shoot input added: arcane")
-                key_pressed[event.key] = True
-                inputs.append(("down", event.key))
-                # print(f"KEYDOWN: {event.key}")
+            if client_state == "select_game_mode":
+                if event.key == pygame.K_1:
+                    game_mode = "1vs1"
+                    client_state = "menu"
+                elif event.key == pygame.K_2:
+                    game_mode = "2vs2"
+                    client_state = "menu"
+            elif client_state == "enter_lobby_id":
+                if event.key == pygame.K_RETURN:
+                    if entered_lobby_id:
+                        pkg = {"client_id": client_id, "request_type": "join_lobby", "room_id": entered_lobby_id, "game_mode": game_mode}
+                        if send_request_to_server(pkg):
+                            entered_lobby_id = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    entered_lobby_id = entered_lobby_id[:-1]
+                elif event.unicode.isalnum():
+                    entered_lobby_id += event.unicode
+            else:
+                if event.key == pygame.K_1:
+                    pkg = {"client_id": client_id, "request_type": "find_random_game", "game_mode": game_mode}
+                    if send_request_to_server(pkg):
+                        client_state = "searching"
+                elif event.key == pygame.K_2:
+                    pkg = {"client_id": client_id, "request_type": "make_lobby", "game_mode": game_mode}
+                    if send_request_to_server(pkg):
+                        client_state = "lobby"
+                elif event.key == pygame.K_3:
+                    client_state = "enter_lobby_id"
+                elif event.key == pygame.K_4:
+                    pkg = {"client_id": client_id, "request_type": "start_the_game_as_host"}
+                    send_request_to_server(pkg)
+                elif event.key == pygame.K_5:
+                    pkg = {"client_id": client_id, "request_type": "destroy_lobby"}
+                    send_request_to_server(pkg)
+                if event.key in key_pressed and not key_pressed[event.key]:
+                    if event.key == pygame.K_SPACE:
+                        shoots.append("arcane")
+                    key_pressed[event.key] = True
+                    inputs.append(("down", event.key))
         elif event.type == pygame.KEYUP:
             if event.key in key_pressed:
                 key_pressed[event.key] = False
                 inputs.append(("up", event.key))
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = event.pos
+            for i, rect in enumerate(option_rects):
+                if rect.collidepoint(mouse_pos):
+                    if client_state == "select_game_mode":
+                        if i == 0:
+                            game_mode = "1vs1"
+                            client_state = "menu"
+                        elif i == 1:
+                            game_mode = "2vs2"
+                            client_state = "menu"
+                    elif client_state == "menu":
+                        if i == 0:
+                            pkg = {"client_id": client_id, "request_type": "find_random_game", "game_mode": game_mode}
+                            if send_request_to_server(pkg):
+                                client_state = "searching"
+                        elif i == 1:
+                            pkg = {"client_id": client_id, "request_type": "make_lobby", "game_mode": game_mode}
+                            if send_request_to_server(pkg):
+                                client_state = "lobby"
+                        elif i == 2:
+                            client_state = "enter_lobby_id"
     return inputs, shoots
 
 def update_and_render():
-    """Renders the correct screen based on the current client state."""
     global running
+    mouse_pos = pygame.mouse.get_pos()
+    option_rects = []
     if game_over:
         draw_game_over(screen, winning_team, losing_team)
         running = False
@@ -190,18 +224,22 @@ def update_and_render():
     elif client_state in ["searching", "waiting"]:
         draw_waiting_screen(screen)
     elif client_state == "lobby":
-        draw_lobby_screen(screen)
+        draw_lobby_screen(screen, lobby_id)
     elif client_state == "menu":
-        draw_menu_screen(screen)
-    else: # Fallback
+        option_rects = draw_menu_screen(screen, mouse_pos)
+    elif client_state == "enter_lobby_id":
+        draw_enter_lobby_screen(screen, entered_lobby_id)
+    elif client_state == "select_game_mode":
+        option_rects = draw_game_mode_screen(screen, mouse_pos)
+    else:
         print("Unknown client_state:", client_state)
         draw_waiting_screen(screen)
     
     pygame.display.flip()
     clock.tick(60)
+    return option_rects
 
 def main():
-    """Main function to initialize and run the client."""
     global conn, client_id, running
 
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -228,29 +266,20 @@ def main():
     recv_thread.daemon = True
     recv_thread.start()
 
-    # Initial request to find a game
-    client_first_package = {
-        "client_id": client_id, "request_type": "find_random_game", "game_mode": "1vs1",
-        "inputs": [], "shoots": []
-    }
-    send_request_to_server(client_first_package)
-
     while running:
-        inputs, shoots = handle_input()
+        option_rects = update_and_render()
+        inputs, shoots = handle_input(option_rects)
 
         if inputs or shoots:
             client_package = {
                 "client_id": client_id,
                 "request_type": "input",
-                "game_mode": "1vs1",
+                "game_mode": game_mode,
                 "inputs": inputs,
                 "shoots": shoots
             }
             send_request_to_server(client_package)
-        
-        update_and_render()
 
-    # Cleanup
     running = False
     conn.close()
     pygame.quit()
