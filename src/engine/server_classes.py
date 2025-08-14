@@ -46,10 +46,12 @@ class Lobby:
         return self.host_client_id == client_id
 
 class Game:
-    def __init__(self, id, mode, ID1, ID2, ID3=None, ID4=None, world=None):
+    def __init__(self, id, mode, ID1, ID2, ID3=None, ID4=None, world=None, usernames=None):
         self.game_clients = [ID1, ID2] if mode == "1vs1" else [ID1, ID2, ID3, ID4]
         self.game_id = id
-
+        self.usernames = usernames
+        print("0000000000000000000000000000000000000000000000000000")
+        print(usernames)
         self.platforms = CustomGroup()
         self.fighters = CustomGroup()
         self.projectiles = CustomGroup()

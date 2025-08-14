@@ -12,15 +12,24 @@ def interpolate_rect(prev_rect, curr_rect, alpha):
     # Interpolate each component (x, y, w, h) between previous and current rects
     return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
 
-def draw_health_bar(screen, rect, health, max_health):
-    bar_width = rect[2] 
-    bar_height = 10  
+def draw_health_bar(screen, rect, health, max_health, username):
+    bar_width = rect[2]
+    bar_height = 10
     bar_x = rect[0]
-    bar_y = rect[1] - bar_height - 5  
+    bar_y = rect[1] - bar_height - 5
     health_ratio = health / max_health
     health_width = bar_width * health_ratio
-    pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height)) 
-    pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, health_width, bar_height))  
+    pygame.draw.rect(screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, health_width, bar_height))
+    # Draw username above health bar
+    font = pygame.font.SysFont('arial', 20)
+    username_text = font.render(username, True, (255, 255, 255))
+    username_rect = username_text.get_rect(center=(bar_x + bar_width // 2, bar_y - 20))
+    padding = 5
+    username_bg = pygame.Surface((username_rect.width + 2 * padding, username_rect.height + 2 * padding), pygame.SRCALPHA)
+    username_bg.fill((0, 0, 0, 100))
+    screen.blit(username_bg, (username_rect.x - padding, username_rect.y - padding))
+    screen.blit(username_text, username_rect)
 
 def static_render(screen, rect, obj, sprite_type, images):
     image = images.get(sprite_type)
@@ -55,8 +64,8 @@ def dynamic_render(screen, rect, obj, fighter_animations, client_anim_states, im
         screen.blit(scaled_image, (rect[0], rect[1]))
         health = obj.get("health",100)
         max_health = obj.get("max_health", 100)
-        
-        draw_health_bar(screen, rect, health, max_health)
+        username = obj.get("username", "Unknown")
+        draw_health_bar(screen, rect, health, max_health, username)
     else:
         image = images.get("fighter")
         if image:
@@ -207,7 +216,7 @@ def draw_game_over(screen, winning_team, losing_team):
     
     pygame.display.flip()
     time.sleep(5)
-def draw_enter_lobby_screen(screen, entered_lobby_id):
+def draw_enter_lobby_screen(screen, entered_lobby_id, error_message=None):
     screen.fill((20, 20, 80))
     font = pygame.font.SysFont('arial', 40)
     title_font = pygame.font.SysFont('arial', 60)
@@ -216,13 +225,26 @@ def draw_enter_lobby_screen(screen, entered_lobby_id):
     
     # Draw input box
     input_box = pygame.Rect(screen.get_width() // 2 - 200, 300, 400, 50)
-    pygame.draw.rect(screen, (255, 255, 255), input_box, 2)  # White border
+    pygame.draw.rect(screen, (255, 255, 255), input_box, 2)
     text_surface = font.render(entered_lobby_id, True, (255, 255, 255))
     screen.blit(text_surface, (input_box.x + 10, input_box.y + 10))
     
     # Instructions
     instruction = font.render("Press Enter to join, Backspace to delete", True, (255, 255, 255))
     screen.blit(instruction, (screen.get_width() // 2 - instruction.get_width() // 2, 400))
+    
+    # Draw error message if exists
+    if error_message:
+        error_surface = font.render(error_message, True, (255, 0, 0))  # Red color for error
+        error_rect = error_surface.get_rect(center=(screen.get_width() // 2, 480))
+        # Draw semi-transparent white background for error message
+        padding = 10
+        error_bg = pygame.Surface((error_rect.width + 2 * padding, error_rect.height + 2 * padding), pygame.SRCALPHA)
+        error_bg.fill((255, 255, 255, 100))  # Semi-transparent white
+        screen.blit(error_bg, (error_rect.x - padding, error_rect.y - padding))
+        screen.blit(error_surface, error_rect)
+    
+    pygame.display.flip()
     
     pygame.display.flip()
 def draw_game_mode_screen(screen, mouse_pos=None):
@@ -250,3 +272,31 @@ def draw_game_mode_screen(screen, mouse_pos=None):
         
     pygame.display.flip()
     return option_rects
+def draw_countdown_screen(screen, countdown_value):
+    screen.fill((20, 20, 80))
+    font = pygame.font.SysFont('arial', 100)
+    if countdown_value is not None:
+        text = font.render(str(countdown_value), True, (255, 255, 255))
+        text_rect = text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+        padding = 10
+        bg_rect = pygame.Surface((text_rect.width + 2 * padding, text_rect.height + 2 * padding), pygame.SRCALPHA)
+        bg_rect.fill((255, 255, 255, 100))
+        screen.blit(bg_rect, (text_rect.x - padding, text_rect.y - padding))
+        screen.blit(text, text_rect)
+    pygame.display.flip()
+def draw_enter_username_screen(screen, username):
+    screen.fill((20, 20, 80))
+    font = pygame.font.SysFont('arial', 40)
+    title_font = pygame.font.SysFont('arial', 60)
+    title = title_font.render("Enter Username", True, (255, 255, 255))
+    screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 100))
+    
+    input_box = pygame.Rect(screen.get_width() // 2 - 200, 300, 400, 50)
+    pygame.draw.rect(screen, (255, 255, 255), input_box, 2)
+    text_surface = font.render(username, True, (255, 255, 255))
+    screen.blit(text_surface, (input_box.x + 10, input_box.y + 10))
+    
+    instruction = font.render("Press Enter to confirm, Backspace to delete", True, (255, 255, 255))
+    screen.blit(instruction, (screen.get_width() // 2 - instruction.get_width() // 2, 400))
+    
+    pygame.display.flip()
