@@ -140,7 +140,6 @@ class Game:
             hit_fighters = pygame.sprite.spritecollide(power, self.fighters, False)
             for fighter in hit_fighters:
                 fighter.upgrade(power.upgrade_type, power.amount)
-                self.sounds.append("power_up")
                 power.kill()
         for sprite in self.fighters:
             sprite.handle_platform_collision(self.platforms)

@@ -62,7 +62,7 @@ last_update_time = 0
 network_interval = 0.1
 shared_lock = threading.Lock()
 client_anim_states = {}
-client_state = "enter_username"  # Start with username entry
+client_state = "enter_username"
 game_over = False
 winning_team = None
 losing_team = None
@@ -114,6 +114,7 @@ def threaded_receive_update(sock):
                 winning_team = client_package.get("winning_team")
                 losing_team = client_package.get("losing_team")
                 game_over = True
+                client_state = "lobby"  # Return to lobby
                 print(f"Game finished: winning_team={winning_team}, losing_team={losing_team}")
             elif client_package.get("request_type") == "lobby_destroyed":
                 print("Lobby has been destroyed by the host.")
@@ -162,15 +163,14 @@ def handle_input(option_rects):
         elif event.type == pygame.KEYDOWN:
             if client_state == "enter_username":
                 if event.key == pygame.K_RETURN:
-                    if username:  # Proceed to game mode selection if username is not empty
+                    if username:
                         client_state = "select_game_mode"
-                        # Send username to server
                         pkg = {"client_id": client_id, "request_type": "set_username", "username": username}
                         send_request_to_server(pkg)
                 elif event.key == pygame.K_BACKSPACE:
                     username = username[:-1]
-                elif event.unicode.isalnum() or event.unicode in ['_']:  # Allow alphanumeric and underscore
-                    if len(username) < 15:  # Limit username length
+                elif event.unicode.isalnum() or event.unicode in ['_']:
+                    if len(username) < 15:
                         username += event.unicode
             elif client_state == "select_game_mode":
                 if event.key == pygame.K_1:
@@ -181,16 +181,16 @@ def handle_input(option_rects):
                     client_state = "menu"
             elif client_state == "enter_lobby_id":
                 if event.key == pygame.K_RETURN:
-                    if entered_lobby_id and not error_message:  # Only send if no error message
+                    if entered_lobby_id and not error_message:
                         pkg = {"client_id": client_id, "request_type": "join_lobby", "room_id": entered_lobby_id, "game_mode": game_mode}
                         send_request_to_server(pkg)
-                    elif error_message:  # Clear error and return to menu
+                    elif error_message:
                         error_message = None
                         error_message_time = None
                         client_state = "menu"
                 elif event.key == pygame.K_BACKSPACE:
                     entered_lobby_id = entered_lobby_id[:-1]
-                elif event.key == pygame.K_ESCAPE:  # Return to menu on Escape
+                elif event.key == pygame.K_ESCAPE:
                     error_message = None
                     error_message_time = None
                     entered_lobby_id = ""
@@ -248,12 +248,17 @@ def handle_input(option_rects):
     return inputs, shoots
 
 def update_and_render():
-    global running, error_message, error_message_time, client_state, countdown_value, username
+    global running, error_message, error_message_time, client_state, countdown_value, username, game_over, winning_team, losing_team, client_state, lobby_id, error_message, error_message_time, countdown_value
     mouse_pos = pygame.mouse.get_pos()
     option_rects = []
     if game_over:
         draw_game_over(screen, winning_team, losing_team)
-        running = False
+        # Reset game_over state after displaying
+        game_over = False
+        winning_team = None
+        losing_team = None
+        pygame.time.delay(3000)  # Show game over screen for 3 seconds
+        client_state = "lobby"  # Return to lobby
     elif client_state == "in_game":
         draw_game_state(screen, shared_lock, game_state, previous_game_state, last_update_time, network_interval, fighter_animations, client_anim_states, images)
     elif client_state in ["searching", "waiting"]:
@@ -264,7 +269,6 @@ def update_and_render():
         option_rects = draw_menu_screen(screen, mouse_pos)
     elif client_state == "enter_lobby_id":
         draw_enter_lobby_screen(screen, entered_lobby_id, error_message)
-        # Automatically return to menu after 3 seconds if error message exists
         if error_message and error_message_time and (time.time() - error_message_time > 2):
             error_message = None
             error_message_time = None
@@ -279,7 +283,6 @@ def update_and_render():
         print("Unknown client_state:", client_state)
         draw_waiting_screen(screen)
     
-    # Clear error message after 3 seconds in menu or enter_lobby_id
     if error_message and error_message_time and client_state != "enter_lobby_id" and (time.time() - error_message_time > 3):
         error_message = None
         error_message_time = None

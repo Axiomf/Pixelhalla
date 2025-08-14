@@ -139,3 +139,8 @@ class FighterSelectState:
         back_button_text = self.font.render("Back", True, (255, 255, 255))  # Render text here
         pulsed_back_button_text_rect = back_button_text.get_rect(center=pulsed_back_button.center)
         scene.blit(back_button_text, pulsed_back_button_text_rect)  # Draw Back button text
+
+
+
+
+        , winning_team, losing_team, client_state, lobby_id, error_message, error_message_time, countdown_value

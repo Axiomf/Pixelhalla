@@ -57,9 +57,8 @@ def threaded_game(game):
                     broadcast(game_over_package, game.game_clients, all_clients)
                     for client in all_clients:
                         if client.client_id in game.game_clients:
-                            client.connected_game_id = ""
-                            client.state = "menu" if client.connected_lobby_id == "" else "lobby"
-
+                            client.connected_game_id = ""  # Clear game ID
+                            client.state = "lobby" if client.connected_lobby_id else "menu"  # Return to lobby if in one
                 with games_lock:
                     if game in all_games:
                         all_games.remove(game)
@@ -346,9 +345,7 @@ def threaded_handle_general_request():
                     # Send game start
                     for cid in ids:
                         send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                    with lobbies_lock:
-                        if lobby in all_lobbies:
-                            all_lobbies.remove(lobby)
+                    # Do not remove lobby here, keep it for after game ends
                     start_new_thread(threaded_game, (new_game,))
         
         except queue.Empty:
