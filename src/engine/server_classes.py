@@ -7,8 +7,7 @@ from src.engine.server_client_helper import generate_unique_client_id, broadcast
 import config
 
 class Client:
-    def __init__(self, client_id, conn, state="menu", username = ""):
-        self.username = username
+    def __init__(self, client_id, conn, state="menu"):
         self.client_id = client_id
         self.conn = conn
         self.state = state
@@ -30,8 +29,6 @@ class Lobby:
         if client_id not in self.members and self.state == "waiting":
             self.members.append(client_id)
             self.update_state()
-            return True
-        return False
 
     def remove_member(self, client_id):
         if client_id in self.members:
