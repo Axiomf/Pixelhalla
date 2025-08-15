@@ -1,0 +1,19 @@
+# Ignore Git and editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+
+# Local files, large assets to handle separately if needed
+src/assets/images/
+src/assets/sounds/
+*.log
