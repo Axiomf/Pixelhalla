@@ -66,63 +66,12 @@ class Game:
         self.finished = False
         self.winning_team = None
 
-        platform1 = Platform(0, config.SCENE_HEIGHT - 20, 1200, 20, color=(139, 140, 78))
-        moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4, config.SCENE_WIDTH/4, 10, range_x=500, range_y=0, speed=1, color=(139, 120, 78))
-        self.platforms.add(platform1, moving_platform)
+        self.load_map_jesus(ID1, ID2,f1,f2,f3,f4)
+        
+        
 
-        fighter1 = Fighter(
-            x=700, 
-            y=config.SCENE_HEIGHT*3/5 - 70, 
-            width=64, 
-            height=64, health=100,
-            platforms=self.platforms,
-            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-            id=ID1, 
-            team=1, 
-            color=(200, 120, 78),
-            multi_player_mode=True
-        )
-        fighter2 = Fighter(
-            x=450, 
-            y=config.SCENE_HEIGHT*3/5 - 70, 
-            width=64, 
-            height=64, health=100,
-            platforms=self.platforms,
-            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-            id=ID2, 
-            team=2, 
-            color=(200, 120, 120),
-            multi_player_mode=True
-        )
-        if mode == "1vs1":
-            self.fighters.add(fighter1, fighter2)
-        elif mode == "2vs2":
-            fighter3 = Fighter(
-            x=800, 
-            y=config.SCENE_HEIGHT*3/5 - 70, 
-            width=32, 
-            height=32, health=100,
-            platforms=self.platforms,
-            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-            id=ID3, 
-            team=1, 
-            color=(200, 120, 78),
-            multi_player_mode=True
-            )
-            fighter4 = Fighter(
-                x=350, 
-                y=config.SCENE_HEIGHT*3/5 - 70, 
-                width=32, 
-                height=32, health=100,
-                platforms=self.platforms,
-                controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
-                id=ID4, 
-                team=2, 
-                color=(200, 120, 120),
-                multi_player_mode=True
-            )
-            self.fighters.add(fighter1, fighter2, fighter3, fighter4)
-
+        
+        
         if mode == "1vs1":
             self.team1_ids = [ID1]
             self.team2_ids = [ID2]
@@ -203,7 +152,7 @@ class Game:
         self.handle_collisions()
         self.check_game_finished()
     
-    def load_map_jesus(self,f1,f2,f3,f4):
+    def load_map_jesus(self,ID1,ID2,f1,f2,f3,f4):
     
         static_platform1 = Platform(0, config.SCENE_HEIGHT - 20, 
                                 1200, 20, 
@@ -215,21 +164,46 @@ class Game:
 
         moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                         config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
-        powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=30, height=30, color=(255,255,0), image_path="src/assets/images/inused_single_images/double_jump.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
-        powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=30, height=30, color=(150,0,0), image_path="src/assets/images/inused_single_images/damage.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
-        powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=30, height=30, color=(150,0,0), image_path="src/assets/images/inused_single_images/shield.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
-        powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75), image_path="src/assets/images/inused_single_images/supershot.png",all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=30, height=30, color=(255,255,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=30, height=30, color=(150,0,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=30, height=30, color=(150,0,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75),all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
         ################################
         # assuming the fighters are added in here
+        fighter1 = Fighter(
+            x=700, 
+            y=config.SCENE_HEIGHT*3/5 - 70, 
+            width=64, 
+            height=64, health=100,
+            platforms=self.platforms,
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+            id=ID1, 
+            team=1, 
+            color=(200, 120, 78),
+            multi_player_mode=True
+        )
+        fighter2 = Fighter(
+            x=450, 
+            y=config.SCENE_HEIGHT*3/5 - 70, 
+            width=64, 
+            height=64, health=100,
+            platforms=self.platforms,
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+            id=ID2, 
+            team=2, 
+            color=(200, 120, 120),
+            multi_player_mode=True
+        )
         
-
+        if self.mode == "1vs1":
+            self.fighters.add(fighter1, fighter2)
+            self.all_sprites.add(fighter1, fighter2)
         
             
         ################################
         # Add each object to the appropriate sprite groups for updating and drawing
-        self.all_sprites.add(static_platform1, moving_platform, static_platform2, fighter1,fighter2, powerup,powerup2,powerup3,powerup4)
+        self.all_sprites.add(static_platform1, moving_platform, static_platform2, powerup,powerup2,powerup3,powerup4)
         self.platforms.add(static_platform1, moving_platform, static_platform2)
-        self.fighters.add(fighter1,fighter2) if self.mode == "1vs1" else self.fighters.add(fighter1,fighter2,fighter3,fighter4)
         self.power_ups.add(powerup,powerup2,powerup3,powerup4)
 
 
