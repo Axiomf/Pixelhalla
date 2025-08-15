@@ -164,10 +164,10 @@ class Game:
 
         moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
                                         config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
-        powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=30, height=30, color=(255,255,0), image_path="src/assets/images/inused_single_images/double_jump.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
-        powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=30, height=30, color=(150,0,0), image_path="src/assets/images/inused_single_images/damage.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
-        powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=30, height=30, color=(150,0,0), image_path="src/assets/images/inused_single_images/shield.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
-        powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75), image_path="src/assets/images/inused_single_images/supershot.png",all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=30, height=30, color=(255,255,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=30, height=30, color=(150,0,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=30, height=30, color=(150,0,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75),all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
         ################################
         # assuming the fighters are added in here
         fighter1 = Fighter(
