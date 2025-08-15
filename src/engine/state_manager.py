@@ -39,6 +39,7 @@ class StateManager:
         self.game_id = None
         self.opponents = []
         self.fighter_type = None
+        self.fighter_type_send = False
         self.error_message = ""
         self.error_message_time = None
         self.countdown_value = None
@@ -63,6 +64,19 @@ class StateManager:
             "fighter": transparent_surface,
             "projectiles": pygame.image.load("src/assets/images/inused_single_images/projectile_Arcane.png")
         }
+        self.fighter_animations = {} 
+        self.fighter_types = {} 
+        try:
+            self.fighter_animations["arcane"] = load_animations_Arcane_Archer()
+            self.fighter_animations["samurai"] = load_animations_Samurai(scale=1)
+            self.fighter_animations["knight"] = load_animations_Knight(scale=1)
+            self.fighter_animations["elf"] = load_animations_Elf_Archer()
+        except Exception as e:
+            print(f"Error loading animations: {e}")
+            self.fighter_animations["arcane"] = {}
+            self.fighter_animations["samurai"] = {}
+            self.fighter_animations["knight"] = {}
+            self.fighter_animations["elf"] = {}
         self.states = {
             config.GAME_STATE_LOADING: LoadingState(scene),
             config.GAME_STATE_MODE_SELECT: ModeSelectState(scene),
@@ -110,7 +124,7 @@ class StateManager:
     def threaded_receive_update(self):
         while self.client_socket:
             try:
-                data = self.client_socket.recv(4096)
+                data = self.client_socket.recv(16384)
                 if not data:
                     print("Disconnected from server.")
                     break
@@ -121,6 +135,9 @@ class StateManager:
                     self.game_world = client_package.get("game_world")
                     self.last_update_time = pygame.time.get_ticks() / 1000.0
                     self.client_state = "in_game"
+                    if self.game_world and "fighters" in self.game_world:
+                        for fighter_data in self.game_world["fighters"]:
+                            self.fighter_types[fighter_data["id"]] = fighter_data["fighter_type"]
                 elif request_type == "game_started":
                     self.client_state = "in_game"
                     self.countdown_value = None
@@ -169,6 +186,15 @@ class StateManager:
         if self.game_state in self.states and self.states[self.game_state] and self.run_client == False:
             self.states[self.game_state].handle_event(event, current_time, scale, self.current_map, self)
         elif self.run_client == True:
+            if self.fighter_type_send == False:
+                pkg = {
+                "client_id": self.client_id,
+                "request_type": "set_fighter_type",
+                "fighter_type": self.fighter_type 
+                }
+                self.send_request_to_server(pkg)
+                self.fighter_type_send = True
+                print(f"Sent fighter_type {self.fighter_type} to server for client {self.client_id}")
             inputs, shoots = self.handle_multiplayer_input(event)
             if inputs or shoots:
                 client_package = {

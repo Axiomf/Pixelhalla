@@ -44,7 +44,7 @@ class FighterSelectState:
                     state_manager.change_state(config.GAME_STATE_PLAYING)
                 elif state_manager.game_mode == "multi":
                     state_manager.fighter1_id = "fighter1"
-                    state_manager.fighter_type = "normal"
+                    state_manager.fighter_type = "elf"
                     state_manager.animation = load_animations_Elf_Archer()
                     state_manager.run_client = True
                     # state_manager.change_state(config.GAME_STATE_WAITING)
@@ -57,7 +57,7 @@ class FighterSelectState:
                     state_manager.change_state(config.GAME_STATE_PLAYING)
                 elif state_manager.game_mode == "multi":
                     state_manager.fighter1_id = "fighter2"
-                    state_manager.fighter_type = "melee"
+                    state_manager.fighter_type = "samurai"
                     state_manager.animation = load_animations_Samurai(scale=1)
                     state_manager.run_client = True
                     # state_manager.change_state(config.GAME_STATE_WAITING)
@@ -70,7 +70,7 @@ class FighterSelectState:
                     state_manager.change_state(config.GAME_STATE_PLAYING)
                 elif state_manager.game_mode == "multi":
                     state_manager.fighter1_id = "fighter3"
-                    state_manager.fighter_type = "melee"
+                    state_manager.fighter_type = "knight"
                     state_manager.animation = load_animations_Knight(scale=1)
                     state_manager.run_client = True
                     # state_manager.change_state(config.GAME_STATE_WAITING)
@@ -83,7 +83,7 @@ class FighterSelectState:
                     state_manager.change_state(config.GAME_STATE_PLAYING)
                 elif state_manager.game_mode == "multi":
                     state_manager.fighter1_id = "fighter4"
-                    state_manager.fighter_type = "normal"
+                    state_manager.fighter_type = "arcane"
                     state_manager.animation = load_animations_Arcane_Archer(scale=1)
                     state_manager.run_client = True
                     # state_manager.change_state(config.GAME_STATE_WAITING)

@@ -115,6 +115,13 @@ def threaded_client(conn):
                             c.username = client_package["username"]
                             print(f"Username set for {client_id}: {client_package['username']}")
                             break
+            elif request_type == "set_fighter_type":  
+                with clients_lock:
+                    for c in all_clients:
+                        if c.client_id == client_package["client_id"]:
+                            c.fighter_type = client_package["fighter_type"]
+                            print(f"Fighter type set for {client_id}: {client_package['fighter_type']}")
+                            break
             else:
                 pending_requests.put((client, client_package))
         except Exception as e:
@@ -187,7 +194,7 @@ def threaded_handle_waiting_clients():
                                 if c.client_id == cid:
                                     usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
                                     break
-                    new_game = Game(game_id, "1vs1", ids[0], ids[1], usernames=usernames)
+                    new_game = Game(game_id, "1vs1", ids[0], ids[1], usernames=usernames, clients_lock=clients_lock, all_clients=all_clients)
                     with games_lock:
                         all_games.append(new_game)
                     for cid in ids:
@@ -220,7 +227,7 @@ def threaded_handle_waiting_clients():
                                 if c.client_id == cid:
                                     usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
                                     break
-                    new_game = Game(game_id, "2vs2", ids[0], ids[1], ids[2], ids[3], usernames=usernames)
+                    new_game = Game(game_id, "2vs2", ids[0], ids[1], ids[2], ids[3], usernames=usernames, clients_lock=clients_lock, all_clients=all_clients)
                     with games_lock:
                         all_games.append(new_game)
                     for cid in ids:
@@ -321,11 +328,11 @@ def threaded_handle_general_request():
                                     usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
                                     break
                     if game_mode == "1vs1":
-                        new_game = Game(game_id, game_mode, ids[0], ids[1], usernames=usernames)
+                        new_game = Game(game_id, game_mode, ids[0], ids[1], usernames=usernames, clients_lock=clients_lock, all_clients=all_clients)
                     else:
                         if len(ids) < 4:
                             continue
-                        new_game = Game(game_id, game_mode, ids[0], ids[1], ids[2], ids[3], usernames=usernames)
+                        new_game = Game(game_id, game_mode, ids[0], ids[1], ids[2], ids[3], usernames=usernames, clients_lock=clients_lock, all_clients=all_clients)
                     with games_lock:
                         all_games.append(new_game)
                     with clients_lock:
