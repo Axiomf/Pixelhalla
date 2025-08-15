@@ -61,7 +61,10 @@ class Game:
         self.all_sprites = CustomGroup()
 
         self.sounds = []
-
+        self.f1 = None
+        self.f2 = None
+        self.f3 = None
+        self.f4 = None
         self.game_updates = []
         self.mode = mode
         self.finished = False
@@ -73,16 +76,16 @@ class Game:
                 for c in all_clients:
                     if c.client_id == cid:
                         if cid == ID1:
-                            f1 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f1 = c.fighter_type if c.fighter_type else "arcane"
                         elif cid == ID2:
-                            f2 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f2 = c.fighter_type if c.fighter_type else "arcane"
                         elif cid == ID3:
-                            f3 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f3 = c.fighter_type if c.fighter_type else "arcane"
                         elif cid == ID4:
-                            f4 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f4 = c.fighter_type if c.fighter_type else "arcane"
                         break
 
-        self.load_map_jesus(ID1, ID2,f1,f2,f3,f4)
+        self.load_map_jesus(ID1, ID2,self.f1,self.f2,self.f3,self.f4)
         
         
 
@@ -157,9 +160,14 @@ class Game:
                     if client_package["client_id"] == fighter.fighter_id:
                         fighter.client_input.extend(client_package["inputs"])
                         if client_package["shoots"]:
-                            for shot in client_package["shoots"]:
-                                projectile = fighter.shoot()
-                                self.projectiles.add(projectile)
+                            if fighter.fighter_type == "arcane" or fighter.fighter_type == "elf":
+                                for shot in client_package["shoots"]:
+                                    projectile = fighter.shoot()
+                                    self.projectiles.add(projectile)
+                            else:
+                                for shot in client_package["shoots"]:
+                                    fighter.attack_multi()
+
             self.game_updates.clear()
         self.fighters.update()
         self.projectiles.update()
@@ -171,6 +179,72 @@ class Game:
     def load_map_jesus(self,ID1,ID2,f1,f2,f3,f4):
     
         static_platform1 = Platform(0, config.SCENE_HEIGHT - 20, 
+                                1200, 20, 
+                                color=(139, 140, 78))
+
+        static_platform2 = Platform(693, config.SCENE_HEIGHT*2/5 - 6, 
+                                153,config.SCENE_HEIGHT*1/200, 
+                                color=(0,0,0))
+
+        moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
+                                        config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
+        powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=30, height=30, color=(255,255,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=30, height=30, color=(150,0,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=30, height=30, color=(150,0,0), all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75),all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        ################################
+        # assuming the fighters are added in here
+        if f1 == "arcane" or f1 == "elf":
+            attack = "shoot"
+            FighterType = Fighter
+        else:
+            attack = "attack"
+            FighterType = Fighter
+        fighter1 = FighterType(
+            x=700, 
+            y=config.SCENE_HEIGHT*3/5 - 70, 
+            width=64, 
+            height=64, health=100,
+            platforms=self.platforms,
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
+            id=ID1, 
+            team=1, 
+            color=(200, 120, 78), fighters=self.fighters,
+            multi_player_mode=True, fighter_type=f1
+        )
+        if f2 == "arcane" or f2 == "elf":
+            attack = "shoot"
+            FighterType = Fighter
+        else:
+            attack = "attack"
+            FighterType = Fighter
+        fighter2 = FighterType(
+            x=450, 
+            y=config.SCENE_HEIGHT*3/5 - 70, 
+            width=64, 
+            height=64, health=100,
+            platforms=self.platforms,
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
+            id=ID2, 
+            team=2, 
+            color=(200, 120, 120), fighters=self.fighters,
+            multi_player_mode=True, fighter_type=f2
+        )
+        
+        if self.mode == "1vs1":
+            self.fighters.add(fighter1, fighter2)
+            self.all_sprites.add(fighter1, fighter2)
+        
+            
+        ################################
+        # Add each object to the appropriate sprite groups for updating and drawing
+        self.all_sprites.add(static_platform1, moving_platform, static_platform2, powerup,powerup2,powerup3,powerup4)
+        self.platforms.add(static_platform1, moving_platform, static_platform2)
+        self.power_ups.add(powerup,powerup2,powerup3,powerup4)
+    
+    def load_map_levels(self,ID1,ID2,f1,f2,f3,f4):
+    
+        static_platform3 = Platform(0, config.SCENE_HEIGHT - 20, 
                                 1200, 20, 
                                 color=(139, 140, 78))
 
@@ -218,8 +292,8 @@ class Game:
             
         ################################
         # Add each object to the appropriate sprite groups for updating and drawing
-        self.all_sprites.add(static_platform1, moving_platform, static_platform2, powerup,powerup2,powerup3,powerup4)
-        self.platforms.add(static_platform1, moving_platform, static_platform2)
+        self.all_sprites.add(static_platform3, moving_platform, static_platform2, powerup,powerup2,powerup3,powerup4)
+        self.platforms.add(static_platform3, moving_platform, static_platform2)
         self.power_ups.add(powerup,powerup2,powerup3,powerup4)
     def load_map_levels(self,ID1,ID2,f1,f2,f3,f4):
     
