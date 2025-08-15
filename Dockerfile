@@ -1,6 +1,9 @@
 # ...existing code...
 FROM python:3.13-slim
 
+# set SDL_AUDIODRIVER to dummy so SDL/Mixer won't attempt real audio
+ENV SDL_AUDIODRIVER=dummy
+
 ENV PYTHONUNBUFFERED=1 \
     POETRY_VIRTUALENVS_CREATE=false
 
