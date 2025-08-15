@@ -258,7 +258,7 @@ def update_and_render():
         winning_team = None
         losing_team = None
         pygame.time.delay(3000)  # Show game over screen for 3 seconds
-        client_state = "lobby"  # Return to lobby
+        client_state = "menu"  # Return to lobby
     elif client_state == "in_game":
         draw_game_state(screen, shared_lock, game_state, previous_game_state, last_update_time, network_interval, fighter_animations, client_anim_states, images)
     elif client_state in ["searching", "waiting"]:
