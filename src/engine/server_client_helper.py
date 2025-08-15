@@ -67,7 +67,8 @@ def serialize_power_ups(group):
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height)
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
+            "type": sprite.upgrade_type
         })
     return serialized
 def serialize_platforms(group):
@@ -76,7 +77,8 @@ def serialize_platforms(group):
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height)
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
+            "color": sprite.color
         })
     return serialized
 
