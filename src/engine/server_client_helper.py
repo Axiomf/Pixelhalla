@@ -48,7 +48,7 @@ def serialize_fighters(group, usernames=None):
             "health": getattr(sprite, "health", 100),
             "max_health": getattr(sprite, "max_health", 100),
             "username": usernames.get(sprite.fighter_id, "Unknown") if usernames else "Unknown",
-            "fighter_type": type(sprite).__name__.lower()
+            "fighter_type": getattr(sprite, "fighter_type", "arcane").lower()
         })
     return serialized
 def serialize_projectiles(group):

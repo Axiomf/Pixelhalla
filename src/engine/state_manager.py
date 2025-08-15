@@ -32,14 +32,19 @@ class StateManager:
         self.win_fighter = False
         self.multi_mode = None
         self.is_initialized = False
+        self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
+
+
+
+        self.fighter_type = None
+        self.run_client = False
+        self.fighter_type_send = False
         self.username = ""
         self.client_socket = None
         self.client_id = None
         self.option_rects = []
         self.game_id = None
         self.opponents = []
-        self.fighter_type = None
-        self.fighter_type_send = False
         self.error_message = ""
         self.error_message_time = None
         self.countdown_value = None
@@ -105,7 +110,6 @@ class StateManager:
 
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
         self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
-        self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
         try:
             pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
             pygame.mixer.music.play(-1)
