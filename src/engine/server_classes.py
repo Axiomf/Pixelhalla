@@ -46,7 +46,8 @@ class Lobby:
         return self.host_client_id == client_id
 
 class Game:
-    def __init__(self, id, mode, ID1, ID2, ID3=None, ID4=None, world=None, usernames=None):
+    def __init__(self, id, mode, ID1, ID2, ID3=None, ID4=None, world=None, usernames=None, 
+                 map = "" , f1 = None, f2 = None, f3 = None, f4 = None):
         self.game_clients = [ID1, ID2] if mode == "1vs1" else [ID1, ID2, ID3, ID4]
         self.game_id = id
         self.usernames = usernames
@@ -56,6 +57,8 @@ class Game:
         self.fighters = CustomGroup()
         self.projectiles = CustomGroup()
         self.power_ups = CustomGroup()
+        self.all_sprites = CustomGroup()
+
         self.sounds = []
 
         self.game_updates = []
@@ -199,3 +202,37 @@ class Game:
         self.platforms.update()
         self.handle_collisions()
         self.check_game_finished()
+    
+    def load_map_jesus(self,f1,f2,f3,f4):
+    
+        static_platform1 = Platform(0, config.SCENE_HEIGHT - 20, 
+                                1200, 20, 
+                                color=(139, 140, 78))
+
+        static_platform2 = Platform(693, config.SCENE_HEIGHT*2/5 - 6, 
+                                153,config.SCENE_HEIGHT*1/200, 
+                                color=(0,0,0))
+
+        moving_platform = MovingPlatform(config.SCENE_WIDTH/8, config.SCENE_HEIGHT/4,
+                                        config.SCENE_WIDTH/4, 10, range_x=150, range_y=0, speed=1)
+        powerup = PowerUp(500, config.SCENE_HEIGHT - 30,"double_jump",5, width=30, height=30, color=(255,255,0), image_path="src/assets/images/inused_single_images/double_jump.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup2 = PowerUp(100, config.SCENE_HEIGHT - 30,"damage",20, width=30, height=30, color=(150,0,0), image_path="src/assets/images/inused_single_images/damage.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup3 = PowerUp(300, config.SCENE_HEIGHT - 30,"shield",20, width=30, height=30, color=(150,0,0), image_path="src/assets/images/inused_single_images/shield.png", all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75), image_path="src/assets/images/inused_single_images/supershot.png",all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
+        ################################
+        # assuming the fighters are added in here
+        
+
+        
+            
+        ################################
+        # Add each object to the appropriate sprite groups for updating and drawing
+        self.all_sprites.add(static_platform1, moving_platform, static_platform2, fighter1,fighter2, powerup,powerup2,powerup3,powerup4)
+        self.platforms.add(static_platform1, moving_platform, static_platform2)
+        self.fighters.add(fighter1,fighter2) if self.mode == "1vs1" else self.fighters.add(fighter1,fighter2,fighter3,fighter4)
+        self.power_ups.add(powerup,powerup2,powerup3,powerup4)
+
+
+
+
+
