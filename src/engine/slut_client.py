@@ -96,7 +96,7 @@ countdown_value = None
 username = ""
 entered_lobby_id = ""
 
-conn = None
+# --- Network Setup ---
 client_id = None
 lobby_id = None
 
@@ -239,7 +239,7 @@ def handle_input(option_rects):
             elif event.key == pygame.K_5:  # destroy_lobby
                 pkg = {"client_id": client_id, "request_type": "destroy_lobby"}
                 send_request_to_server(pkg)
-            elif event.key == pygame.K_p:
+            elif event.key == pygame.K_v:
                 with info_lock:
                     if game_mode == "1vs1":
                         game_mode = "2vs2"

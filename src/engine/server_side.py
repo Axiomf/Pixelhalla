@@ -112,6 +112,56 @@ def threaded_game(game):
         if sleep_time > 0:
             time.sleep(sleep_time)
 
+def handle_client_disconnection(client, conn):
+    global all_clients, all_lobbies, all_games, waiting_clients
+    client_id = client.client_id
+    print(f"Client {client_id} disconnected")
+    with clients_lock:
+        # Remove from all_clients
+        for i, c in enumerate(all_clients):
+            if c.client_id == client_id:
+                del all_clients[i]
+                break
+
+        # Remove from lobby if in one
+        with lobbies_lock:
+            for lobby in list(all_lobbies):
+                if client_id in lobby.members:
+                    lobby.remove_member(client_id)
+                    if lobby.is_host(client_id):
+                        client_ids_in_lobby = list(lobby.members)
+                        for cid in client_ids_in_lobby:
+                            for c in all_clients:
+                                if c.client_id == cid:
+                                    c.connected_lobby_id = ""
+                                    c.is_host = False
+                                    c.state = "menu"
+                        broadcast({"request_type": "lobby_destroyed"}, client_ids_in_lobby, all_clients)
+                        print(f"Lobby {lobby.lobby_id} destroyed due to host {client_id} disconnection")
+                        all_lobbies.remove(lobby)
+                    else:
+                        broadcast({"request_type": "client_disconnected", "client_id": client_id}, lobby.members, all_clients)
+                    break
+
+        # Remove from game if in one
+        with games_lock:
+            for game in all_games:
+                if client_id in game.game_clients:
+                    game.handle_client_disconnect(client_id)
+                    break
+
+        # Remove from waiting_clients if in waiting room
+        with waiting_clients_lock:
+            if client_id in waiting_clients:
+                waiting_clients.pop(client_id, None)
+                print(f"Client {client_id} removed from waiting_clients")
+
+    try:
+        conn.close()
+    except Exception as e:
+        print(f"Error closing connection for {client_id}: {e}")
+        traceback.print_exc()
+
 def threaded_client(conn):
     global pending_requests, all_games, all_lobbies, waiting_clients
     client_id = generate_unique_client_id()
@@ -151,53 +201,10 @@ def threaded_client(conn):
             traceback.print_exc()
             break
 
-    # Handle client disconnection
-    print(f"Client {client_id} disconnected")
-    with clients_lock:
-        # Remove from all_clients
-        for i, c in enumerate(all_clients):
-            if c.client_id == client_id:
-                del all_clients[i]
-                break
+    # Handle client disconnection (refactored)
+    handle_client_disconnection(client, conn)
+    return
 
-        # Remove from lobby if in one
-        with lobbies_lock:
-            for lobby in all_lobbies:
-                if client_id in lobby.members:
-                    lobby.remove_member(client_id)
-                    if lobby.is_host(client_id):
-                        client_ids_in_lobby = list(lobby.members)
-                        for cid in client_ids_in_lobby:
-                            for c in all_clients:
-                                if c.client_id == cid:
-                                    c.connected_lobby_id = ""
-                                    c.is_host = False
-                                    c.state = "menu"
-                        broadcast({"request_type": "lobby_destroyed"}, client_ids_in_lobby, all_clients)
-                        print(f"Lobby {lobby.lobby_id} destroyed due to host {client_id} disconnection")
-                        all_lobbies.remove(lobby)
-                    else:
-                        broadcast({"request_type": "client_disconnected", "client_id": client_id}, lobby.members, all_clients)
-                    break
-
-        # Remove from game if in one
-        with games_lock:
-            for game in all_games:
-                if client_id in game.game_clients:
-                    game.handle_client_disconnect(client_id)
-                    break
-
-        # Remove from waiting_clients if in waiting room
-        with waiting_clients_lock:
-            if client_id in waiting_clients:
-                waiting_clients.pop(client_id, None)
-                print(f"Client {client_id} removed from waiting_clients")
-
-    try:
-        conn.close()
-    except Exception as e:
-        print(f"Error closing connection for {client_id}: {e}")
-        traceback.print_exc()
 def threaded_handle_waiting_clients():
     global waiting_clients, all_games, all_clients
     while True:

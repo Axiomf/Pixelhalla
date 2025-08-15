@@ -7,7 +7,8 @@ from src.engine.server_helper import generate_unique_client_id, broadcast, send_
 import config
 
 class Client:
-    def __init__(self, client_id, conn, state="menu"):
+    def __init__(self, client_id, conn, state="menu", username):
+        self.username = username
         self.client_id = client_id
         self.conn = conn
         self.state = state
