@@ -70,8 +70,8 @@ class Game:
         fighter1 = Fighter(
             x=700, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
-            width=32, 
-            height=32, health=100,
+            width=64, 
+            height=64, health=100,
             platforms=self.platforms,
             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
             id=ID1, 
@@ -82,8 +82,8 @@ class Game:
         fighter2 = Fighter(
             x=450, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
-            width=32, 
-            height=32, health=100,
+            width=64, 
+            height=64, health=100,
             platforms=self.platforms,
             controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
             id=ID2, 

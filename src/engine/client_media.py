@@ -1,14 +1,9 @@
 import pygame
 import time
 
-def get_full_rect(rect):
-    # Ensure rect is (x, y, width, height), default width and height = 32 if missing
-    return rect if len(rect) == 4 else (rect[0], rect[1], 64, 64)
 
 def interpolate_rect(prev_rect, curr_rect, alpha):
     # Ensure both rects are (x, y, width, height)
-    prev_rect = get_full_rect(prev_rect)
-    curr_rect = get_full_rect(curr_rect)
     # Interpolate each component (x, y, w, h) between previous and current rects
     return tuple(int(prev_rect[i] + alpha * (curr_rect[i] - prev_rect[i])) for i in range(4))
 
@@ -32,12 +27,11 @@ def draw_health_bar(screen, rect, health, max_health, username):
     screen.blit(username_text, username_rect)
 
 def static_render(screen, rect, obj, sprite_type, images):
+    # Normalize rect so width/height are always available
     image = images.get(sprite_type)
     if image:
-        if sprite_type == "projectiles":
-            w = 10
-            h = 10
-        scaled_image = pygame.transform.scale(image, (w, h))
+        # Use explicit size for projectiles, otherwise use rect size
+        scaled_image = pygame.transform.scale(image, (int(rect[2]), int(rect[3])))
         screen.blit(scaled_image, (rect[0], rect[1]))
     else:
         pygame.draw.rect(screen, (255, 255, 255), rect)
@@ -77,7 +71,7 @@ def dynamic_render(screen, rect, obj, fighter_animations, client_anim_states, im
             pygame.draw.rect(screen, (255, 255, 255), rect)
 
 def render_obj(screen, rect, obj, sprite_type, fighter_animations, client_anim_states, images):
-    rect = get_full_rect(rect)
+   
     if sprite_type == "fighters":
         dynamic_render(screen, rect, obj, fighter_animations, client_anim_states, images)
     else:

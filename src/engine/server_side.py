@@ -35,9 +35,6 @@ server_package = {
         "sounds": []
 }
 """
-
-
-
 def threaded_game(game):
     target_frame_duration = 1.0 / 60
     while True:

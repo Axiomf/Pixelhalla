@@ -35,11 +35,13 @@ def send_to_client(server_package, client_id, all_clients):
         print(f"Error sending to client {client_id}: {e}")
 
 def serialize_fighters(group, usernames=None):
-    """Serialize fighter sprites, including username from the provided usernames dictionary."""
+    """Serialize fighter sprites, including username from the provided usernames dictionary.
+    Rect is sent as (x, y, width, height).
+    """
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y),  # modified: only x and y coordinates
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
             "state": getattr(sprite, "state", "idle"),
             "id": getattr(sprite, "fighter_id", "id not given"),
             "facing_right": getattr(sprite, "facing_right", True),
@@ -49,28 +51,31 @@ def serialize_fighters(group, usernames=None):
         })
     return serialized
 def serialize_projectiles(group):
+    """Serialize projectiles. Rect is (x, y, width, height)."""
     
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y),  # modified: only x and y coordinates
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
             "id": getattr(sprite, "fighter_id", "id not given")
         })
     return serialized
 def serialize_power_ups(group):
+    """Serialize power-ups. Rect is (x, y, width, height)."""
     
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y)  # modified: only x and y coordinates
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height)
         })
     return serialized
 def serialize_platforms(group):
+    """Serialize platforms. Rect is (x, y, width, height)."""
     
     serialized = []
     for sprite in group.sprites():
         serialized.append({
-            "rect": (sprite.rect.x, sprite.rect.y)  # modified: only x and y coordinates
+            "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height)
         })
     return serialized
 
