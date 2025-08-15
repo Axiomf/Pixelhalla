@@ -234,7 +234,45 @@ class Game:
         if self.mode == "1vs1":
             self.fighters.add(fighter1, fighter2)
             self.all_sprites.add(fighter1, fighter2)
-        
+        else:
+            if f3 == "arcane" or f3 == "elf":
+                attack = "shoot"
+                FighterType = Fighter
+            else:
+                attack = "attack"
+                FighterType = Fighter
+            fighter3 = FighterType(
+                x=800, 
+                y=config.SCENE_HEIGHT*3/5 - 70, 
+                width=64, 
+                height=64, health=100,
+                platforms=self.platforms,
+                controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
+                id=ID1, 
+                team=1, 
+                color=(200, 120, 78), fighters=self.fighters,
+                multi_player_mode=True, fighter_type=f3
+            )
+            if f4 == "arcane" or f4 == "elf":
+                attack = "shoot"
+                FighterType = Fighter
+            else:
+                attack = "attack"
+                FighterType = Fighter
+            fighter4 = FighterType(
+                x=350, 
+                y=config.SCENE_HEIGHT*3/5 - 70, 
+                width=64, 
+                height=64, health=100,
+                platforms=self.platforms,
+                controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
+                id=ID2, 
+                team=2, 
+                color=(200, 120, 120), fighters=self.fighters,
+                multi_player_mode=True, fighter_type=f4
+            )
+            self.fighters.add(fighter1, fighter2, fighter3, fighter4)
+            self.all_sprites.add(fighter1, fighter2, fighter3, fighter4)
             
         ################################
         # Add each object to the appropriate sprite groups for updating and drawing
