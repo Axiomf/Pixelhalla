@@ -375,7 +375,7 @@ class Player(DynamicObject):
 
 class Fighter(Player):
     def __init__(self, x, y, width=70, height=70, color=None, controls=None, health=config.PLAYER_HEALTH, 
-                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 0,multi_player_mode=False):
+                 damage=config.PLAYER_DAMAGE, image_path=None, platforms=None, enemies=None, fighters=None, username=None, animations=None, id=None, team = 0,multi_player_mode=False, fighter_type=None):
         super().__init__(x, y, width, height, color, health, damage, image_path, animations,multi_player_mode=multi_player_mode)
         self.controls = controls or {}  # Store control keys for this fighter
         self.speed = config.PLAYER_SPEED  # Horizontal speed
@@ -383,6 +383,7 @@ class Fighter(Player):
         self.enemies = enemies
         self.fighters = fighters
 
+        self.fighter_type=fighter_type
         self.server_update = False
         self.client_input  = []
         self.fighter_id = id or "id not given"

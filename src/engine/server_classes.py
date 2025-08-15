@@ -52,7 +52,6 @@ class Game:
         self.game_clients = [ID1, ID2] if mode == "1vs1" else [ID1, ID2, ID3, ID4]
         self.game_id = id
         self.usernames = usernames
-        print("0000000000000000000000000000000000000000000000000000")
         print(usernames)
         self.platforms = CustomGroup()
         self.fighters = CustomGroup()
@@ -66,6 +65,21 @@ class Game:
         self.mode = mode
         self.finished = False
         self.winning_team = None
+
+        self.fighter_types = {} 
+        with clients_lock:  
+            for cid in self.game_clients:
+                for c in all_clients:
+                    if c.client_id == cid:
+                        if cid == ID1:
+                            f1 = c.fighter_type if c.fighter_type else "arcane"
+                        elif cid == ID2:
+                            f2 = c.fighter_type if c.fighter_type else "arcane"
+                        elif cid == ID3:
+                            f3 = c.fighter_type if c.fighter_type else "arcane"
+                        elif cid == ID4:
+                            f4 = c.fighter_type if c.fighter_type else "arcane"
+                        break
 
         self.load_map_jesus(ID1, ID2,f1,f2,f3,f4)
         
@@ -181,7 +195,7 @@ class Game:
             id=ID1, 
             team=1, 
             color=(200, 120, 78),
-            multi_player_mode=True
+            multi_player_mode=True, fighter_type=f1
         )
         fighter2 = Fighter(
             x=450, 
@@ -193,7 +207,7 @@ class Game:
             id=ID2, 
             team=2, 
             color=(200, 120, 120),
-            multi_player_mode=True
+            multi_player_mode=True, fighter_type=f2
         )
         
         if self.mode == "1vs1":
