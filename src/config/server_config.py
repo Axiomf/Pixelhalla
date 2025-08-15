@@ -1,7 +1,7 @@
 import socket
 
-SERVER_IP = "127.0.0.1"  # Server IP
-SERVER_PORT = 5555           # Server port
+SERVER_IP = "eed67e51-7b09-43d5-8972-3cc20f2b2723.hsvc.ir"  # Server IP
+SERVER_PORT = 28655           # Server port
 server_ip = "0.0.0.0"
 def create_server_socket():# the comments on how it works are in previous commits when there was no server_config.py
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
