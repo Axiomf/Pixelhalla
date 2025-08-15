@@ -155,6 +155,7 @@ class DynamicObject(GameObject):
     def _handle_attack_animation(self, now):
         # If attack duration has passed, reset attack state
         if self.is_attacking and now - self.attack_start_time >= self.attack_duration:
+            print(now)
             self.is_attacking = False
             self.change_x = self.original_change_x  # Restore original movement
             self.state = "walk" if self.change_x != 0 else "idle"
@@ -490,6 +491,11 @@ class Fighter(Player):
         super().update()
 
     def attack_multi(self):
+        now = pygame.time.get_ticks()
+        print("------")
+        print(now)
+        print("------")
+        self.attack_start_time = now
         self.attack_range = 50
         self.is_attacking = True
         self.state = "attack"
@@ -505,6 +511,7 @@ class Fighter(Player):
                 dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
                 if dist <= self.attack_range:
                     sprite.take_damage(self.damage)
+        self.last_attack_time = now 
 
     def shoot(self,arrow = "arcane"):
         """Creates a projectile moving in the direction the player is facing."""
