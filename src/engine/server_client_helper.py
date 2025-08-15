@@ -78,7 +78,7 @@ def serialize_platforms(group):
     for sprite in group.sprites():
         serialized.append({
             "rect": (sprite.rect.x, sprite.rect.y, sprite.rect.width, sprite.rect.height),
-            # "color": sprite.color
+            #"color": sprite.color
         })
     return serialized
 

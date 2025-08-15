@@ -35,7 +35,7 @@ class StateManager:
         self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
 
 
-
+        # info_lock candidates:
         self.fighter_type = None
         self.run_client = False
         self.fighter_type_send = False
@@ -56,12 +56,20 @@ class StateManager:
         self.key_pressed = {
             pygame.K_a: False, pygame.K_d: False, pygame.K_w: False, pygame.K_SPACE: False
         }
+
+
         self.client_anim_states = {}
-        self.game_world = None
-        self.previous_game_world = None
-        self.last_update_time = 0
+        self.game_world = None # game_lock
+        self.previous_game_world = None # game_lock
+        self.last_update_time = 0 # game_lock
         self.network_interval = 0.1
-        self.shared_lock = threading.Lock()
+        self.run_client = False
+
+        
+        self.shared_lock = threading.Lock() # going to split into info_lock and game_lock
+        self.info_lock = threading.Lock()
+        self.game_lock = threading.Lock()
+
         transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)
         transparent_surface.fill((0, 0, 0, 0))
         self.images = {
@@ -121,14 +129,16 @@ class StateManager:
             self.client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)
             self.client_socket.connect((SERVER_IP, SERVER_PORT))
             client_id_data = self.client_socket.recv(4096)
-            self.client_id = pickle.loads(client_id_data)
+            with self.info_lock:
+                self.client_id = pickle.loads(client_id_data)
             print(f"Connected to server. Your client ID is: {self.client_id}")
             self.recv_thread = threading.Thread(target=self.threaded_receive_update, args=(), daemon=True)
             self.recv_thread.start()
         except Exception as e:
             print(f"Could not connect to server: {e}")
-            self.error_message = "Could not connect to server"
-            self.error_message_time = pygame.time.get_ticks()
+            with self.info_lock:
+                self.error_message = "Could not connect to server"
+                self.error_message_time = pygame.time.get_ticks()
 
     def threaded_receive_update(self):
         while self.client_socket:
@@ -140,44 +150,61 @@ class StateManager:
                 client_package = pickle.loads(data)
                 request_type = client_package.get("request_type")
                 if request_type == "game_update":
-                    self.previous_game_world = self.game_world
-                    self.game_world = client_package.get("game_world")
-                    self.last_update_time = pygame.time.get_ticks() / 1000.0
-                    self.client_state = "in_game"
-                    if self.game_world and "fighters" in self.game_world:
-                        for fighter_data in self.game_world["fighters"]:
-                            self.fighter_types[fighter_data["id"]] = fighter_data["fighter_type"]
+                    # Protect mutation of game state
+                    with self.game_lock:
+                        self.previous_game_world = self.game_world
+                        self.game_world = client_package.get("game_world")
+                        self.last_update_time = pygame.time.get_ticks() / 1000.0
+                        if self.game_world and "fighters" in self.game_world:
+                            for fighter_data in self.game_world["fighters"]:
+                                self.fighter_types[fighter_data["id"]] = fighter_data["fighter_type"]
+                    # update client_state in one grouped info_lock
+                    with self.info_lock:
+                        self.client_state = "in_game"
                 elif request_type == "game_started":
-                    self.client_state = "in_game"
-                    self.countdown_value = None
+                    # countdown_value is game-level, client_state is info-level
+                    with self.game_lock:
+                        self.countdown_value = None
+                    with self.info_lock:
+                        self.client_state = "in_game"
                     print("Game started!")
                 elif request_type == "game_finished":
-                    self.winning_team = client_package.get("winning_team")
-                    self.losing_team = client_package.get("losing_team")
-                    self.game_over = True
-                    self.client_state = "lobby"
+                    # Protect setting of end-of-game fields (game-level) and info fields grouped
+                    with self.game_lock:
+                        self.winning_team = client_package.get("winning_team")
+                        self.losing_team = client_package.get("losing_team")
+                        self.game_over = True
+                    with self.info_lock:
+                        self.client_state = "lobby"
                     print(f"Game finished: winning_team={self.winning_team}, losing_team={self.losing_team}")
                 elif request_type == "lobby_destroyed":
+                    with self.info_lock:
+                        self.client_state = "menu"
                     print("Lobby has been destroyed by the host.")
-                    self.client_state = "menu"
                 elif request_type == "lobby_created":
-                    self.game_id = client_package.get("lobby_id")
-                    self.client_state = "lobby"
+                    with self.info_lock:
+                        self.game_id = client_package.get("lobby_id")
+                        self.client_state = "lobby"
                     print(f"Lobby created with ID: {self.game_id}")
                 elif request_type == "lobby_joined":
-                    self.game_id = client_package.get("lobby_id")
-                    self.client_state = "lobby"
-                    self.entered_lobby_id = ""
+                    with self.info_lock:
+                        self.game_id = client_package.get("lobby_id")
+                        self.client_state = "lobby"
+                        self.entered_lobby_id = ""
                     print(f"Joined lobby with ID: {self.game_id}")
                 elif request_type == "lobby_join_failed":
-                    self.error_message = client_package.get("message", "Lobby not found")
-                    self.error_message_time = pygame.time.get_ticks()
+                    with self.info_lock:
+                        self.error_message = client_package.get("message", "Lobby not found")
+                        self.error_message_time = pygame.time.get_ticks()
                     print(f"Lobby join failed: {self.error_message}")
                 elif request_type == "client_disconnected":
                     print(f"Client {client_package.get('client_id')} disconnected from the game or lobby")
                 elif request_type == "countdown":
-                    self.countdown_value = client_package.get("count")
-                    self.client_state = "countdown"
+                    # Protect countdown value update (game-level) and client_state (info-level)
+                    with self.game_lock:
+                        self.countdown_value = client_package.get("count")
+                    with self.info_lock:
+                        self.client_state = "countdown"
                     print(f"Countdown: {self.countdown_value}")
             except Exception as e:
                 print(f"Error receiving message: {e}")
@@ -185,7 +212,12 @@ class StateManager:
 
     def send_request_to_server(self, client_package):
         try:
-            self.client_socket.sendall(pickle.dumps(client_package))
+            # snapshot socket under info_lock to avoid race and to avoid holding lock during network I/O
+            with self.info_lock:
+                sock = self.client_socket
+            if not sock:
+                return False
+            sock.sendall(pickle.dumps(client_package))
             return True
         except Exception as e:
             print(f"Error sending data: {e}")
@@ -194,180 +226,265 @@ class StateManager:
     def handle_event(self, event, current_time, scale):
         if self.game_state in self.states and self.states[self.game_state] and self.run_client == False:
             self.states[self.game_state].handle_event(event, current_time, scale, self.current_map, self)
-        elif self.run_client == True:
-            if self.fighter_type_send == False:
-                pkg = {
-                "client_id": self.client_id,
-                "request_type": "set_fighter_type",
-                "fighter_type": self.fighter_type 
-                }
-                self.send_request_to_server(pkg)
-                self.fighter_type_send = True
-                print(f"Sent fighter_type {self.fighter_type} to server for client {self.client_id}")
-            inputs, shoots = self.handle_multiplayer_input(event)
-            if inputs or shoots:
-                client_package = {
-                    "client_id": self.client_id,
-                    "request_type": "input",
-                    "game_mode": self.game_mode,
-                    "inputs": inputs,
-                    "shoots": shoots
-                }
-                self.send_request_to_server(client_package)
+        else:
+            # Check run_client and prepare fighter-type send in a single info_lock
+            with self.info_lock:
+                run_client_local = self.run_client
+                need_send_fighter = (not self.fighter_type_send)
+                client_id_local = self.client_id
+                fighter_type_local = self.fighter_type
+            if run_client_local:
+                if need_send_fighter:
+                    # mark sent under lock, but perform network send after releasing lock
+                    with self.info_lock:
+                        self.fighter_type_send = True
+                    pkg = {
+                        "client_id": client_id_local,
+                        "request_type": "set_fighter_type",
+                        "fighter_type": fighter_type_local
+                    }
+                    self.send_request_to_server(pkg)
+                    print(f"Sent fighter_type {fighter_type_local} to server for client {client_id_local}")
+                inputs, shoots = self.handle_multiplayer_input(event)
+                if inputs or shoots:
+                    # snapshot needed info once
+                    with self.info_lock:
+                        client_id_local = self.client_id
+                        game_mode_local = self.game_mode
+                    client_package = {
+                        "client_id": client_id_local,
+                        "request_type": "input",
+                        "game_mode": game_mode_local,
+                        "inputs": inputs,
+                        "shoots": shoots
+                    }
+                    self.send_request_to_server(client_package)
 
     def handle_multiplayer_input(self, event):
         inputs = []
         shoots = []
+        outbound_pkg = None
+
         if event.type == pygame.QUIT:
             return [], []
-        elif event.type == pygame.KEYDOWN:
-            if self.client_state == "enter_username":
+        # Snapshot a set of info fields once to decide behavior; modify state and prepare packages inside the same lock
+        with self.info_lock:
+            client_state_local = self.client_state
+            username_local = self.username
+            entered_local = self.entered_lobby_id
+            error_local = self.error_message
+            game_mode_local = self.game_mode
+            option_rects_local = list(self.option_rects)
+        # Handle keyboard events
+        if event.type == pygame.KEYDOWN:
+            if client_state_local == "enter_username":
                 if event.key == pygame.K_RETURN:
-                    if self.username:
-                        self.client_state = "select_game_mode"
-                        pkg = {"client_id": self.client_id, "request_type": "set_username", "username": self.username}
-                        self.send_request_to_server(pkg)
+                    # set new state and prepare pkg under lock
+                    with self.info_lock:
+                        if self.username:
+                            self.client_state = "select_game_mode"
+                            outbound_pkg = {"client_id": self.client_id, "request_type": "set_username", "username": self.username}
                 elif event.key == pygame.K_BACKSPACE:
-                    self.username = self.username[:-1]
+                    with self.info_lock:
+                        self.username = self.username[:-1]
                 elif event.unicode.isalnum() or event.unicode in ['_']:
-                    if len(self.username) < 15:
-                        self.username += event.unicode
-            elif self.client_state == "select_game_mode":
+                    with self.info_lock:
+                        if len(self.username) < 15:
+                            self.username += event.unicode
+            elif client_state_local == "select_game_mode":
                 if event.key == pygame.K_1:
-                    self.game_mode = "1vs1"
-                    self.client_state = "menu"
+                    with self.info_lock:
+                        self.game_mode = "1vs1"
+                        self.client_state = "menu"
                     self.click_sound.play()
                 elif event.key == pygame.K_2:
-                    self.game_mode = "2vs2"
-                    self.client_state = "menu"
+                    with self.info_lock:
+                        self.game_mode = "2vs2"
+                        self.client_state = "menu"
                     self.click_sound.play()
-            elif self.client_state == "enter_lobby_id":
+            elif client_state_local == "enter_lobby_id":
                 if event.key == pygame.K_RETURN:
-                    if self.entered_lobby_id and not self.error_message:
-                        pkg = {"client_id": self.client_id, "request_type": "join_lobby", "room_id": self.entered_lobby_id, "game_mode": self.game_mode}
-                        self.send_request_to_server(pkg)
-                    elif self.error_message:
+                    with self.info_lock:
+                        entered = self.entered_lobby_id
+                        has_error = bool(self.error_message)
+                    if entered and not has_error:
+                        outbound_pkg = {"client_id": self.client_id, "request_type": "join_lobby", "room_id": entered, "game_mode": self.game_mode}
+                    elif has_error:
+                        with self.info_lock:
+                            self.error_message = None
+                            self.error_message_time = None
+                            self.client_state = "menu"
+                elif event.key == pygame.K_BACKSPACE:
+                    with self.info_lock:
+                        self.entered_lobby_id = self.entered_lobby_id[:-1]
+                elif event.key == pygame.K_ESCAPE:
+                    with self.info_lock:
                         self.error_message = None
                         self.error_message_time = None
+                        self.entered_lobby_id = ""
                         self.client_state = "menu"
-                elif event.key == pygame.K_BACKSPACE:
-                    self.entered_lobby_id = self.entered_lobby_id[:-1]
-                elif event.key == pygame.K_ESCAPE:
-                    self.error_message = None
-                    self.error_message_time = None
-                    self.entered_lobby_id = ""
-                    self.client_state = "menu"
                 elif event.unicode.isalnum():
-                    self.entered_lobby_id += event.unicode
-            elif self.client_state == "menu":
+                    with self.info_lock:
+                        self.entered_lobby_id += event.unicode
+            elif client_state_local == "menu":
                 if event.key == pygame.K_1:
-                    pkg = {"client_id": self.client_id, "request_type": "find_random_game", "game_mode": self.game_mode}
-                    if self.send_request_to_server(pkg):
-                        self.client_state = "searching"
+                    with self.info_lock:
+                        gm = self.game_mode
+                    outbound_pkg = {"client_id": self.client_id, "request_type": "find_random_game", "game_mode": gm}
+                    if outbound_pkg:
+                        with self.info_lock:
+                            self.client_state = "searching"
                         self.click_sound.play()
                 elif event.key == pygame.K_2:
-                    pkg = {"client_id": self.client_id, "request_type": "make_lobby", "game_mode": self.game_mode}
-                    if self.send_request_to_server(pkg):
-                        self.client_state = "lobby"
+                    with self.info_lock:
+                        gm = self.game_mode
+                    outbound_pkg = {"client_id": self.client_id, "request_type": "make_lobby", "game_mode": gm}
+                    if outbound_pkg:
+                        with self.info_lock:
+                            self.client_state = "lobby"
                         self.click_sound.play()
                 elif event.key == pygame.K_3:
-                    self.client_state = "enter_lobby_id"
+                    with self.info_lock:
+                        self.client_state = "enter_lobby_id"
                     self.click_sound.play()
-            elif self.client_state == "lobby":
+            elif client_state_local == "lobby":
                 if event.key == pygame.K_4:
-                    pkg = {"client_id": self.client_id, "request_type": "start_the_game_as_host"}
-                    self.send_request_to_server(pkg)
+                    outbound_pkg = {"client_id": self.client_id, "request_type": "start_the_game_as_host"}
                     self.click_sound.play()
                 elif event.key == pygame.K_5:
-                    pkg = {"client_id": self.client_id, "request_type": "destroy_lobby"}
-                    self.send_request_to_server(pkg)
+                    outbound_pkg = {"client_id": self.client_id, "request_type": "destroy_lobby"}
                     self.click_sound.play()
-            if event.key in self.key_pressed and not self.key_pressed[event.key]:
-                if event.key == pygame.K_SPACE:
-                    shoots.append("arcane")
-                self.key_pressed[event.key] = True
-                inputs.append(("down", event.key))
+            # Key press tracking consolidated: update key state in one lock for the event
+            if event.key in self.key_pressed:
+                with self.info_lock:
+                    if not self.key_pressed[event.key]:
+                        if event.key == pygame.K_SPACE:
+                            shoots.append("arcane")
+                        self.key_pressed[event.key] = True
+                        inputs.append(("down", event.key))
         elif event.type == pygame.KEYUP:
             if event.key in self.key_pressed:
-                self.key_pressed[event.key] = False
-                inputs.append(("up", event.key))
+                with self.info_lock:
+                    self.key_pressed[event.key] = False
+                    inputs.append(("up", event.key))
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = event.pos
-            print(f"Mouse clicked at: {mouse_pos}, option_rects: {self.option_rects}") 
-            for i, rect in enumerate(self.option_rects):
+            print(f"Mouse clicked at: {mouse_pos}, option_rects: {option_rects_local}") 
+            for i, rect in enumerate(option_rects_local):
                 if rect.collidepoint(mouse_pos):
                     print(f"Option {i} clicked") 
                     self.click_sound.play()
-                    if self.client_state == "select_game_mode":
+                    # All state updates prepared inside one short lock per branch
+                    if client_state_local == "select_game_mode":
+                        with self.info_lock:
+                            if i == 0:
+                                self.game_mode = "1vs1"
+                                self.client_state = "menu"
+                            elif i == 1:
+                                self.game_mode = "2vs2"
+                                self.client_state = "menu"
+                    elif client_state_local == "menu":
                         if i == 0:
-                            self.game_mode = "1vs1"
-                            self.client_state = "menu"
+                            with self.info_lock:
+                                gm = self.game_mode
+                            outbound_pkg = {"client_id": self.client_id, "request_type": "find_random_game", "game_mode": gm}
+                            if outbound_pkg:
+                                with self.info_lock:
+                                    self.client_state = "searching"
                         elif i == 1:
-                            self.game_mode = "2vs2"
-                            self.client_state = "menu"
-                    elif self.client_state == "menu":
-                        if i == 0:
-                            pkg = {"client_id": self.client_id, "request_type": "find_random_game", "game_mode": self.game_mode}
-                            if self.send_request_to_server(pkg):
-                                self.client_state = "searching"
-                        elif i == 1:
-                            pkg = {"client_id": self.client_id, "request_type": "make_lobby", "game_mode": self.game_mode}
-                            if self.send_request_to_server(pkg):
-                                self.client_state = "lobby"
+                            with self.info_lock:
+                                gm = self.game_mode
+                            outbound_pkg = {"client_id": self.client_id, "request_type": "make_lobby", "game_mode": gm}
+                            if outbound_pkg:
+                                with self.info_lock:
+                                    self.client_state = "lobby"
                         elif i == 2:
-                            self.client_state = "enter_lobby_id"
-                    elif self.client_state == "lobby":
-                        if i == 1:  
-                            pkg = {"client_id": self.client_id, "request_type": "start_the_game_as_host"}
-                            self.send_request_to_server(pkg)
-                        elif i == 2:  
-                            pkg = {"client_id": self.client_id, "request_type": "destroy_lobby"}
-                            self.send_request_to_server(pkg)
+                            with self.info_lock:
+                                self.client_state = "enter_lobby_id"
+                    elif client_state_local == "lobby":
+                        if i == 1:
+                            outbound_pkg = {"client_id": self.client_id, "request_type": "start_the_game_as_host"}
+                        elif i == 2:
+                            outbound_pkg = {"client_id": self.client_id, "request_type": "destroy_lobby"}
+
+        # Perform network send outside the locks
+        if outbound_pkg:
+            self.send_request_to_server(outbound_pkg)
+
         return inputs, shoots
 
     def update(self, current_time, scale):
         if self.game_state in self.states and self.states[self.game_state] and self.run_client == False:
             self.states[self.game_state].update(current_time, scale, self)
         if self.run_client == True:
-            if self.error_message and self.error_message_time and (current_time - self.error_message_time > 3000):
-                self.error_message = None
-                self.error_message_time = None
+            with self.info_lock:
+                if self.error_message and self.error_message_time and (current_time - self.error_message_time > 3000):
+                    self.error_message = None
+                    self.error_message_time = None
 
     def draw(self, scale):
         if self.game_state in self.states and self.states[self.game_state] and self.run_client == False:
             self.states[self.game_state].draw(self.scene, scale, self)
-        elif self.run_client == True:
+        else:
+            # snapshot client_state and set/clear option_rects under info_lock
+            with self.info_lock:
+                client_state_local = self.client_state
+                self.option_rects = []
             mouse_pos = pygame.mouse.get_pos()
-            self.option_rects = []
-            if self.game_over:
-                draw_game_over(self.scene, self.winning_team, self.losing_team)
+            # Safely snapshot/clear game_over and related data under game_lock
+            with self.game_lock:
+                game_over_local = self.game_over
+                winning_team_local = self.winning_team
+                losing_team_local = self.losing_team
+                if game_over_local:
+                    # clear the shared state while still holding the lock
+                    self.game_over = False
+                    self.winning_team = None
+                    self.losing_team = None
+            if game_over_local:
+                draw_game_over(self.scene, winning_team_local, losing_team_local)
                 pygame.time.delay(3000)
-                self.game_over = False
-                self.winning_team = None
-                self.losing_team = None
-                self.client_state = "menu"
-            elif self.client_state == "in_game":
-                draw_game_state(self.scene, self.shared_lock, self.game_world, self.previous_game_world, 
+                with self.info_lock:
+                    self.client_state = "menu"
+            elif client_state_local == "in_game":
+                draw_game_state(self.scene, self.game_lock, self.game_world, self.previous_game_world, 
                                self.last_update_time, self.network_interval, self.fighter_animations, self.client_anim_states, self.images)
-            elif self.client_state in ["searching", "waiting"]:
+            elif client_state_local in ["searching", "waiting"]:
                 draw_waiting_screen(self.scene)
-            elif self.client_state == "lobby":
-                draw_lobby_screen(self.scene, self.game_id)
-            elif self.client_state == "menu":
-                self.option_rects = draw_menu_screen(self.scene, mouse_pos)
-            elif self.client_state == "enter_lobby_id":
-                draw_enter_lobby_screen(self.scene, self.entered_lobby_id, self.error_message)
-            elif self.client_state == "select_game_mode":
-                self.option_rects = draw_game_mode_screen(self.scene, mouse_pos)
-            elif self.client_state == "countdown":
-                draw_countdown_screen(self.scene, self.countdown_value)
-            elif self.client_state == "enter_username":
-                draw_enter_username_screen(self.scene, self.username)
+            elif client_state_local == "lobby":
+                with self.info_lock:
+                    game_id_local = self.game_id
+                draw_lobby_screen(self.scene, game_id_local)
+            elif client_state_local == "menu":
+                rects = draw_menu_screen(self.scene, mouse_pos)
+                with self.info_lock:
+                    self.option_rects = rects
+            elif client_state_local == "enter_lobby_id":
+                with self.info_lock:
+                    entered_local = self.entered_lobby_id
+                    error_local = self.error_message
+                draw_enter_lobby_screen(self.scene, entered_local, error_local)
+            elif client_state_local == "select_game_mode":
+                rects = draw_game_mode_screen(self.scene, mouse_pos)
+                with self.info_lock:
+                    self.option_rects = rects
+            elif client_state_local == "countdown":
+                # countdown_value is protected by game_lock
+                with self.game_lock:
+                    countdown_local = self.countdown_value
+                draw_countdown_screen(self.scene, countdown_local)
+            elif client_state_local == "enter_username":
+                with self.info_lock:
+                    username_local = self.username
+                draw_enter_username_screen(self.scene, username_local)
             else:
                 draw_waiting_screen(self.scene)
-            if self.error_message:
+            # display error message if any (read under info_lock)
+            with self.info_lock:
+                error_to_show = self.error_message
+            if error_to_show:
                 font = pygame.font.Font(None, 60)
-                error_text = font.render(self.error_message, True, (255, 0, 0))
+                error_text = font.render(error_to_show, True, (255, 0, 0))
                 error_rect = error_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 2 - 150))
                 self.scene.blit(error_text, error_rect)
 
