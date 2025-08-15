@@ -35,6 +35,7 @@ class StateManager:
         self.username = ""
         self.client_socket = None
         self.client_id = None
+        self.option_rects = []
         self.game_id = None
         self.opponents = []
         self.fighter_type = None
@@ -182,7 +183,6 @@ class StateManager:
     def handle_multiplayer_input(self, event):
         inputs = []
         shoots = []
-        option_rects = []
         if event.type == pygame.QUIT:
             return [], []
         elif event.type == pygame.KEYDOWN:
@@ -201,9 +201,11 @@ class StateManager:
                 if event.key == pygame.K_1:
                     self.game_mode = "1vs1"
                     self.client_state = "menu"
+                    self.click_sound.play()
                 elif event.key == pygame.K_2:
                     self.game_mode = "2vs2"
                     self.client_state = "menu"
+                    self.click_sound.play()
             elif self.client_state == "enter_lobby_id":
                 if event.key == pygame.K_RETURN:
                     if self.entered_lobby_id and not self.error_message:
@@ -222,36 +224,45 @@ class StateManager:
                     self.client_state = "menu"
                 elif event.unicode.isalnum():
                     self.entered_lobby_id += event.unicode
-            else:
+            elif self.client_state == "menu":
                 if event.key == pygame.K_1:
                     pkg = {"client_id": self.client_id, "request_type": "find_random_game", "game_mode": self.game_mode}
                     if self.send_request_to_server(pkg):
                         self.client_state = "searching"
+                        self.click_sound.play()
                 elif event.key == pygame.K_2:
                     pkg = {"client_id": self.client_id, "request_type": "make_lobby", "game_mode": self.game_mode}
                     if self.send_request_to_server(pkg):
                         self.client_state = "lobby"
+                        self.click_sound.play()
                 elif event.key == pygame.K_3:
                     self.client_state = "enter_lobby_id"
-                elif event.key == pygame.K_4:
+                    self.click_sound.play()
+            elif self.client_state == "lobby":
+                if event.key == pygame.K_4:
                     pkg = {"client_id": self.client_id, "request_type": "start_the_game_as_host"}
                     self.send_request_to_server(pkg)
+                    self.click_sound.play()
                 elif event.key == pygame.K_5:
                     pkg = {"client_id": self.client_id, "request_type": "destroy_lobby"}
                     self.send_request_to_server(pkg)
-                if event.key in self.key_pressed and not self.key_pressed[event.key]:
-                    if event.key == pygame.K_SPACE:
-                        shoots.append("arcane")
-                    self.key_pressed[event.key] = True
-                    inputs.append(("down", event.key))
+                    self.click_sound.play()
+            if event.key in self.key_pressed and not self.key_pressed[event.key]:
+                if event.key == pygame.K_SPACE:
+                    shoots.append("arcane")
+                self.key_pressed[event.key] = True
+                inputs.append(("down", event.key))
         elif event.type == pygame.KEYUP:
             if event.key in self.key_pressed:
                 self.key_pressed[event.key] = False
                 inputs.append(("up", event.key))
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = event.pos
-            for i, rect in enumerate(option_rects):
+            print(f"Mouse clicked at: {mouse_pos}, option_rects: {self.option_rects}") 
+            for i, rect in enumerate(self.option_rects):
                 if rect.collidepoint(mouse_pos):
+                    print(f"Option {i} clicked") 
+                    self.click_sound.play()
                     if self.client_state == "select_game_mode":
                         if i == 0:
                             self.game_mode = "1vs1"
@@ -270,6 +281,13 @@ class StateManager:
                                 self.client_state = "lobby"
                         elif i == 2:
                             self.client_state = "enter_lobby_id"
+                    elif self.client_state == "lobby":
+                        if i == 1:  
+                            pkg = {"client_id": self.client_id, "request_type": "start_the_game_as_host"}
+                            self.send_request_to_server(pkg)
+                        elif i == 2:  
+                            pkg = {"client_id": self.client_id, "request_type": "destroy_lobby"}
+                            self.send_request_to_server(pkg)
         return inputs, shoots
 
     def update(self, current_time, scale):
@@ -285,7 +303,7 @@ class StateManager:
             self.states[self.game_state].draw(self.scene, scale, self)
         elif self.run_client == True:
             mouse_pos = pygame.mouse.get_pos()
-            option_rects = []
+            self.option_rects = []
             if self.game_over:
                 draw_game_over(self.scene, self.winning_team, self.losing_team)
                 pygame.time.delay(3000)
@@ -301,38 +319,36 @@ class StateManager:
             elif self.client_state == "lobby":
                 draw_lobby_screen(self.scene, self.game_id)
             elif self.client_state == "menu":
-                option_rects = draw_menu_screen(self.scene, mouse_pos)
+                self.option_rects = draw_menu_screen(self.scene, mouse_pos)
             elif self.client_state == "enter_lobby_id":
                 draw_enter_lobby_screen(self.scene, self.entered_lobby_id, self.error_message)
             elif self.client_state == "select_game_mode":
-                option_rects = draw_game_mode_screen(self.scene, mouse_pos)
+                self.option_rects = draw_game_mode_screen(self.scene, mouse_pos)
             elif self.client_state == "countdown":
                 draw_countdown_screen(self.scene, self.countdown_value)
             elif self.client_state == "enter_username":
                 draw_enter_username_screen(self.scene, self.username)
             else:
                 draw_waiting_screen(self.scene)
-        if self.error_message:
-            font = pygame.font.Font(None, 60)
-            error_text = font.render(self.error_message, True, (255, 0, 0))
-            error_rect = error_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 2 - 150))
-            self.scene.blit(error_text, error_rect)
+            if self.error_message:
+                font = pygame.font.Font(None, 60)
+                error_text = font.render(self.error_message, True, (255, 0, 0))
+                error_rect = error_text.get_rect(center=(config.SCENE_WIDTH // 2, config.SCENE_HEIGHT // 2 - 150))
+                self.scene.blit(error_text, error_rect)
 
     def change_state(self, new_state, state_instance=None):
-            """Change the current game state."""
-            previous_state = self.game_state
-            self.game_state = new_state
-            # Initialize WaitingState or PlayingState_Multiplayer only when needed
-            if state_instance:
-                self.states[new_state] = state_instance
-            # Manage music based on state
-            if new_state not in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER]:
-                try:
-                    if not pygame.mixer.music.get_busy():
-                        pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
-                        pygame.mixer.music.play(-1)
-                except pygame.error as e:
-                    print(f"Error loading menu music: {e}")
-                    self.error_message = "Failed to load menu music"
-            elif new_state in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER] and pygame.mixer.music.get_busy():
+        """Change the current game state."""
+        previous_state = self.game_state
+        self.game_state = new_state
+        if state_instance:
+            self.states[new_state] = state_instance
+        if new_state not in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER]:
+            try:
+                if not pygame.mixer.music.get_busy():
+                    pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
+                    pygame.mixer.music.play(-1)
+            except pygame.error as e:
+                print(f"Error loading menu music: {e}")
+                self.error_message = "Failed to load menu music"
+        elif new_state in [config.GAME_STATE_PLAYING, config.GAME_STATE_MULTIPLATER] and pygame.mixer.music.get_busy():
                 pygame.mixer.music.stop()
