@@ -5,7 +5,6 @@ from .base import GameObject
 from .animation_loader import *
 import math  # Added for distance calculations
 
-pygame.mixer.init()  # Initialize mixer for audio
 
 # "animations" is a dictionary with keys of states and values of corresponding frames in order
 class DynamicObject(GameObject):

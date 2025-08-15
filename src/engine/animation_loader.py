@@ -1,6 +1,6 @@
 import pygame
-from PIL import Image  
-import os
+  
+
 # trying to make a general template  for loading animations outside of objects, dict : ( "state" : frames )
 # these have shared loader: HellDude, Eye,
 
