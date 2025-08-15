@@ -16,6 +16,7 @@ class Client:
         self.is_host = False
         self.hero = None
         self.game_mode = None
+        self.fighter_type = None
 
 class Lobby:
     def __init__(self, lobby_id, host_client_id, game_mode):
@@ -47,7 +48,7 @@ class Lobby:
 
 class Game:
     def __init__(self, id, mode, ID1, ID2, ID3=None, ID4=None, world=None, usernames=None, 
-                 map = "" , f1 = None, f2 = None, f3 = None, f4 = None):
+                 map = "" , f1 = None, f2 = None, f3 = None, f4 = None, clients_lock=None, all_clients=None):
         self.game_clients = [ID1, ID2] if mode == "1vs1" else [ID1, ID2, ID3, ID4]
         self.game_id = id
         self.usernames = usernames
