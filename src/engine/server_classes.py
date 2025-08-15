@@ -67,7 +67,7 @@ class Game:
         self.finished = False
         self.winning_team = None
 
-        self.load_map_levels(ID1, ID2,f1,f2,f3,f4)
+        self.load_map_jesus(ID1, ID2,f1,f2,f3,f4)
         
         
 
