@@ -60,7 +60,10 @@ class Game:
         self.all_sprites = CustomGroup()
 
         self.sounds = []
-
+        self.f1 = None
+        self.f2 = None
+        self.f3 = None
+        self.f4 = None
         self.game_updates = []
         self.mode = mode
         self.finished = False
@@ -72,16 +75,16 @@ class Game:
                 for c in all_clients:
                     if c.client_id == cid:
                         if cid == ID1:
-                            f1 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f1 = c.fighter_type if c.fighter_type else "arcane"
                         elif cid == ID2:
-                            f2 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f2 = c.fighter_type if c.fighter_type else "arcane"
                         elif cid == ID3:
-                            f3 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f3 = c.fighter_type if c.fighter_type else "arcane"
                         elif cid == ID4:
-                            f4 = c.fighter_type if c.fighter_type else "arcane"
+                            self.f4 = c.fighter_type if c.fighter_type else "arcane"
                         break
 
-        self.load_map_jesus(ID1, ID2,f1,f2,f3,f4)
+        self.load_map_jesus(ID1, ID2,self.f1,self.f2,self.f3,self.f4)
         
         
 
@@ -156,9 +159,14 @@ class Game:
                     if client_package["client_id"] == fighter.fighter_id:
                         fighter.client_input.extend(client_package["inputs"])
                         if client_package["shoots"]:
-                            for shot in client_package["shoots"]:
-                                projectile = fighter.shoot()
-                                self.projectiles.add(projectile)
+                            if fighter.fighter_type == "arcane" or fighter.fighter_type == "elf":
+                                for shot in client_package["shoots"]:
+                                    projectile = fighter.shoot()
+                                    self.projectiles.add(projectile)
+                            else:
+                                for shot in client_package["shoots"]:
+                                    fighter.attack_multi()
+
             self.game_updates.clear()
         self.fighters.update()
         self.projectiles.update()
@@ -185,28 +193,40 @@ class Game:
         powerup4 = PowerUp(900, config.SCENE_HEIGHT - 30,"supershot",4, width=30, height=30, color=(75,75,75),all_sprites=self.all_sprites, power_ups=self.power_ups, platforms=self.platforms)
         ################################
         # assuming the fighters are added in here
-        fighter1 = Fighter(
+        if f1 == "arcane" or f1 == "elf":
+            attack = "shoot"
+            FighterType = Fighter
+        else:
+            attack = "attack"
+            FighterType = Fighter
+        fighter1 = FighterType(
             x=700, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
             width=64, 
             height=64, health=100,
             platforms=self.platforms,
-            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
             id=ID1, 
             team=1, 
-            color=(200, 120, 78),
+            color=(200, 120, 78), fighters=self.fighters,
             multi_player_mode=True, fighter_type=f1
         )
-        fighter2 = Fighter(
+        if f2 == "arcane" or f2 == "elf":
+            attack = "shoot"
+            FighterType = Fighter
+        else:
+            attack = "attack"
+            FighterType = Fighter
+        fighter2 = FighterType(
             x=450, 
             y=config.SCENE_HEIGHT*3/5 - 70, 
             width=64, 
             height=64, health=100,
             platforms=self.platforms,
-            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, "shoot": pygame.K_SPACE},
+            controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
             id=ID2, 
             team=2, 
-            color=(200, 120, 120),
+            color=(200, 120, 120), fighters=self.fighters,
             multi_player_mode=True, fighter_type=f2
         )
         
@@ -249,7 +269,7 @@ class Game:
             id=ID1, 
             team=1, 
             color=(200, 120, 78),
-            multi_player_mode=True
+            multi_player_mode=True, fighter_type=f1
         )
         fighter2 = Fighter(
             x=450, 
@@ -261,7 +281,7 @@ class Game:
             id=ID2, 
             team=2, 
             color=(200, 120, 120),
-            multi_player_mode=True
+            multi_player_mode=True, fighter_type=f2
         )
         
         if self.mode == "1vs1":

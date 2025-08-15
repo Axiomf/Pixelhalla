@@ -421,11 +421,16 @@ class Fighter(Player):
                             self.change_y = self.jump_strength
                             self.state = "jump"
                             print(f"Jumping, change_y: {self.change_y}")
-                        elif key == self.controls["shoot"]:
+                        elif key == self.controls.get("shoot"):
                             self.last_shoot_time = pygame.time.get_ticks()
                             self.state = "shoot"
                             print("Shooting")
                             return self.shoot()
+                        elif key == self.controls.get("attack"):
+                            self.last_shoot_time = pygame.time.get_ticks()
+                            self.state = "attack"
+                            print("attacking")
+                            return self.attack_multi
                     elif action == "up":
                         if key == self.controls["left"] or key == self.controls["right"]:
                             self.change_x = 0
@@ -483,6 +488,23 @@ class Fighter(Player):
 
         # Call the parent's update to apply gravity and update movement
         super().update()
+
+    def attack_multi(self):
+        self.attack_range = 50
+        self.is_attacking = True
+        self.state = "attack"
+        self.current_animation = "attack"
+        self.original_change_x = self.change_x
+        self.change_x = 0
+        # Check for targets in attack range
+        attack_x = self.rect.centerx + (self.attack_range * (1 if self.facing_right else -1))
+        attack_y = self.rect.centery
+
+        for sprite in self.fighters:  # Assuming all_sprites contains fighters and NPCs
+            if hasattr(sprite, 'health') and sprite != self:
+                dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
+                if dist <= self.attack_range:
+                    sprite.take_damage(self.damage)
 
     def shoot(self,arrow = "arcane"):
         """Creates a projectile moving in the direction the player is facing."""
@@ -592,38 +614,38 @@ class MeleeFighter(Fighter):
         elif self.rect.left < 0:
             self.rect.left = 0
             self.change_x = 0
+        if not self.multi_player_mode:
+            # Melee attack with space key
+            if self.controls.get("attack") and keys[self.controls["attack"]]:
+                now = pygame.time.get_ticks()
+                if not self.is_attacking and now - self.last_attack_time >= self.attack_cooldown:
+                    self.is_attacking = True
+                    self.attack_start_time = now
+                    self.state = "attack"
+                    self.current_animation = "attack"
+                    self.original_change_x = self.change_x
+                    self.change_x = 0
+                    self.last_attack_time = now
 
-        # Melee attack with space key
-        if self.controls.get("attack") and keys[self.controls["attack"]]:
-            now = pygame.time.get_ticks()
-            if not self.is_attacking and now - self.last_attack_time >= self.attack_cooldown:
-                self.is_attacking = True
-                self.attack_start_time = now
-                self.state = "attack"
-                self.current_animation = "attack"
-                self.original_change_x = self.change_x
-                self.change_x = 0
-                self.last_attack_time = now
-
-                # Check for targets in attack range
-                attack_x = self.rect.centerx + (self.attack_range * (1 if self.facing_right else -1))
-                attack_y = self.rect.centery
-                for sprite in self.enemies:  # Assuming all_sprites contains fighters and NPCs
-                    if hasattr(sprite, 'health') and sprite != self:
-                        dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
-                        if dist <= self.attack_range:
-                            sprite.take_damage(self.damage)
-                            if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
-                                sprite.blood_sound.play()
-                                self.last_sound_time = now
-                for sprite in self.fighters:  # Assuming all_sprites contains fighters and NPCs
-                    if hasattr(sprite, 'health') and sprite != self:
-                        dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
-                        if dist <= self.attack_range:
-                            sprite.take_damage(self.damage)
-                            if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
-                                sprite.blood_sound.play()
-                                self.last_sound_time = now
+                    # Check for targets in attack range
+                    attack_x = self.rect.centerx + (self.attack_range * (1 if self.facing_right else -1))
+                    attack_y = self.rect.centery
+                    for sprite in self.enemies:  # Assuming all_sprites contains fighters and NPCs
+                        if hasattr(sprite, 'health') and sprite != self:
+                            dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
+                            if dist <= self.attack_range:
+                                sprite.take_damage(self.damage)
+                                if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
+                                    sprite.blood_sound.play()
+                                    self.last_sound_time = now
+                    for sprite in self.fighters:  # Assuming all_sprites contains fighters and NPCs
+                        if hasattr(sprite, 'health') and sprite != self:
+                            dist = math.hypot(sprite.rect.centerx - attack_x, sprite.rect.centery - attack_y)
+                            if dist <= self.attack_range:
+                                sprite.take_damage(self.damage)
+                                if now - self.last_sound_time >= 3000:  # 3-second sound cooldown
+                                    sprite.blood_sound.play()
+                                    self.last_sound_time = now
 
         # Update image based on direction
         if self.facing_right != previous_facing and not self.animations.get(self.current_animation):
