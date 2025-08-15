@@ -448,7 +448,7 @@ class StateManager:
                     self.client_state = "menu"
             elif client_state_local == "in_game":
                 draw_game_state(self.scene, self.game_lock, self.game_world, self.previous_game_world, 
-                               self.last_update_time, self.network_interval, self.animation, self.client_anim_states, self.images)
+                               self.last_update_time, self.network_interval, self.fighter_animations, self.client_anim_states, self.images)
             elif client_state_local in ["searching", "waiting"]:
                 draw_waiting_screen(self.scene)
             elif client_state_local == "lobby":
