@@ -34,7 +34,7 @@ server_package = {
         "sounds": []
 }
 """
-
+# main logics
 def handle_game_finished(game):
     losing_team = 2 if game.winning_team == 1 else 1
     game_over_package = {
@@ -79,40 +79,29 @@ def handle_game_finished(game):
                     client.is_host = (client.client_id == lobby_to_update.host_id)
                     info_package["is_host"] = client.is_host
                     send_to_client(info_package, client.client_id, all_clients)
-
-def threaded_game(game):
-    target_frame_duration = 1.0 / 60
-    while True:
-        start_time = time.perf_counter()
-        try:
-            game.update()
-            if game.finished:
-                handle_game_finished(game)
-                break
-
-            # send game update if not finished
-            server_package = {
-                "request_type": "game_update",
-                "game_world": {
-                    "platforms": serialize_platforms(game.platforms),
-                    "fighters": serialize_fighters(game.fighters, game.usernames),
-                    "projectiles": serialize_projectiles(game.projectiles),
-                    "power_ups": serialize_power_ups(game.power_ups),
-                    "sounds": game.sounds
-                }
-            }
-            game.sounds = []
+def handle_client_package(client, client_package):
+    """
+    Move the logic that handles a received client_package out of threaded_client.
+    """
+    try:
+        request_type = client_package.get("request_type")
+        if request_type == "input":
+            with games_lock:
+                for game in all_games:
+                    if game.game_id == client.connected_game_id:
+                        game.game_updates.append(client_package)
+        elif request_type == "set_username":
             with clients_lock:
-                broadcast(server_package, game.game_clients, all_clients)
-        except Exception as e:
-            print(f"Exception in threaded_game {game.game_id}: {e}")
-            traceback.print_exc()
-            break
-        next_frame_time = start_time + target_frame_duration
-        sleep_time = next_frame_time - time.perf_counter()
-        if sleep_time > 0:
-            time.sleep(sleep_time)
-
+                for c in all_clients:
+                    if c.client_id == client_package.get("client_id"):
+                        c.username = client_package.get("username")
+                        print(f"Username set for {client.client_id}: {client_package.get('username')}")
+                        break
+        else:
+            pending_requests.put((client, client_package))
+    except Exception as e:
+        print(f"Exception in handle_client_package for {getattr(client, 'client_id', 'unknown')}: {e}")
+        traceback.print_exc()
 def handle_client_disconnection(client, conn):
     global all_clients, all_lobbies, all_games, waiting_clients
     client_id = client.client_id
@@ -162,138 +151,6 @@ def handle_client_disconnection(client, conn):
     except Exception as e:
         print(f"Error closing connection for {client_id}: {e}")
         traceback.print_exc()
-
-def threaded_client(conn):
-    global pending_requests, all_games, all_lobbies, waiting_clients
-    client_id = generate_unique_client_id()
-    client = Client(client_id, conn)
-    with clients_lock:
-        all_clients.append(client)
-    try:
-        conn.sendall(pickle.dumps(client_id))
-    except Exception as e:
-        print(f"Error sending client ID to {client_id}: {e}")
-        traceback.print_exc()
-        return
-
-    while True:
-        try:
-            data = conn.recv(4096)
-            if not data:
-                break
-            client_package = pickle.loads(data)
-            
-            # ...refactored: delegate package handling...
-            handle_client_package(client, client_package)
-
-        except Exception as e:
-            print(f"Exception in threaded_client for {client_id}: {e}")
-            traceback.print_exc()
-            break
-
-    # Handle client disconnection (refactored)
-    handle_client_disconnection(client, conn)
-    return
-
-def handle_client_package(client, client_package):
-    """
-    Move the logic that handles a received client_package out of threaded_client.
-    """
-    try:
-        request_type = client_package.get("request_type")
-        if request_type == "input":
-            with games_lock:
-                for game in all_games:
-                    if game.game_id == client.connected_game_id:
-                        game.game_updates.append(client_package)
-        elif request_type == "set_username":
-            with clients_lock:
-                for c in all_clients:
-                    if c.client_id == client_package.get("client_id"):
-                        c.username = client_package.get("username")
-                        print(f"Username set for {client.client_id}: {client_package.get('username')}")
-                        break
-        else:
-            pending_requests.put((client, client_package))
-    except Exception as e:
-        print(f"Exception in handle_client_package for {getattr(client, 'client_id', 'unknown')}: {e}")
-        traceback.print_exc()
-
-def threaded_handle_waiting_clients():
-    global waiting_clients, all_games, all_clients
-    while True:
-        try:
-            with waiting_clients_lock:
-                one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
-                while len(one_vs_one_clients) >= 2:
-                    ids = one_vs_one_clients[:2]
-                    game_id = "_".join(ids)
-                    # Get usernames for the clients
-                    usernames = {}
-                    with clients_lock:
-                        for cid in ids:
-                            for c in all_clients:
-                                if c.client_id == cid:
-                                    usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
-                                    break
-                    new_game = Game(game_id, "1vs1", ids[0], ids[1], usernames=usernames)
-                    with games_lock:
-                        all_games.append(new_game)
-                    for cid in ids:
-                        waiting_clients.pop(cid, None)
-                    with clients_lock:
-                        for c in all_clients:
-                            if c.client_id in ids:
-                                c.connected_game_id = game_id
-                                c.state = "countdown"
-                    # Start countdown
-                    for i in range(3, 0, -1):
-                        countdown_package = {"request_type": "countdown", "count": i}
-                        broadcast(countdown_package, ids, all_clients)
-                        time.sleep(1)
-                    # Send game start
-                    for cid in ids:
-                        send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                    start_new_thread(threaded_game, (new_game,))
-                    one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
-
-                two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
-                while len(two_vs_two_clients) >= 4:
-                    ids = two_vs_two_clients[:4]
-                    game_id = "_".join(ids)
-                    # Get usernames for the clients
-                    usernames = {}
-                    with clients_lock:
-                        for cid in ids:
-                            for c in all_clients:
-                                if c.client_id == cid:
-                                    usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
-                                    break
-                    new_game = Game(game_id, "2vs2", ids[0], ids[1], ids[2], ids[3], usernames=usernames)
-                    with games_lock:
-                        all_games.append(new_game)
-                    for cid in ids:
-                        waiting_clients.pop(cid, None)
-                    with clients_lock:
-                        for c in all_clients:
-                            if c.client_id in ids:
-                                c.connected_game_id = game_id
-                                c.state = "countdown"
-                    # Start countdown
-                    for i in range(3, 0, -1):
-                        countdown_package = {"request_type": "countdown", "count": i}
-                        broadcast(countdown_package, ids, all_clients)
-                        time.sleep(1)
-                    # Send game start
-                    for cid in ids:
-                        send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
-                    start_new_thread(threaded_game, (new_game,))
-                    two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
-            time.sleep(0.2)
-        except Exception as e:
-            print(f"Exception in threaded_handle_waiting_clients: {e}")
-            traceback.print_exc()
-            time.sleep(0.2)
 def threaded_handle_general_request():
     global all_lobbies, all_games, waiting_clients
     while True:
@@ -433,6 +290,149 @@ def threaded_handle_general_request():
             print(f"Exception in threaded_handle_general_request: {e}")
             traceback.print_exc()
             time.sleep(0.5)
+
+
+
+
+# independent no need for merge handling
+def threaded_game(game):
+    target_frame_duration = 1.0 / 60
+    while True:
+        start_time = time.perf_counter()
+        try:
+            game.update()
+            if game.finished:
+                handle_game_finished(game)
+                break
+
+            # send game update if not finished
+            server_package = {
+                "request_type": "game_update",
+                "game_world": {
+                    "platforms": serialize_platforms(game.platforms),
+                    "fighters": serialize_fighters(game.fighters, game.usernames),
+                    "projectiles": serialize_projectiles(game.projectiles),
+                    "power_ups": serialize_power_ups(game.power_ups),
+                    "sounds": game.sounds
+                }
+            }
+            game.sounds = []
+            with clients_lock:
+                broadcast(server_package, game.game_clients, all_clients)
+        except Exception as e:
+            print(f"Exception in threaded_game {game.game_id}: {e}")
+            traceback.print_exc()
+            break
+        next_frame_time = start_time + target_frame_duration
+        sleep_time = next_frame_time - time.perf_counter()
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+def threaded_client(conn):
+    global pending_requests, all_games, all_lobbies, waiting_clients
+    client_id = generate_unique_client_id()
+    client = Client(client_id, conn)
+    with clients_lock:
+        all_clients.append(client)
+    try:
+        conn.sendall(pickle.dumps(client_id))
+    except Exception as e:
+        print(f"Error sending client ID to {client_id}: {e}")
+        traceback.print_exc()
+        return
+
+    while True:
+        try:
+            data = conn.recv(4096)
+            if not data:
+                break
+            client_package = pickle.loads(data)
+            
+            # ...refactored: delegate package handling...
+            handle_client_package(client, client_package)
+
+        except Exception as e:
+            print(f"Exception in threaded_client for {client_id}: {e}")
+            traceback.print_exc()
+            break
+
+    # Handle client disconnection (refactored)
+    handle_client_disconnection(client, conn)
+    return
+def threaded_handle_waiting_clients():
+    global waiting_clients, all_games, all_clients
+    while True:
+        try:
+            with waiting_clients_lock:
+                one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
+                while len(one_vs_one_clients) >= 2:
+                    ids = one_vs_one_clients[:2]
+                    game_id = "_".join(ids)
+                    # Get usernames for the clients
+                    usernames = {}
+                    with clients_lock:
+                        for cid in ids:
+                            for c in all_clients:
+                                if c.client_id == cid:
+                                    usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
+                                    break
+                    new_game = Game(game_id, "1vs1", ids[0], ids[1], usernames=usernames)
+                    with games_lock:
+                        all_games.append(new_game)
+                    for cid in ids:
+                        waiting_clients.pop(cid, None)
+                    with clients_lock:
+                        for c in all_clients:
+                            if c.client_id in ids:
+                                c.connected_game_id = game_id
+                                c.state = "countdown"
+                    # Start countdown
+                    for i in range(3, 0, -1):
+                        countdown_package = {"request_type": "countdown", "count": i}
+                        broadcast(countdown_package, ids, all_clients)
+                        time.sleep(1)
+                    # Send game start
+                    for cid in ids:
+                        send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
+                    start_new_thread(threaded_game, (new_game,))
+                    one_vs_one_clients = [cid for cid, mode in waiting_clients.items() if mode == "1vs1"]
+
+                two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
+                while len(two_vs_two_clients) >= 4:
+                    ids = two_vs_two_clients[:4]
+                    game_id = "_".join(ids)
+                    # Get usernames for the clients
+                    usernames = {}
+                    with clients_lock:
+                        for cid in ids:
+                            for c in all_clients:
+                                if c.client_id == cid:
+                                    usernames[cid] = c.username if hasattr(c, 'username') else "Unknown"
+                                    break
+                    new_game = Game(game_id, "2vs2", ids[0], ids[1], ids[2], ids[3], usernames=usernames)
+                    with games_lock:
+                        all_games.append(new_game)
+                    for cid in ids:
+                        waiting_clients.pop(cid, None)
+                    with clients_lock:
+                        for c in all_clients:
+                            if c.client_id in ids:
+                                c.connected_game_id = game_id
+                                c.state = "countdown"
+                    # Start countdown
+                    for i in range(3, 0, -1):
+                        countdown_package = {"request_type": "countdown", "count": i}
+                        broadcast(countdown_package, ids, all_clients)
+                        time.sleep(1)
+                    # Send game start
+                    for cid in ids:
+                        send_to_client({"request_type": "game_started", "game_id": game_id, "members": ids}, cid, all_clients)
+                    start_new_thread(threaded_game, (new_game,))
+                    two_vs_two_clients = [cid for cid, mode in waiting_clients.items() if mode == "2vs2"]
+            time.sleep(0.2)
+        except Exception as e:
+            print(f"Exception in threaded_handle_waiting_clients: {e}")
+            traceback.print_exc()
+            time.sleep(0.2)
 
 pygame.init() 
 all_clients = []
