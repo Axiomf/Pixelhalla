@@ -4,13 +4,11 @@ import pickle
 generated_ids = set()
 
 def generate_unique_client_id():
-    """Generate a random 8-character ID and ensure it is unique among active_client_ids."""
+    """Generate a random 4-character ID and ensure it is unique among active_client_ids."""
     while True:
-        client_id = str(uuid.uuid4())[:8]
+        client_id = str(uuid.uuid4())[:4]
         if client_id not in generated_ids:
             generated_ids.add(client_id)
-            # Removed heavy logging to prevent slowdown
-            # print(f"Generated unique client_id: {client_id}")
             return client_id
 
 def broadcast(server_package, list_of_IDs, all_clients):
