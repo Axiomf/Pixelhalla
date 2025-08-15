@@ -183,7 +183,7 @@ class Player(DynamicObject):
         # Added shooting state attributes
 
     def take_damage(self, amount):
-        print("HUH")
+        #print("HUH")
         if self.shield:
             return
         """Subtracts the given amount from player's health."""
@@ -405,7 +405,7 @@ class Fighter(Player):
                 # print(f"Processing client_input for fighter {self.fighter_id}: {self.client_input}")
                 while self.client_input:
                     action, key = self.client_input.pop(0)
-                    print(f"Action: {action}, Key: {key}")
+                    #print(f"Action: {action}, Key: {key}")
                     if action == "down":
                         if key == self.controls["left"]:
                             self.change_x = -self.speed
