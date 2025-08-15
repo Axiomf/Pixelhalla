@@ -76,11 +76,22 @@ class StateManager:
             "fighter": transparent_surface,
             "projectiles": pygame.image.load("src/assets/images/inused_single_images/projectile_Arcane.png"),
             # power up images
-            "double_jump": "src/assets/images/inused_single_images/double_jump.png",
-            "damage":"src/assets/images/inused_single_images/damage.png",
-            "shield":"src/assets/images/inused_single_images/shield.png",
-            "supershot":"src/assets/images/inused_single_images/supershot.png",
+            "double_jump": pygame.image.load("src/assets/images/inused_single_images/double_jump.png"),
+            "damage": pygame.image.load("src/assets/images/inused_single_images/damage.png"),
+            "shield": pygame.image.load("src/assets/images/inused_single_images/shield.png"),
+            "supershot": pygame.image.load("src/assets/images/inused_single_images/supershot.png"),
+        }
 
+        background2 = pygame.image.load("src/assets/images/background/jesus/j1.jpg")
+        background2 = pygame.transform.scale(background2, (300, 600))
+        background3 = pygame.image.load("src/assets/images/background/jesus/j2.jpg")
+        background3 = pygame.transform.scale(background3, (300, 600))
+        background4 = pygame.image.load("src/assets/images/background/jesus/j3.jpg")
+        background4 = pygame.transform.scale(background4, (300, 600))
+        background5 = pygame.image.load("src/assets/images/background/jesus/j4.jpg")
+        background5 = pygame.transform.scale(background5, (300, 600))
+        self.backgrounds = {
+            "map_jesus" : [background2 , background3, background4, background5]
         }
         self.fighter_animations = {} 
         self.fighter_types = {} 
@@ -448,7 +459,7 @@ class StateManager:
                     self.client_state = "menu"
             elif client_state_local == "in_game":
                 draw_game_state(self.scene, self.game_lock, self.game_world, self.previous_game_world, 
-                               self.last_update_time, self.network_interval, self.fighter_animations, self.client_anim_states, self.images)
+                               self.last_update_time, self.network_interval, self.fighter_animations, self.client_anim_states, self.images, map="map_jesus",backgrounds=self.backgrounds)
             elif client_state_local in ["searching", "waiting"]:
                 draw_waiting_screen(self.scene)
             elif client_state_local == "lobby":
