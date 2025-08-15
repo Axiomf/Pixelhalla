@@ -3,11 +3,11 @@ import pygame
 from src.engine.dynamic_objects import *
 from src.engine.platforms import *
 from .base import CustomGroup
-from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
+from src.engine.server_client_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
 import config
 
 class Client:
-    def __init__(self, client_id, conn, state="menu", username):
+    def __init__(self, client_id, conn, state="menu", username = ""):
         self.username = username
         self.client_id = client_id
         self.conn = conn

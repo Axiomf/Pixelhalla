@@ -232,7 +232,7 @@ def draw_game_over(screen, winning_team, losing_team):
     
     pygame.display.flip()
     time.sleep(2)
-def draw_enter_lobby_screen(screen, entered_lobby_id):
+def draw_enter_lobby_screen(screen, entered_lobby_id,error_message):
     screen.fill((20, 20, 80))
     font = pygame.font.SysFont('arial', 40)
     title_font = pygame.font.SysFont('arial', 60)

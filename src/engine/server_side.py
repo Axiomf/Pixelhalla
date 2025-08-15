@@ -4,7 +4,7 @@ import pickle  # To serialize Python objects to send over the network
 import time  # added for game world update timing
 from src.config.server_config import create_server_socket  # New import for server configuration
 import threading
-from src.engine.server_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
+from src.engine.server_client_helper import generate_unique_client_id, broadcast, send_to_client,serialize_fighters, serialize_projectiles, serialize_power_ups, serialize_platforms
 import traceback
 import queue  # new import for pending requests
 import pygame

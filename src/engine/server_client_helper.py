@@ -74,3 +74,13 @@ def serialize_platforms(group):
         })
     return serialized
 
+# New helper to send client requests (client-side usage)
+def send_request_to_server(conn, client_package):
+    """Send a pickled client_package over the given socket. Returns True on success."""
+    try:
+        conn.sendall(pickle.dumps(client_package))
+    except Exception as e:
+        print(f"Error sending data: {e}")
+        return False
+    return True
+
