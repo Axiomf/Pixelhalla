@@ -9,6 +9,16 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libsdl2-2.0-0 \
+    libsdl2-mixer-2.0-0 \
+    libasound2 \
+    libpulse0 \
+    libfreetype6 \
+    libjpeg62-turbo \
+    libpng16-16 \
+ && rm -rf /var/lib/apt/lists/*
 # Copy and install Python deps (use python -m pip and no cache)
 COPY requirements.txt /app/requirements.txt
 RUN python -m pip install --upgrade pip \
@@ -28,3 +38,9 @@ EXPOSE 5555
 # Run as a module
 CMD ["python", "-m", "src.engine.server_side"]
 # ...existing code...
+
+
+
+
+
+
