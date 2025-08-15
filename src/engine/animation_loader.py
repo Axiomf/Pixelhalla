@@ -523,6 +523,7 @@ def load_animations_Knight(frame_width=120, frame_height=80, colorkey=None,
     """ "idle"  "walk" "death" "attack" """
     animations = {} # output
     path_list = {"idle" :    "src/assets/images/inused_sheets/Knight/idle.png"
+                 ,"hurt" : "src/assets/images/inused_sheets/Knight/idle.png"
                  ,"walk" :   "src/assets/images/inused_sheets/Knight/walk.png"
                  ,"death" :  "src/assets/images/inused_sheets/Knight/death.png"
                  ,"attack" : "src/assets/images/inused_sheets/Knight/attack.png"}
