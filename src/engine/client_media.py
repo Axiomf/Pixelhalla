@@ -38,7 +38,10 @@ def static_render(screen, rect, obj, sprite_type, images):
 
 def dynamic_render(screen, rect, obj, fighter_animations, client_anim_states, images):
     facing_right = obj.get("facing_right", True)
-    anim = fighter_animations.get(obj.get("state"), None)
+    fighter_type = obj.get("fighter_type", "arcane") 
+    type_animations = fighter_animations.get(fighter_type, {}) 
+    anim = type_animations.get(obj.get("state"), [])  
+    # print(f"Rendering fighter: ID={obj['id']}, Type={fighter_type}, State={obj.get('state')}, Animations={list(type_animations.keys())}, Anim={anim}")
     if anim:
         state = client_anim_states.get(
             obj["id"],
@@ -56,7 +59,7 @@ def dynamic_render(screen, rect, obj, fighter_animations, client_anim_states, im
             image = pygame.transform.flip(image, True, False)
         scaled_image = pygame.transform.scale(image, (rect[2], rect[3]))
         screen.blit(scaled_image, (rect[0], rect[1]))
-        health = obj.get("health",100)
+        health = obj.get("health", 100)
         max_health = obj.get("max_health", 100)
         username = obj.get("username", "Unknown")
         draw_health_bar(screen, rect, health, max_health, username)

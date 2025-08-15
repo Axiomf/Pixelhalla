@@ -32,14 +32,19 @@ class StateManager:
         self.win_fighter = False
         self.multi_mode = None
         self.is_initialized = False
+        self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
+
+
+
+        self.fighter_type = None
+        self.run_client = False
+        self.fighter_type_send = False
         self.username = ""
         self.client_socket = None
         self.client_id = None
         self.option_rects = []
         self.game_id = None
         self.opponents = []
-        self.fighter_type = None
-        self.fighter_type_send = False
         self.error_message = ""
         self.error_message_time = None
         self.countdown_value = None
@@ -56,7 +61,6 @@ class StateManager:
         self.previous_game_world = None
         self.last_update_time = 0
         self.network_interval = 0.1
-        self.run_client = False
         self.shared_lock = threading.Lock()
         transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)
         transparent_surface.fill((0, 0, 0, 0))
@@ -94,7 +98,6 @@ class StateManager:
 
         self.click_sound = pygame.mixer.Sound("src/assets/sounds/mixkit-stapling-paper-2995.wav")
         self.blood_sound = pygame.mixer.Sound("src/assets/sounds/blood2.wav")
-        self.win_sound = pygame.mixer.Sound("src/assets/sounds/win.mp3")
         try:
             pygame.mixer.music.load("src/assets/sounds/LevelHellboy.mp3.mpeg")
             pygame.mixer.music.play(-1)
@@ -339,7 +342,7 @@ class StateManager:
                 self.client_state = "menu"
             elif self.client_state == "in_game":
                 draw_game_state(self.scene, self.shared_lock, self.game_world, self.previous_game_world, 
-                               self.last_update_time, self.network_interval, self.animation, self.client_anim_states, self.images)
+                               self.last_update_time, self.network_interval, self.fighter_animations, self.client_anim_states, self.images)
             elif self.client_state in ["searching", "waiting"]:
                 draw_waiting_screen(self.scene)
             elif self.client_state == "lobby":
