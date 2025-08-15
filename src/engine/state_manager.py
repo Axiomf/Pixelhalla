@@ -76,11 +76,10 @@ class StateManager:
             "fighter": transparent_surface,
             "projectiles": pygame.image.load("src/assets/images/inused_single_images/projectile_Arcane.png"),
             # power up images
-            "double_jump": "src/assets/images/inused_single_images/double_jump.png",
-            "damage":"src/assets/images/inused_single_images/damage.png",
-            "shield":"src/assets/images/inused_single_images/shield.png",
-            "supershot":"src/assets/images/inused_single_images/supershot.png",
-
+            "double_jump": pygame.image.load("src/assets/images/inused_single_images/double_jump.png"),
+            "damage": pygame.image.load("src/assets/images/inused_single_images/damage.png"),
+            "shield": pygame.image.load("src/assets/images/inused_single_images/shield.png"),
+            "supershot": pygame.image.load("src/assets/images/inused_single_images/supershot.png"),
         }
         self.fighter_animations = {} 
         self.fighter_types = {} 

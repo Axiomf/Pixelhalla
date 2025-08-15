@@ -81,7 +81,7 @@ class Game:
                             f4 = c.fighter_type if c.fighter_type else "arcane"
                         break
 
-        self.load_map4(ID1, ID2,f1,f2,f3,f4)
+        self.load_map_jesus(ID1, ID2,f1,f2,f3,f4)
         
         
 

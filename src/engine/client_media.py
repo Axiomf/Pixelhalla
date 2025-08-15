@@ -169,13 +169,19 @@ def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_u
                         interp_rect = interpolate_rect(prev_rect, curr_rect, alpha)
                     else:
                         interp_rect = curr_rect
-                        
+
+                    if key == "power_ups":
+                        key = obj.get("type")
+                        print(key)
                     render_obj(screen, interp_rect, obj, key, fighter_animations, client_anim_states, images)
             else:
                 # If no previous state or group size mismatch, just draw current positions
                 for obj in current_group:
                     rect = obj.get("rect")
                     if rect:
+                        if key == "power_ups":
+                            key = obj.get("type")
+                            print(key)
                         render_obj(screen, rect, obj, key, fighter_animations, client_anim_states, images)
         
             
