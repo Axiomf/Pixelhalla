@@ -57,7 +57,12 @@ class StateManager:
         self.last_update_time = 0
         self.network_interval = 0.1
         self.run_client = False
-        self.shared_lock = threading.Lock()
+
+        
+        self.shared_lock = threading.Lock() # going to split into info_lock and game_lock
+        self.info_lock = threading.Lock()
+        self.game_lock = threading.Lock()
+
         transparent_surface = pygame.Surface((32, 32), pygame.SRCALPHA)
         transparent_surface.fill((0, 0, 0, 0))
         self.images = {
@@ -344,7 +349,7 @@ class StateManager:
                 self.losing_team = None
                 self.client_state = "menu"
             elif self.client_state == "in_game":
-                draw_game_state(self.scene, self.shared_lock, self.game_world, self.previous_game_world, 
+                draw_game_state(self.scene, self.game_lock, self.game_world, self.previous_game_world, 
                                self.last_update_time, self.network_interval, self.animation, self.client_anim_states, self.images)
             elif self.client_state in ["searching", "waiting"]:
                 draw_waiting_screen(self.scene)
