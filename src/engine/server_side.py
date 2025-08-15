@@ -35,6 +35,51 @@ server_package = {
 }
 """
 
+def handle_game_finished(game):
+    losing_team = 2 if game.winning_team == 1 else 1
+    game_over_package = {
+        "request_type": "game_finished",
+        "winning_team": game.winning_team,
+        "losing_team": losing_team,
+        "game_id": game.game_id
+    }
+    print(f"Game finished: winning_team={game.winning_team}, losing_team={losing_team}")
+    with clients_lock:
+        broadcast(game_over_package, game.game_clients, all_clients)
+        for client in all_clients:
+            if client.client_id in game.game_clients:
+                client.connected_game_id = ""  # Clear game ID
+                client.state = "lobby" if client.connected_lobby_id else "menu"  # Return to lobby if in one
+    with games_lock:
+        if game in all_games:
+            all_games.remove(game)
+
+    # Find the lobby and update its state to allow players to rejoin/start again
+    with lobbies_lock, clients_lock:
+        lobby_to_update = None
+        for l in all_lobbies:
+            if l.lobby_id == game.game_id:
+                lobby_to_update = l
+                break
+        
+        if lobby_to_update:
+            lobby_to_update.state = "waiting"
+            info_package = {
+                "request_type": "info",
+                "lobby_id": lobby_to_update.lobby_id,
+                "game_mode": lobby_to_update.game_mode,
+                "members": lobby_to_update.members,
+                "host_id": lobby_to_update.host_id,
+                "lobby_members_id": lobby_to_update.members
+            }
+            
+            for client in all_clients:
+                if client.client_id in lobby_to_update.members:
+                    client.state = "lobby"
+                    client.is_host = (client.client_id == lobby_to_update.host_id)
+                    info_package["is_host"] = client.is_host
+                    send_to_client(info_package, client.client_id, all_clients)
+
 def threaded_game(game):
     target_frame_duration = 1.0 / 60
     while True:
@@ -42,54 +87,10 @@ def threaded_game(game):
         try:
             game.update()
             if game.finished:
-                losing_team = 2 if game.winning_team == 1 else 1
-                game_over_package = {
-                    "request_type": "game_finished",
-                    "winning_team": game.winning_team,
-                    "losing_team": losing_team,
-                    "game_id": game.game_id
-                }
-                print(f"Game finished: winning_team={game.winning_team}, losing_team={losing_team}")
-                with clients_lock:
-                    broadcast(game_over_package, game.game_clients, all_clients)
-                    for client in all_clients:
-                        if client.client_id in game.game_clients:
-                            client.connected_game_id = ""  # Clear game ID
-                            client.state = "lobby" if client.connected_lobby_id else "menu"  # Return to lobby if in one
-                with games_lock:
-                    if game in all_games:
-                        all_games.remove(game)
-
-                # Find the lobby and update its state to allow players to rejoin/start again
-                with lobbies_lock, clients_lock:
-                    lobby_to_update = None
-                    for l in all_lobbies:
-                        if l.lobby_id == game.game_id:
-                            lobby_to_update = l
-                            break
-                    
-                    if lobby_to_update:
-                        lobby_to_update.state = "waiting"
-                        info_package = {
-                            "request_type": "info",
-                            "lobby_id": lobby_to_update.lobby_id,
-                            "game_mode": lobby_to_update.game_mode,
-                            "members": lobby_to_update.members,
-                            "host_id": lobby_to_update.host_id,
-                            "lobby_members_id": lobby_to_update.members
-                        }
-                        
-                        for client in all_clients:
-                            if client.client_id in lobby_to_update.members:
-                                client.state = "lobby"
-                                client.is_host = (client.client_id == lobby_to_update.host_id)
-                                info_package["is_host"] = client.is_host
-                                send_to_client(info_package, client.client_id, all_clients)
-
+                handle_game_finished(game)
                 break
-
-
-
+            
+            # send game update if not finished
             server_package = {
                 "request_type": "game_update",
                 "game_world": {
