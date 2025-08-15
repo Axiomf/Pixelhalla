@@ -139,9 +139,15 @@ def draw_lobby_screen(screen, lobby_id=None):
         
     pygame.display.flip()
 
-def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_update_time, network_interval, fighter_animations, client_anim_states, images):
+def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_update_time, network_interval, fighter_animations, client_anim_states, images,map, backgrounds):
     # Clear the screen to black before drawing anything
+    
     screen.fill((0, 0, 0))
+    if map == "map_jesus":
+        screen.blit(backgrounds["map_jesus"][0], (600, 0))
+        screen.blit(backgrounds["map_jesus"][1], (300, 0))
+        screen.blit(backgrounds["map_jesus"][2], (900, 0))
+        screen.blit(backgrounds["map_jesus"][3], (0, 0))
     now = time.time()
     # Safely copy the shared game state for this frame
     with shared_lock:

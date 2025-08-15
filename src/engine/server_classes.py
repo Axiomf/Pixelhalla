@@ -53,6 +53,7 @@ class Game:
         self.game_id = id
         self.usernames = usernames
         print(usernames)
+        self.map = map
         self.platforms = CustomGroup()
         self.fighters = CustomGroup()
         self.projectiles = CustomGroup()
