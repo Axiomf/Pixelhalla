@@ -170,19 +170,17 @@ def draw_game_state(screen, shared_lock, game_state, previous_game_state, last_u
                     else:
                         interp_rect = curr_rect
 
-                    if key == "power_ups":
-                        key = obj.get("type")
-                        print(key)
-                    render_obj(screen, interp_rect, obj, key, fighter_animations, client_anim_states, images)
+                    # Determine sprite_type to render. For power_ups, use the specific power-up type;
+                    # do NOT overwrite the loop variable `key`.
+                    sprite_type = obj.get("type") if key == "power_ups" else key
+                    render_obj(screen, interp_rect, obj, sprite_type, fighter_animations, client_anim_states, images)
             else:
                 # If no previous state or group size mismatch, just draw current positions
                 for obj in current_group:
                     rect = obj.get("rect")
                     if rect:
-                        if key == "power_ups":
-                            key = obj.get("type")
-                            print(key)
-                        render_obj(screen, rect, obj, key, fighter_animations, client_anim_states, images)
+                        sprite_type = obj.get("type") if key == "power_ups" else key
+                        render_obj(screen, rect, obj, sprite_type, fighter_animations, client_anim_states, images)
         
             
     # Update the display with everything drawn this frame
