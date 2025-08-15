@@ -89,7 +89,7 @@ def threaded_game(game):
             if game.finished:
                 handle_game_finished(game)
                 break
-            
+
             # send game update if not finished
             server_package = {
                 "request_type": "game_update",
@@ -182,21 +182,10 @@ def threaded_client(conn):
             if not data:
                 break
             client_package = pickle.loads(data)
-            request_type = client_package["request_type"]
-            if request_type == "input":
-                with games_lock:
-                    for game in all_games:
-                        if game.game_id == client.connected_game_id:
-                            game.game_updates.append(client_package)
-            elif request_type == "set_username":
-                with clients_lock:
-                    for c in all_clients:
-                        if c.client_id == client_package["client_id"]:
-                            c.username = client_package["username"]
-                            print(f"Username set for {client_id}: {client_package['username']}")
-                            break
-            else:
-                pending_requests.put((client, client_package))
+            
+            # ...refactored: delegate package handling...
+            handle_client_package(client, client_package)
+
         except Exception as e:
             print(f"Exception in threaded_client for {client_id}: {e}")
             traceback.print_exc()
@@ -205,6 +194,30 @@ def threaded_client(conn):
     # Handle client disconnection (refactored)
     handle_client_disconnection(client, conn)
     return
+
+def handle_client_package(client, client_package):
+    """
+    Move the logic that handles a received client_package out of threaded_client.
+    """
+    try:
+        request_type = client_package.get("request_type")
+        if request_type == "input":
+            with games_lock:
+                for game in all_games:
+                    if game.game_id == client.connected_game_id:
+                        game.game_updates.append(client_package)
+        elif request_type == "set_username":
+            with clients_lock:
+                for c in all_clients:
+                    if c.client_id == client_package.get("client_id"):
+                        c.username = client_package.get("username")
+                        print(f"Username set for {client.client_id}: {client_package.get('username')}")
+                        break
+        else:
+            pending_requests.put((client, client_package))
+    except Exception as e:
+        print(f"Exception in handle_client_package for {getattr(client, 'client_id', 'unknown')}: {e}")
+        traceback.print_exc()
 
 def threaded_handle_waiting_clients():
     global waiting_clients, all_games, all_clients
