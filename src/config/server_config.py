@@ -1,7 +1,10 @@
 import socket
 
+
 SERVER_IP = "eed67e51-7b09-43d5-8972-3cc20f2b2723.hsvc.ir"  # Server IP
 SERVER_PORT = 28655           # Server port
+
+
 server_ip = "0.0.0.0"
 def create_server_socket():# the comments on how it works are in previous commits when there was no server_config.py
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -11,7 +14,7 @@ def create_server_socket():# the comments on how it works are in previous commit
     s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)
 
     try:
-        s.bind((server_ip, SERVER_PORT))
+        s.bind((server_ip,5555))
     except socket.error as e:
         print(f"Server could not bind to {server_ip}:{SERVER_PORT}, error: {e}")
         exit()
