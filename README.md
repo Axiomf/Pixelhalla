@@ -6,7 +6,7 @@ PixelHalla is an ongoing 2D game built with Pygame. This repository contains the
 
 - church aesthetic
 - Simple arcade-style gameplay
-- Keyboard controls
+- Unique mechanics
 - Lightweight and easy to extend
 
 ## Installation
