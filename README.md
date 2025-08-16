@@ -4,7 +4,7 @@ PixelHalla is an ongoing 2D game built with Pygame. This repository contains the
 
 ## Features
 
-- Pixel-art aesthetic
+- church aesthetic
 - Simple arcade-style gameplay
 - Keyboard controls
 - Lightweight and easy to extend
@@ -14,8 +14,15 @@ PixelHalla is an ongoing 2D game built with Pygame. This repository contains the
 1.  Clone the repository:
 
     ```bash
-    git clone <repo-url>
-    cd <repo-directory>
+    git clone https://github.com/CSUT-AP403/ut-brawlforge-pixelhalla
+    cd ut-brawlforge-pixelhalla
+    ```
+
+    Or to clone into a custom folder name:
+
+    ```bash
+    git clone https://github.com/CSUT-AP403/ut-brawlforge-pixelhalla my-folder
+    cd my-folder
     ```
 
 2.  Install dependencies:
