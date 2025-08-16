@@ -14,8 +14,12 @@ class MapSelectState:
         self.map1_preview = pygame.transform.scale(self.map1_preview, (300, 150))
         self.map2_preview = pygame.image.load("src/assets/images/nature_3/origbig.png").convert_alpha()
         self.map2_preview = pygame.transform.scale(self.map2_preview, (300, 150))
+
         self.map3_preview = pygame.image.load("src/assets/images/background/jesus/j1.jpg").convert_alpha()
-        self.map3_preview = pygame.transform.scale(self.map3_preview, (300, 150))
+        self.map3_preview = pygame.transform.scale(self.map3_preview, (150, 300))
+        self.map3_preview2 = pygame.image.load("src/assets/images/background/jesus/j4.jpg").convert_alpha()
+        self.map3_preview2 = pygame.transform.scale(self.map3_preview2, (150, 300)) 
+
         self.map4_preview = pygame.image.load("src/assets/images/background/twilightgrove.png").convert_alpha()
         self.map4_preview = pygame.transform.scale(self.map4_preview, (300, 150))
 
@@ -76,6 +80,8 @@ class MapSelectState:
                                         map2_button.width + scale, map2_button.height + scale)
         pulsed_map3_button = pygame.Rect(map3_button.x - scale / 2, map3_button.y - scale / 2, 
                                         map3_button.width + scale, map3_button.height + scale)
+        pulsed_map32_button = pygame.Rect(map3_button.x - scale / 2 + 150, map3_button.y - scale / 2, 
+                                        map3_button.width + scale , map3_button.height + scale)
         pulsed_map4_button = pygame.Rect(map4_button.x - scale / 2, map4_button.y - scale / 2, 
                                         map4_button.width + scale, map4_button.height + scale)
         if pulsed_map1_button.collidepoint(mouse_pos):
@@ -87,6 +93,7 @@ class MapSelectState:
         if pulsed_map3_button.collidepoint(mouse_pos):
             pygame.draw.rect(scene, (0, 200, 255), pulsed_map3_button, 5)  # Blue border for hover
         scene.blit(self.map3_preview, map3_button)
+        scene.blit(self.map3_preview2, pulsed_map32_button)
         if pulsed_map4_button.collidepoint(mouse_pos):
             pygame.draw.rect(scene, (0, 200, 255), pulsed_map4_button, 5)  # Blue border for hover
         scene.blit(self.map4_preview, map4_button)

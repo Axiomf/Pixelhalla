@@ -134,6 +134,11 @@ class DynamicObject(GameObject):
                 self.rect.bottom = platform.rect.top
                 self.change_y = 0
                 return False
+            # Resolve collision when moving upward (hitting the underside of a platform)
+            elif self.change_y < 0:
+                self.rect.top = platform.rect.bottom
+                self.change_y = 0
+                return False
         return True
 
     def _handle_hurt_animation(self, now):
