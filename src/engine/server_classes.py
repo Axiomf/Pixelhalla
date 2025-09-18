@@ -84,8 +84,11 @@ class Game:
                         elif cid == ID4:
                             self.f4 = c.fighter_type if c.fighter_type else "arcane"
                         break
-
-        self.load_map_jesus(ID1, ID2,self.f1,self.f2,self.f3,self.f4)
+        if mode == "1vs1":
+            self.load_map_jesus(ID1, ID2,self.f1,self.f2,self.f3,self.f4)
+        else:
+            self.load_map_jesus(ID1, ID2,self.f1,self.f2,self.f3,self.f4)
+        
         
         
 
@@ -248,7 +251,7 @@ class Game:
                 height=64, health=100,
                 platforms=self.platforms,
                 controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
-                id=ID1, 
+                id=self.ID3, 
                 team=1, 
                 color=(200, 120, 78), fighters=self.fighters,
                 multi_player_mode=True, fighter_type=f3
@@ -266,7 +269,7 @@ class Game:
                 height=64, health=100,
                 platforms=self.platforms,
                 controls={"left": pygame.K_a, "right": pygame.K_d, "jump": pygame.K_w, attack: pygame.K_SPACE},
-                id=ID2, 
+                id=self.ID4, 
                 team=2, 
                 color=(200, 120, 120), fighters=self.fighters,
                 multi_player_mode=True, fighter_type=f4
