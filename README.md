@@ -1,10 +1,10 @@
 # PixelHalla
 
-PixelHalla is an ongoing 2D game built with Pygame. This repository contains the game source, assets, and simple instructions to run and develop the project.
+PixelHalla is an ongoing 2D game initially started as a university course project. It is currently built with Pygame. This repository contains the game source, assets, and simple instructions to run and develop the project.
 
 ## Features
 
-- church aesthetic
+- aesthetic visuals
 - Simple arcade-style gameplay
 - Unique mechanics
 - Lightweight and easy to extend
