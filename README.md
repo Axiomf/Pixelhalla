@@ -5,8 +5,8 @@ PixelHalla is an ongoing 2D game initially started as a university course projec
 ## Features
 
 - aesthetic visuals
-- sound effects and music align with atmosphere of each level or boss
-- interactive dialouges with integrated LLM
+- sound effects and musics align with atmosphere of each level or boss
+- interactive dialouges via integrated LLM
 - Unique mechanics
 - Lightweight and easy to extend
 
