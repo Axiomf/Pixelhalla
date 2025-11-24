@@ -1,6 +1,6 @@
-# PixelHalla
+# Pixelhalla
 
-PixelHalla is an ongoing 2D game initially started as a university course project. It is currently built with Pygame. This repository contains the game source, assets, and simple instructions to run and develop the project.
+Pixelhalla is an ongoing 2D game initially started as a university course project. It is currently built with Pygame. This repository contains the game source, assets, and simple instructions to run and develop the project.
 <img width="1366" height="768" alt="Screenshot (15)" src="https://github.com/user-attachments/assets/ce52dd71-c0df-41d7-805f-866369bf3435" />
 <img width="1366" height="768" alt="Screenshot (16)" src="https://github.com/user-attachments/assets/3ff12fb4-babf-4e3e-90ad-ef16d4915893" />
 <img width="1366" height="768" alt="Screenshot (17)" src="https://github.com/user-attachments/assets/af62970c-71c4-42f8-98dc-4728e3882fd9" />
